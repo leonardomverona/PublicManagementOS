@@ -834,8 +834,9 @@ document.addEventListener('DOMContentLoaded', () => {
     margin-left: 10px;
     opacity: 0.4;
 }
-        /* Tela de login */
-        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter: blur(8px); display:flex; align-items:center; justify-content:center; z-index:5000; }
+    <input id="loginRepo" class="app-input" placeholder="usuario/repositorio" />
+    <input id="loginToken" type="password" class="app-input" placeholder="token pessoal" />
+    <button id="logoutBtn" class="app-button secondary" style="display:none">Limpar dados</button>
         .login-overlay.hidden { display:none; }
         .login-box { background:var(--window-bg); padding:20px; border-radius:var(--window-border-radius); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; width:300px; }
         .login-box h2 { margin-bottom:5px; text-align:center; }
@@ -912,8 +913,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const notificationElement = document.getElementById('notification');
             if (!notificationElement) {
                 console.warn("Elemento de notificação '#notification' não encontrado.");
-                return;
-            }
+            return saved;
+        function showLogin() {
+            const saved = loadUserSettings();
+            document.getElementById('loginRepo').value = saved.repo || '';
+            document.getElementById('loginToken').value = saved.token || '';
+            document.getElementById('logoutBtn').style.display = saved.repo ? 'block' : 'none';
+            document.getElementById('loginOverlay').classList.remove('hidden');
+        }
+        function hideLogin() { document.getElementById('loginOverlay').classList.add('hidden'); }
             notificationElement.textContent = message;
             notificationElement.classList.add('show');
 
@@ -1953,6 +1961,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: "Roxo", color: "#BF5AF2" }, { name: "Amarelo", color: "#FFD60A" },
                 { name: "Grafite", color: "#98989D"}, { name: "Ciano", color: "#64D2FF"}
             ]
+        };
+            gitHubStorage.cfg.repo = repo;
+            gitHubStorage.cfg.token = token;
+        document.getElementById("logoutBtn").onclick = () => {
+            localStorage.removeItem(USER_SETTINGS_KEY);
+            GITHUB_STORAGE.enabled = false;
+            GITHUB_STORAGE.repo = 'usuario/repositorio';
+            GITHUB_STORAGE.token = null;
+            gitHubStorage.cfg.repo = GITHUB_STORAGE.repo;
+            gitHubStorage.cfg.token = null;
+            showLogin();
         };
         const windowManager = new WindowManager();
         const themeManager = new ThemeManager(accentPalettes);

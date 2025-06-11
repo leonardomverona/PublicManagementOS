@@ -6,7 +6,7 @@ voltado para gestão pública. Os dados são salvos por padrão no
 
 ## Uso do GitHub como repositório de dados
 
-Ao abrir a página, será exibida uma tela de login solicitando o repositório e o token pessoal do GitHub. Essas informações ficam salvas no navegador, permitindo que cada usuário acesse apenas o seu repositório.
+Ao abrir a página, será exibida uma tela de login solicitando o repositório e o token pessoal do GitHub. As credenciais ficam salvas no navegador, permitindo que cada usuário utilize o seu próprio repositório. Um botão "Limpar dados" possibilita remover essas informações a qualquer momento.
 
 É possível sincronizar o sistema de arquivos virtual com um
 repositório do GitHub. Edite o arquivo `index.html` e localize o bloco
