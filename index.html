@@ -834,10 +834,23 @@ document.addEventListener('DOMContentLoaded', () => {
     margin-left: 10px;
     opacity: 0.4;
 }
+        /* Tela de login */
+        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter: blur(8px); display:flex; align-items:center; justify-content:center; z-index:5000; }
+        .login-overlay.hidden { display:none; }
+        .login-box { background:var(--window-bg); padding:20px; border-radius:var(--window-border-radius); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; width:300px; }
+        .login-box h2 { margin-bottom:5px; text-align:center; }
 
 </style>
 </head>
 <body>
+<div id="loginOverlay" class="login-overlay hidden">
+  <div class="login-box">
+    <h2>Login GitHub</h2>
+    <input id="loginRepo" class="app-input" placeholder="usuario/repositorio"/>
+    <input id="loginToken" type="password" class="app-input" placeholder="token pessoal"/>
+    <button id="loginBtn" class="app-button">Entrar</button>
+  </div>
+</div>
 <div class="desktop" id="desktop">
     <!-- Janelas dos aplicativos serão adicionadas aqui pelo JavaScript -->
 </div>
@@ -916,6 +929,18 @@ document.addEventListener('DOMContentLoaded', () => {
             filePath: 'dados/fs.json',    // Caminho do arquivo no repositório
             token: null                   // Token pessoal (necessário para salvar)
         };
+        const USER_SETTINGS_KEY = "github_user_settings";
+        function loadUserSettings() {
+            const saved = JSON.parse(localStorage.getItem(USER_SETTINGS_KEY) || "{}");
+            if (saved.repo && saved.token) {
+                GITHUB_STORAGE.enabled = true;
+                GITHUB_STORAGE.repo = saved.repo;
+                GITHUB_STORAGE.token = saved.token;
+            }
+        }
+        function showLogin() { document.getElementById("loginOverlay").classList.remove("hidden"); }
+        function hideLogin() { document.getElementById("loginOverlay").classList.add("hidden"); }
+        loadUserSettings();
 
         // --- Classe: WindowManager ---
         // Gerencia a criação, interação e estado das janelas dos aplicativos
@@ -1934,7 +1959,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileSystem = new FileSystem();
         if (GITHUB_STORAGE.enabled) {
             fileSystem.loadFromGitHub();
+        } else {
+            showLogin();
         }
+        document.getElementById("loginBtn").onclick = () => {
+            const repo = document.getElementById("loginRepo").value.trim();
+            const token = document.getElementById("loginToken").value.trim();
+            if(!repo || !token){ alert("Informe repositório e token"); return; }
+            localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({repo, token}));
+            GITHUB_STORAGE.enabled = true;
+            GITHUB_STORAGE.repo = repo;
+            GITHUB_STORAGE.token = token;
+            hideLogin();
+            fileSystem.loadFromGitHub();
+        };
         let desktopMenuInitialized = false; // Flag para inicializar listeners do menu de contexto apenas uma vez
 
         // --- Início das Funções de Abertura de Aplicativos ---
