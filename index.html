@@ -834,10 +834,23 @@ document.addEventListener('DOMContentLoaded', () => {
     margin-left: 10px;
     opacity: 0.4;
 }
+        /* Tela de login */
+        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter: blur(8px); display:flex; align-items:center; justify-content:center; z-index:5000; }
+        .login-overlay.hidden { display:none; }
+        .login-box { background:var(--window-bg); padding:20px; border-radius:var(--window-border-radius); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; width:300px; }
+        .login-box h2 { margin-bottom:5px; text-align:center; }
 
 </style>
 </head>
 <body>
+<div id="loginOverlay" class="login-overlay hidden">
+  <div class="login-box">
+    <h2>Login GitHub</h2>
+    <input id="loginRepo" class="app-input" placeholder="usuario/repositorio"/>
+    <input id="loginToken" type="password" class="app-input" placeholder="token pessoal"/>
+    <button id="loginBtn" class="app-button">Entrar</button>
+  </div>
+</div>
 <div class="desktop" id="desktop">
     <!-- Janelas dos aplicativos serão adicionadas aqui pelo JavaScript -->
 </div>
@@ -908,6 +921,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 notificationElement.classList.remove('show');
             }, duration);
         }
+
+        // Configurações para sincronização opcional com o GitHub
+        const GITHUB_STORAGE = {
+            enabled: true,               // Altere para true para ativar
+            repo: 'usuario/repositorio',  // Formato "usuario/repositorio"
+            filePath: 'dados/fs.json',    // Caminho do arquivo no repositório
+            token: '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' // Token pessoal (necessário para salvar)
+        };
+        const USER_SETTINGS_KEY = "github_user_settings";
+        function loadUserSettings() {
+            const saved = JSON.parse(localStorage.getItem(USER_SETTINGS_KEY) || "{}");
+            if (saved.repo && saved.token) {
+                GITHUB_STORAGE.enabled = true;
+                GITHUB_STORAGE.repo = saved.repo;
+                GITHUB_STORAGE.token = saved.token;
+            }
+        }
+        function showLogin() { document.getElementById("loginOverlay").classList.remove("hidden"); }
+        function hideLogin() { document.getElementById("loginOverlay").classList.add("hidden"); }
+        loadUserSettings();
 
         // --- Classe: WindowManager ---
         // Gerencia a criação, interação e estado das janelas dos aplicativos
@@ -1486,9 +1519,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]
                 };
             }
+
+            async loadFromGitHub() {
+                if (!GITHUB_STORAGE.enabled) return;
+                try {
+                    const data = await gitHubStorage.load();
+                    if (data) {
+                        this.fs = data;
+                        localStorage.setItem(STORAGE_KEYS.FILE_SYSTEM, JSON.stringify(this.fs));
+                    }
+                } catch (e) {
+                    console.error('Falha ao carregar FS do GitHub', e);
+                }
+            }
             save() { // Salva o estado atual do FS no localStorage
                 try {
                     localStorage.setItem(STORAGE_KEYS.FILE_SYSTEM, JSON.stringify(this.fs));
+                    if (GITHUB_STORAGE.enabled) {
+                        gitHubStorage.save(JSON.stringify(this.fs)).catch(e => console.error('Falha ao salvar no GitHub', e));
+                    }
                 } catch (e) {
                     console.error("Erro ao salvar Sistema de Arquivos:", e);
                     showNotification("Erro: Não foi possível salvar o sistema de arquivos. O armazenamento pode estar cheio.", 5000);
@@ -1664,6 +1713,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
         }
+
+        // --- Classe GitHubStorage ---
+        // Lê e grava o sistema de arquivos em um repositório GitHub
+        class GitHubStorage {
+            constructor(config) {
+                this.cfg = config;
+                this.sha = null; // SHA do arquivo no GitHub para atualizações
+            }
+            _headers(acceptRaw = false) {
+                const h = { 'Accept': acceptRaw ? 'application/vnd.github+json' : 'application/vnd.github+json' };
+                if (this.cfg.token) h['Authorization'] = `token ${this.cfg.token}`;
+                return h;
+            }
+            async load() {
+                const url = `https://api.github.com/repos/${this.cfg.repo}/contents/${this.cfg.filePath}`;
+                const res = await fetch(url, { headers: this._headers(true) });
+                if (!res.ok) { console.warn('GitHubStorage load falhou:', res.status); return null; }
+                const data = await res.json();
+                this.sha = data.sha;
+                try {
+                    return JSON.parse(atob(data.content.replace(/\n/g, '')));
+                } catch (e) {
+                    console.error('GitHubStorage: erro ao decodificar', e);
+                    return null;
+                }
+            }
+            async save(content) {
+                const url = `https://api.github.com/repos/${this.cfg.repo}/contents/${this.cfg.filePath}`;
+                const body = {
+                    message: 'Atualiza dados do WebOS',
+                    content: btoa(unescape(encodeURIComponent(content))),
+                };
+                if (this.sha) body.sha = this.sha;
+                const res = await fetch(url, {
+                    method: 'PUT',
+                    headers: this._headers(false),
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) { console.error('GitHubStorage save falhou:', res.status); return; }
+                const data = await res.json();
+                this.sha = data.content && data.content.sha;
+            }
+        }
+
+        const gitHubStorage = new GitHubStorage(GITHUB_STORAGE);
 
         // --- Classe StageManager ---
         // Gerencia o modo "Organizador Visual" (Stage Manager)
@@ -1863,6 +1957,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const windowManager = new WindowManager();
         const themeManager = new ThemeManager(accentPalettes);
         const fileSystem = new FileSystem();
+        if (GITHUB_STORAGE.enabled) {
+            fileSystem.loadFromGitHub();
+        } else {
+            showLogin();
+        }
+        document.getElementById("loginBtn").onclick = () => {
+            const repo = document.getElementById("loginRepo").value.trim();
+            const token = document.getElementById("loginToken").value.trim();
+            if(!repo || !token){ alert("Informe repositório e token"); return; }
+            localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify({repo, token}));
+            GITHUB_STORAGE.enabled = true;
+            GITHUB_STORAGE.repo = repo;
+            GITHUB_STORAGE.token = token;
+            hideLogin();
+            fileSystem.loadFromGitHub();
+        };
         let desktopMenuInitialized = false; // Flag para inicializar listeners do menu de contexto apenas uma vez
 
         // --- Início das Funções de Abertura de Aplicativos ---
