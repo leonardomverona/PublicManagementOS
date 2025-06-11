@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Faturamento e Empenhos - VISA Digital</title>
+    <style>
+        /* Light Theme (Default) */
+        :root {
+            --primary: #2c3e50; /* Azul Escuro */
+            --secondary: #3498db; /* Azul Claro */
+            --success: #27ae60; /* Verde */
+            --warning: #f39c12; /* Laranja */
+            --danger: #e74c3c; /* Vermelho */
+            --info: #9b59b6; /* Roxo */
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --background: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-color: #e0e0e0;
+            --table-header-bg: var(--primary);
+            --table-header-fg: #ffffff;
+            --table-row-even-bg: #fdfdfd;
+            --input-bg: #ffffff;
+            --input-border: var(--medium-gray);
+
+            --status-pre-faturado-bg: #f1c40f20;
+            --status-pre-faturado-fg: #f1c40f;
+            --status-nf-emitida-bg: #3498db20;
+            --status-nf-emitida-fg: #3498db;
+            --status-atestada-bg: #9b59b620;
+            --status-atestada-fg: #9b59b6;
+            --status-liquidada-bg: #e67e2220;
+            --status-liquidada-fg: #e67e22;
+            --status-paga-bg: #27ae6020;
+            --status-paga-fg: #27ae60;
+            --status-cancelada-bg: #e74c3c20;
+            --status-cancelada-fg: #e74c3c;
+        }
+
+        /* Dark Theme Variables */
+        body.dark-mode {
+            --primary: #ecf0f1; /* Cinza Claro (agora primário no escuro) */
+            --secondary: #3498db; /* Azul continua ok */
+            --success: #2ecc71; /* Verde mais claro */
+            --warning: #f1c40f; /* Amarelo continua ok */
+            --danger: #e74c3c; /* Vermelho continua ok */
+            --info: #9b59b6; /* Roxo continua ok */
+            --light-gray: #34495e; /* Azul Escuro (bg sutil) */
+            --medium-gray: #7f8c8d; /* Cinza Médio */
+            --dark-gray: #95a5a6; /* Cinza Claro (texto secundário) */
+            --background: #2c3e50; /* Fundo Azul Escuro */
+            --card-bg: #34495e; /* Cartões Azul um pouco mais claro */
+            --text-color: #ecf0f1; /* Texto Principal Claro */
+            --text-muted: #bdc3c7; /* Texto Secundário Cinza */
+            --border-color: #46627f; /* Borda mais escura */
+            --table-header-bg: #4a6a8a; /* Cabeçalho Tabela */
+            --table-header-fg: #ecf0f1;
+            --table-row-even-bg: #3a536b; /* Linha par tabela */
+            --input-bg: #4a6a8a;
+            --input-border: #7f8c8d;
+
+            /* Ajustar cores de status se necessário para contraste */
+             --status-pre-faturado-bg: #f1c40f30;
+             --status-nf-emitida-bg: #3498db30;
+             --status-atestada-bg: #9b59b630;
+             --status-liquidada-bg: #e67e2230;
+             --status-paga-bg: #27ae6030;
+             --status-cancelada-bg: #e74c3c30;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background);
+            color: var(--text-color);
+            font-size: 14px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        h1, h2, h3 {
+            color: var(--text-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 5px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+         .import-export-controls, .theme-controls {
+             display: flex;
+             gap: 10px;
+             align-items: center;
+             margin-top: 10px; /* Espaçamento se quebrar linha */
+         }
+
+         .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 24px;
+            position: relative;
+            width: 50px;
+            margin-left: 8px;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            background-color: #fff;
+            bottom: 4px;
+            content: "";
+            height: 16px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 16px;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--secondary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .filters-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 15px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filters-actions label {
+            font-weight: 500;
+             color: var(--text-color);
+        }
+
+        input[type="text"], input[type="number"], input[type="month"], input[type="date"], select, button {
+            padding: 8px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 0.95em;
+            min-height: 38px; /* Align height */
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        input[type="file"] {
+            padding: 5px; /* Ajuste para input file */
+        }
+
+        input, select {
+             min-width: 180px;
+        }
+         button:disabled {
+             opacity: 0.5;
+             cursor: not-allowed;
+         }
+
+        button {
+            background-color: var(--secondary);
+            color: #ffffff; /* Branco fixo para melhor contraste em botões coloridos */
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, background-color 0.2s;
+            font-weight: 500;
+        }
+        button:not(:disabled):hover {
+            opacity: 0.9;
+        }
+        button.btn-add { background-color: var(--success); }
+        button.btn-edit { background-color: var(--warning); color: var(--primary); /* Cor primária original para contraste */ padding: 5px 8px; font-size: 0.9em; margin-right: 3px;}
+        button.btn-delete { background-color: var(--danger); padding: 5px 8px; font-size: 0.9em; margin-right: 3px;}
+        button.btn-action { background-color: var(--info); }
+        button.btn-import { background-color: var(--info); }
+        button.btn-export { background-color: var(--success); }
+        button.btn-print { background-color: var(--dark-gray); color: var(--primary); }
+        button.btn-movement { background-color: #3498db; color: #ffffff; font-size: 0.8em; padding: 4px 8px; margin-right: 3px;}
+
+
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .card { background: var(--card-bg); padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s, background-color 0.3s, border-left-color 0.3s; position: relative; border-left: 5px solid var(--secondary); }
+        .card.dev { border-left-color: var(--success); }
+        .card.hosp { border-left-color: var(--warning); }
+        .card.rap { border-left-color: var(--danger); }
+        .card:hover { transform: translateY(-2px); }
+        .card h3 { margin: 0 0 8px 0; font-size: 1em; color: var(--text-color); border-bottom: none; }
+        .card .value { font-size: 1.5em; font-weight: 600; color: var(--text-color); margin-bottom: 5px; }
+        .card small { color: var(--text-muted); font-size: 0.85em; display: block; line-height: 1.3; }
+        .saldo-negativo { color: var(--danger) !important; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 0.9em; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); vertical-align: middle; color: var(--text-color); }
+        th { background-color: var(--table-header-bg); color: var(--table-header-fg); font-weight: 500; white-space: nowrap; }
+        tbody tr:nth-child(even) { background-color: var(--table-row-even-bg); }
+        tbody tr:hover { background-color: var(--light-gray); }
+
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 500; white-space: nowrap; color: #fff; /* Branco fixo para badges */ }
+        .status-pre-faturado { background-color: var(--status-pre-faturado-fg); }
+        .status-nf-emitida { background-color: var(--status-nf-emitida-fg); }
+        .status-atestada { background-color: var(--status-atestada-fg); }
+        .status-liquidada { background-color: var(--status-liquidada-fg); }
+        .status-paga { background-color: var(--status-paga-fg); }
+        .status-cancelada { background-color: var(--status-cancelada-fg); }
+        .status-ativo { background-color: var(--success); }
+        .status-encerrado { background-color: var(--dark-gray); }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 20px; box-sizing: border-box; }
+        .modal-content { background: var(--card-bg); padding: 25px 30px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal-content h3 { margin-top: 0; color: var(--text-color); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--text-color); font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; box-sizing: border-box; }
+        .form-actions { margin-top: 25px; display: flex; justify-content: flex-end; gap: 10px; }
+        .form-actions button { min-width: 100px; }
+        .form-actions button.btn-cancel { background-color: var(--medium-gray); color: var(--primary); }
+        body.dark-mode .form-actions button.btn-cancel { color: var(--text-color); } /* Ajuste cor botão cancelar no dark mode */
+
+
+        .alert { padding: 12px 15px; border-radius: 4px; margin: 15px 0; font-weight: 500; }
+        .alert-success { background-color: var(--status-paga-bg); color: var(--status-paga-fg); border: 1px solid var(--status-paga-fg); }
+        .alert-error { background-color: var(--status-cancelada-bg); color: var(--status-cancelada-fg); border: 1px solid var(--status-cancelada-fg); }
+        .alert-warning { background-color: var(--status-pre-faturado-bg); color: var(--status-pre-faturado-fg); border: 1px solid var(--status-pre-faturado-fg); }
+
+        .chart-placeholder { min-height: 200px; display: flex; align-items: center; justify-content: center; background-color: var(--light-gray); color: var(--dark-gray); border-radius: 4px; margin-top: 10px; text-align: center; padding: 10px; }
+        textarea { min-height: 80px; }
+
+        #importJsonInput { display: none; } /* Esconde input file */
+
+        /* Print Styles */
+        @media print {
+            body {
+                font-size: 10pt;
+                color: #000 !important; /* Garante texto preto */
+                background-color: #fff !important; /* Fundo branco */
+                -webkit-print-color-adjust: exact; /* Força cores no Chrome/Safari */
+                print-color-adjust: exact; /* Força cores no Firefox */
+            }
+             /* Remove variáveis de tema para impressão */
+            body, .card, input, select, button, table, th, td {
+                color: #000 !important;
+                background-color: #fff !important;
+                border-color: #ccc !important;
+            }
+            .header-controls, .filters-actions, .import-export-controls, .modal, #alertas, button, .chart-placeholder, .theme-switch-wrapper {
+                display: none !important; /* Esconde elementos não imprimíveis */
+            }
+             h1, h2, h3 {
+                 border-bottom: 1px solid #ccc !important;
+                 color: #000 !important;
+                 margin-top: 15px;
+                 margin-bottom: 10px;
+                 padding-bottom: 3px;
+                 page-break-after: avoid;
+            }
+            .container {
+                 max-width: 100%;
+                 margin: 0;
+                 box-shadow: none;
+                 padding: 0;
+            }
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr); /* Ajusta dashboard */
+                box-shadow: none;
+                border: 1px solid #ccc !important;
+                padding: 10px;
+                margin-bottom: 15px;
+                gap: 10px;
+            }
+            .card {
+                 box-shadow: none;
+                 border: 1px solid #ccc !important;
+                 border-left-width: 3px !important;
+                 padding: 10px;
+                 page-break-inside: avoid;
+                 border-radius: 0;
+            }
+            .card.dev { border-left-color: #27ae60 !important; } /* Cores fixas para impressão */
+            .card.hosp { border-left-color: #f39c12 !important; }
+            .card.rap { border-left-color: #e74c3c !important; }
+
+            .card .value { font-size: 1.2em; }
+            .card small { font-size: 0.8em; color: #555 !important; }
+             table {
+                 width: 100%;
+                 border: 1px solid #ccc !important;
+                 margin-bottom: 15px;
+                 page-break-inside: auto; /* Permite quebrar tabela entre páginas */
+             }
+             thead { display: table-header-group; } /* Repete cabeçalho */
+             th, td {
+                 border: 1px solid #ccc !important;
+                 padding: 5px;
+                 background-color: #fff !important; /* Remove cores de fundo */
+             }
+             th { background-color: #eee !important; font-weight: bold; }
+             tbody tr { page-break-inside: avoid; page-break-after: auto; } /* Evita quebrar linha no meio */
+             .status-badge {
+                 border: 1px solid #999;
+                 padding: 2px 4px;
+                 border-radius: 4px;
+                 color: #000 !important;
+                 background-color: transparent !important;
+                 font-size: 0.8em;
+                 display: inline-block; /* Garante que seja visível */
+             }
+             .saldo-negativo { color: #D00 !important; font-weight: bold; }
+              a[href]:after { content: none !important; } /* Não mostra URL de links */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-controls">
+            <h1>Controle de Faturamento e Empenhos</h1>
+            <div class="theme-controls">
+                 <div class="theme-switch-wrapper">
+                     <span>Modo Escuro</span>
+                     <label class="theme-switch">
+                         <input type="checkbox" id="themeToggle">
+                         <span class="slider"></span>
+                     </label>
+                 </div>
+             </div>
+        </div>
+
+        <div id="alertas"></div>
+
+        <div class="filters-actions">
+             <button class="btn-add" onclick="openModal('empenho', null)">➕ Empenho</button>
+            <button class="btn-add" onclick="openModal('faturamento', null)">📋 Pré-Faturamento</button>
+             <div style="flex-grow: 1;"></div> <label for="filterContrato">Contrato:</label>
+            <select id="filterContrato" onchange="carregarDados()"> </select>
+            <label for="filterAnoEmpenho">Ano Empenho:</label>
+            <select id="filterAnoEmpenho" onchange="carregarDados()"> </select>
+            <label for="filterStatusFaturamento">Status Fat.:</label>
+            <select id="filterStatusFaturamento" onchange="carregarDados()"> </select>
+        </div>
+
+        <div class="import-export-controls" style="margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
+             <button class="btn-import" onclick="document.getElementById('importJsonInput').click();">📤 Importar JSON</button>
+             <input type="file" id="importJsonInput" accept=".json" onchange="importarJson(event)">
+             <button class="btn-export" onclick="exportarJson()">📥 Exportar JSON</button>
+             <button class="btn-export" onclick="exportarCsv('empenhos')">📊 Exportar Empenhos (CSV)</button>
+             <button class="btn-export" onclick="exportarCsv('faturamentos')">📈 Exportar Faturamento (CSV)</button>
+             <button class="btn-print" onclick="window.print()">📄 Imprimir / Salvar PDF</button>
+             <button class="btn-delete" onclick="clearAllData()">🧹 Limpar Todos os Dados</button>
+        </div>
+
+        <h2>📊 Dashboard</h2>
+        <div class="dashboard">
+            <div class="card dev">
+                <h3>Desenvolvimento (INF.4177/00)</h3>
+                <div class="value" id="saldoDisponivelDev">R$ 0,00</div>
+                <small>Saldo Disponível (Empenhado - Liquidado)</small>
+                <small>Comprometido (Pré-Fat): <span id="saldoComprometidoDev">R$ 0,00</span></small>
+                 <small>Liquidado: <span id="saldoLiquidadoDev">R$ 0,00</span></small>
+                 <small>Total Empenhado: <span id="totalEmpenhadoDev">R$ 0,00</span></small>
+            </div>
+            <div class="card hosp">
+                <h3>Hospedagem (INF–4628/00)</h3>
+                 <div class="value" id="saldoDisponivelHosp">R$ 0,00</div>
+                <small>Saldo Disponível (Empenhado - Liquidado)</small>
+                <small>Comprometido (Pré-Fat): <span id="saldoComprometidoHosp">R$ 0,00</span></small>
+                 <small>Liquidado: <span id="saldoLiquidadoHosp">R$ 0,00</span></small>
+                 <small>Total Empenhado: <span id="totalEmpenhadoHosp">R$ 0,00</span></small>
+            </div>
+             <div class="card rap">
+                <h3>Restos a Pagar (Anos Ant.)</h3>
+                 <div class="value" id="saldoDisponivelRap">R$ 0,00</div>
+                <small>Saldo Disponível (Empenhado - Liquidado)</small>
+                <small>Liquidado: <span id="saldoLiquidadoRap">R$ 0,00</span></small>
+                 <small>Total Empenhado: <span id="totalEmpenhadoRap">R$ 0,00</span></small>
+            </div>
+            <div class="card">
+                 <h3>Execução Orçamentária (Ano Corrente)</h3>
+                 <div class="chart-placeholder">Gráfico de Empenhado vs Liquidado (Ex: Usar Chart.js)</div>
+            </div>
+             <div class="card">
+                 <h3>Despesas por Contrato (Ano Corrente)</h3>
+                 <div class="chart-placeholder">Gráfico de Pizza de Despesas Liquidadas (Ex: Usar Chart.js)</div>
+            </div>
+        </div>
+
+         <h2>📑 Empenhos</h2>
+        <table id="tabelaEmpenhos">
+            <thead>
+                <tr>
+                    <th>Contrato</th>
+                    <th>Nº Empenho</th>
+                    <th>Ano</th>
+                    <th>Valor Empenhado (Total)</th> <th>Valor Liquidado</th>
+                    <th>Saldo Disponível</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+
+        <h2>📈 Fluxo de Faturamento</h2>
+        <table id="tabelaFaturamento">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Contrato</th>
+                    <th>Mês/Ano Serviço</th>
+                    <th>Nº Empenho</th>
+                    <th>Valor</th>
+                    <th>NF (Num/Data)</th>
+                    <th>Ateste (Data/Doc)</th>
+                    <th>Liquidação (Data)</th>
+                    <th>Pagamento (Data)</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+    </div><div id="empenhoModal" class="modal">
+        <div class="modal-content">
+            <h3>📄 Novo/Editar Empenho Inicial</h3> <form id="formEmpenho" onsubmit="salvarEmpenho(event)">
+                <input type="hidden" id="empenhoId">
+                <div class="form-group">
+                    <label for="contratoEmpenho">Contrato:</label>
+                    <select id="contratoEmpenho" required>
+                        <option value="9275811/2021">Desenvolvimento (INF.4177/00)</option>
+                        <option value="9389678/2023">Hospedagem (INF–4628/00)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="numeroEmpenho">Número do Empenho:</label>
+                    <input type="text" id="numeroEmpenho" required placeholder="Ex: 2025NE00123">
+                </div>
+                <div class="form-group">
+                    <label for="anoEmpenho">Ano:</label>
+                    <input type="number" id="anoEmpenho" required min="2020" step="1">
+                </div>
+                <div class="form-group" style="display: none;">
+                    <label for="tipoEmpenho">Tipo de Empenho:</label>
+                    <select id="tipoEmpenho" required>
+                        <option value="Inicial" selected>Inicial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="valorEmpenho">Valor Inicial / Total Atualizado (R$):</label> <input type="number" id="valorEmpenho" step="0.01" required placeholder="Valor inicial do empenho ou valor total atual">
+                </div>
+                 <div class="form-group">
+                    <label for="statusEmpenho">Status:</label>
+                    <select id="statusEmpenho" required>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Encerrado">Encerrado</option>
+                         <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="fecharModal('empenho')">Cancelar</button>
+                    <button type="submit">Salvar Empenho</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="faturamentoModal" class="modal">
+        <div class="modal-content">
+            <h3>📋 Novo/Editar Pré-Faturamento</h3>
+            <form id="formFaturamento" onsubmit="salvarFaturamento(event)">
+                <input type="hidden" id="faturamentoId">
+                <div class="form-group">
+                    <label for="contratoFaturamento">Contrato:</label>
+                    <select id="contratoFaturamento" required onchange="filtrarEmpenhosDisponiveis()">
+                         <option value="">Selecione...</option>
+                        <option value="9275811/2021">Desenvolvimento (INF.4177/00)</option>
+                        <option value="9389678/2023">Hospedagem (INF–4628/00)</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="mesAnoServico">Mês/Ano da Prestação do Serviço:</label>
+                    <input type="month" id="mesAnoServico" required onchange="filtrarEmpenhosDisponiveis()">
+                </div>
+                <div class="form-group">
+                    <label for="empenhoVinculado">Empenho a Vincular:</label>
+                    <select id="empenhoVinculado" required>
+                        <option value="">Selecione contrato e mês/ano primeiro</option>
+                    </select>
+                     <small id="saldoEmpenhoInfo">Saldo disponível: R$ 0,00</small>
+                </div>
+                 <div class="form-group">
+                    <label for="valorPreFat">Valor Pré-Faturado (R$):</label>
+                    <input type="number" id="valorPreFat" step="0.01" required>
+                </div>
+                <hr>
+                 <p><strong>Etapas do Faturamento (Preencha conforme avança):</strong></p>
+                 <div class="form-group">
+                    <label for="numeroNF">Número Nota Fiscal:</label>
+                    <input type="text" id="numeroNF" placeholder="Ex: 00012345">
+                </div>
+                 <div class="form-group">
+                    <label for="dataNF">Data Emissão Nota Fiscal:</label>
+                    <input type="date" id="dataNF">
+                </div>
+                 <div class="form-group">
+                    <label for="dataAteste">Data Ateste:</label>
+                    <input type="date" id="dataAteste">
+                </div>
+                 <div class="form-group" id="groupDocAceiteSprint" style="display: none;"> <label for="docAceiteSprint">Documento SEI Aceite Sprint (Obrigatório para Ateste):</label>
+                    <input type="text" id="docAceiteSprint" placeholder="Nº do Documento SEI ou link">
+                </div>
+                 <div class="form-group">
+                    <label for="dataLiquidacao">Data Liquidação:</label>
+                    <input type="date" id="dataLiquidacao">
+                </div>
+                <div class="form-group">
+                    <label for="dataPagamento">Data Pagamento:</label>
+                    <input type="date" id="dataPagamento">
+                </div>
+                 <div class="form-group">
+                    <label for="observacoesFat">Observações:</label>
+                    <textarea id="observacoesFat"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="fecharModal('faturamento')">Cancelar</button>
+                    <button type="submit">Salvar Faturamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        // Constantes
+        const CONTRATO_DEV = '9275811/2021';
+        const CONTRATO_HOSP = '9389678/2023';
+        const ANO_CORRENTE = new Date().getFullYear();
+
+        // Estado da Aplicação (Dados)
+        let empenhos = []; // Agora armazena apenas os Empenhos Iniciais com valor total
+        let faturamentos = [];
+        let editEmpenhoId = null; // Usado apenas para editar o Empenho Inicial
+        let editFaturamentoId = null;
+
+        // Funções Utilitárias
+        const formatarMoeda = (valor) => {
+            if (isNaN(valor) || valor === null) return "R$ 0,00";
+            return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        const formatarCompetencia = (isoMonth) => { //YYYY-MM
+            if (!isoMonth) return '-';
+            const [ano, mes] = isoMonth.split('-');
+            return `${mes}/${ano}`;
+        }
+
+         const formatarData = (isoDate) => { //YYYY-MM-DD
+            if (!isoDate) return '-';
+            try {
+                const [ano, mes, dia] = isoDate.split('-');
+                 if (isNaN(ano) || isNaN(mes) || isNaN(dia) || ano < 1000 || mes < 1 || mes > 12 || dia < 1 || dia > 31) {
+                     console.warn("Formato de data inválido encontrado:", isoDate);
+                     return '-';
+                 }
+                 return `${dia.padStart(2,'0')}/${mes.padStart(2,'0')}/${ano}`;
+            } catch (e) {
+                 console.error("Erro ao formatar data:", isoDate, e);
+                 return '-';
+            }
+        }
+
+        const getNomeContrato = (idContrato) => {
+             if (idContrato === CONTRATO_DEV) return "Desenvolvimento";
+             if (idContrato === CONTRATO_HOSP) return "Hospedagem";
+             return "N/A";
+        }
+
+        // ========== DARK MODE ==========
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const currentTheme = localStorage.getItem("theme");
+        if (currentTheme == "dark") {
+            document.body.classList.add("dark-mode");
+            if(themeToggle) themeToggle.checked = true;
+        } else if (currentTheme == "light") {
+            document.body.classList.remove("dark-mode");
+             if(themeToggle) themeToggle.checked = false;
+        } else if (prefersDarkScheme.matches) { // Auto-detect if no preference saved
+             document.body.classList.add("dark-mode");
+             if(themeToggle) themeToggle.checked = true;
+             localStorage.setItem("theme", "dark"); // Salva o tema detectado
+        } else {
+             localStorage.setItem("theme", "light"); // Salva o tema detectado
+        }
+
+
+        if(themeToggle) {
+            themeToggle.addEventListener('change', function() {
+                let theme;
+                if(this.checked) {
+                    document.body.classList.add("dark-mode");
+                    theme = "dark";
+                } else {
+                    document.body.classList.remove("dark-mode");
+                    theme = "light";
+                }
+                localStorage.setItem("theme", theme);
+            });
+        }
+
+
+        // Funções de Persistência (LocalStorage)
+        const salvarDados = () => {
+            try {
+                // Garante que ao salvar, apenas empenhos 'Inicial' são mantidos na lista principal
+                const empenhosParaSalvar = empenhos.filter(e => e.tipoEmpenho === 'Inicial');
+                localStorage.setItem('empenhos_visa', JSON.stringify(empenhosParaSalvar));
+                localStorage.setItem('faturamentos_visa', JSON.stringify(faturamentos));
+            } catch (e) {
+                console.error("Erro ao salvar dados no LocalStorage:", e);
+                exibirAlerta("Erro ao salvar dados. O armazenamento local pode estar cheio ou indisponível.", "error");
+            }
+        }
+
+        const carregarDadosDoStorage = () => {
+            try {
+                const empenhosData = localStorage.getItem('empenhos_visa');
+                const faturamentosData = localStorage.getItem('faturamentos_visa');
+
+                empenhos = empenhosData ? JSON.parse(empenhosData) : [];
+                faturamentos = faturamentosData ? JSON.parse(faturamentosData) : [];
+
+                // Garante que valores numéricos sejam números e datas sejam strings (ou null)
+                empenhos = empenhos.map(e => ({
+                     ...e,
+                     anoEmpenho: e.anoEmpenho ? parseInt(e.anoEmpenho) : null,
+                     // Garante que valorOriginalEmpenho é float
+                     valorOriginalEmpenho: e.valorOriginalEmpenho ? parseFloat(e.valorOriginalEmpenho) : 0,
+                     // Ensure tipoEmpenho is always 'Inicial' if not set (from old data)
+                     tipoEmpenho: 'Inicial' // Força tipo para Inicial ao carregar
+                }));
+
+                faturamentos = faturamentos.map(f => ({
+                    ...f,
+                    valorPreFat: f.valorPreFat ? parseFloat(f.valorPreFat) : 0,
+                    // Garante que datas sejam strings ou null
+                    dataNF: f.dataNF || null,
+                    dataAteste: f.dataAteste || null,
+                    dataLiquidacao: f.dataLiquidacao || null,
+                    dataPagamento: f.dataPagamento || null,
+                }));
+            } catch (e) {
+                console.error("Erro ao carregar dados do LocalStorage:", e);
+                empenhos = []; // Reseta se houver erro na leitura/parse
+                faturamentos = [];
+                exibirAlerta("Erro ao carregar dados salvos. Iniciando com dados vazios.", "warning");
+            }
+        }
+
+        // Funções de Cálculo de Saldo
+        const calcularTotalLiquidadoEmpenho = (empenhoId) => {
+             // Calcula o total liquidado para um *específico* Empenho ID (Inicial)
+            return faturamentos
+                .filter(f => f.empenhoVinculado === empenhoId && f.dataLiquidacao && f.status !== 'Cancelada')
+                .reduce((acc, f) => acc + (f.valorPreFat || 0), 0);
+        }
+
+         const calcularSaldoDisponivelEmpenho = (empenho) => {
+             if (!empenho || empenho.tipoEmpenho !== 'Inicial') return 0; // Só calcula saldo para Empenhos Iniciais
+             const totalEmpenhado = empenho.valorOriginalEmpenho || 0; // O valorOriginalEmpenho agora é o total (Inicial + Reforços - Anulações)
+             const totalLiquidado = calcularTotalLiquidadoEmpenho(empenho.id); // Total liquidado contra este Empenho Inicial ID
+             return totalEmpenhado - totalLiquidado;
+         }
+
+         const calcularTotalComprometidoEmpenho = (empenhoId) => {
+             // Soma pré-faturamentos que ainda não foram liquidados e não foram cancelados
+             // vinculados a ESTE ID de empenho específico.
+             return faturamentos
+                .filter(f => f.empenhoVinculado === empenhoId && !f.dataLiquidacao && f.status !== 'Cancelada')
+                .reduce((acc, f) => acc + (f.valorPreFat || 0), 0);
+         }
+
+        // Funções de Renderização (Atualização da UI)
+         const popularSelect = (selectId, options, includeAllOption = true) => {
+            const select = document.getElementById(selectId);
+             if (!select) {
+                 console.error("Select element not found:", selectId);
+                 return;
+             }
+            const currentValue = select.value; // Preserva valor selecionado
+            select.innerHTML = '';
+            if (includeAllOption) {
+                select.add(new Option('Todos', ''));
+            }
+            options.forEach(opt => {
+                // opt can be a string or an object {value: 'val', text: 'txt'}
+                const value = typeof opt === 'object' ? opt.value : opt;
+                const text = typeof opt === 'object' ? opt.text : opt;
+                select.add(new Option(text, value));
+            });
+             // Tenta restaurar o valor anterior, se ele ainda for uma opção válida
+             if ([...select.options].some(option => option.value === currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        const carregarFiltros = () => {
+            // Contrato
+            popularSelect('filterContrato', [
+                { value: CONTRATO_DEV, text: `Desenvolvimento (…${CONTRATO_DEV.slice(-8)})` }, // Mostra só parte do número
+                { value: CONTRATO_HOSP, text: `Hospedagem (…${CONTRATO_HOSP.slice(-8)})` }
+            ]);
+            // Ano Empenho - Filtra apenas anos de empenhos 'Inicial'
+            const anos = [...new Set(empenhos.filter(e => e.tipoEmpenho === 'Inicial').map(e => e.anoEmpenho).filter(ano => ano))].sort((a, b) => b - a);
+            popularSelect('filterAnoEmpenho', anos);
+            // Status Faturamento
+            popularSelect('filterStatusFaturamento', [
+                'Pré-faturado', 'NF Emitida', 'Atestada', 'Liquidada', 'Paga', 'Cancelada'
+            ]);
+        }
+
+
+        const renderizarTabelaEmpenhos = () => {
+             const filtroContrato = document.getElementById('filterContrato').value;
+             const filtroAno = document.getElementById('filterAnoEmpenho').value;
+             const corpoTabela = document.getElementById('tabelaEmpenhos').querySelector('tbody');
+              if (!corpoTabela) return;
+             corpoTabela.innerHTML = ''; // Limpa antes de renderizar
+
+             // Filtra apenas empenhos do tipo 'Inicial' para exibir na tabela principal
+             const empenhosFiltrados = empenhos.filter(e => e.tipoEmpenho === 'Inicial')
+                 .filter(e =>
+                     (!filtroContrato || e.contrato === filtroContrato) &&
+                     (!filtroAno || (e.anoEmpenho && e.anoEmpenho.toString() === filtroAno))
+                 );
+
+            empenhosFiltrados.sort((a,b) => (b.anoEmpenho || 0) - (a.anoEmpenho || 0) || (a.numeroEmpenho || "").localeCompare(b.numeroEmpenho || "")) // Ordena por ano (desc) e número
+                .forEach(e => {
+                 const saldoDisponivel = calcularSaldoDisponivelEmpenho(e); // Calcula saldo usando o valor total atualizado
+                 const liquidado = calcularTotalLiquidadoEmpenho(e.id); // Calcula liquidado vinculado a este ID
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `
+                    <td>${getNomeContrato(e.contrato)} <small>(${e.contrato === CONTRATO_DEV ? 'INF.4177/00' : 'INF–4628/00'})</small></td>
+                    <td>${e.numeroEmpenho || 'N/A'}</td>
+                    <td>${e.anoEmpenho || 'N/A'}</td>
+                    <td>${formatarMoeda(e.valorOriginalEmpenho)}</td> <td>${formatarMoeda(liquidado)}</td>
+                    <td class="${saldoDisponivel < 0 ? 'saldo-negativo' : ''}">${formatarMoeda(saldoDisponivel)}</td>
+                    <td><span class="status-badge status-${(e.statusEmpenho || 'Ativo').toLowerCase()}">${e.statusEmpenho || 'Ativo'}</span></td>
+                    <td>
+                         <button class="btn-edit" onclick="openModal('empenho', '${e.id}')" title="Editar Empenho Inicial">✏️</button>
+                         <button class="btn-movement" onclick="addMovimentoEmpenho('${e.id}', 'Reforço')" title="Adicionar Reforço">➕R</button>
+                         <button class="btn-movement" onclick="addMovimentoEmpenho('${e.id}', 'Anulação Parcial')" title="Anulação Parcial">➖A</button>
+                         <button class="btn-delete" onclick="excluirEmpenho('${e.id}')" title="Excluir Empenho">🗑️</button>
+                    </td>
+                 `;
+                 corpoTabela.appendChild(tr);
+            });
+        }
+
+        const determinarStatusFaturamento = (f) => {
+            if (!f) return 'N/A';
+            if (f.status === 'Cancelada') return 'Cancelada';
+            if (f.dataPagamento) return 'Paga';
+            if (f.dataLiquidacao) return 'Liquidada';
+            if (f.dataAteste) return 'Atestada';
+            if (f.dataNF) return 'NF Emitida';
+            return 'Pré-faturado';
+        }
+
+         const renderizarTabelaFaturamento = () => {
+            const filtroContrato = document.getElementById('filterContrato').value;
+             const filtroAnoEmpenho = document.getElementById('filterAnoEmpenho').value;
+             const filtroStatus = document.getElementById('filterStatusFaturamento').value;
+             const corpoTabela = document.getElementById('tabelaFaturamento').querySelector('tbody');
+             if (!corpoTabela) return;
+             corpoTabela.innerHTML = '';
+
+             const faturamentosFiltrados = faturamentos.filter(f => {
+                 const empenho = empenhos.find(e => e.id === f.empenhoVinculado && e.tipoEmpenho === 'Inicial'); // Encontra o empenho INICIAL vinculado
+                 const statusAtual = determinarStatusFaturamento(f);
+                 return (
+                     (!filtroContrato || f.contrato === filtroContrato) &&
+                     (!filtroAnoEmpenho || (empenho && empenho.anoEmpenho && empenho.anoEmpenho.toString() === filtroAnoEmpenho)) && // Filtra pelo ano do empenho vinculado
+                      (!filtroStatus || statusAtual === filtroStatus)
+                 );
+             });
+
+            faturamentosFiltrados.sort((a, b) => (b.mesAnoServico || '').localeCompare(a.mesAnoServico || '') || (a.id < b.id ? -1 : 1)) // Mais recentes primeiro pela competência
+                .forEach(f => {
+                 const empenho = empenhos.find(e => e.id === f.empenhoVinculado && e.tipoEmpenho === 'Inicial');
+                 const status = determinarStatusFaturamento(f);
+                 const statusClass = status.toLowerCase().replace(/\s+/g, '-'); // Ex: nf-emitida
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `
+                    <td>${f.id ? f.id.toString().slice(-5) : 'N/A'}</td>
+                    <td>${getNomeContrato(f.contrato)}</td>
+                    <td>${formatarCompetencia(f.mesAnoServico)}</td>
+                    <td>${empenho ? empenho.numeroEmpenho : 'N/A'} <small>(${empenho ? empenho.anoEmpenho : 'N/A'})</small></td>
+                    <td>${formatarMoeda(f.valorPreFat)}</td>
+                    <td>${f.numeroNF || '-'}<br><small>${formatarData(f.dataNF)}</small></td>
+                    <td>${formatarData(f.dataAteste)}<br><small>${f.contrato === CONTRATO_DEV ? (f.docAceiteSprint || (f.dataAteste ? 'Pendente Doc' : '-')) : 'N/A'}</small></td>
+                    <td>${formatarData(f.dataLiquidacao)}</td>
+                    <td>${formatarData(f.dataPagamento)}</td>
+                    <td><span class="status-badge status-${statusClass}">${status}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="openModal('faturamento', '${f.id}')" title="Gerenciar Etapas">✏️</button>
+                        <button class="btn-delete" onclick="excluirFaturamento('${f.id}')" title="Excluir Registro">🗑️</button>
+                         ${status !== 'Cancelada' ? `<button class="btn-action btn-delete" onclick="cancelarFaturamento('${f.id}')" title="Cancelar Faturamento">❌</button>` : ''}
+                    </td>
+                 `;
+                 corpoTabela.appendChild(tr);
+             });
+         }
+
+        const calcularSaldosDashboard = () => {
+            const anoAtual = ANO_CORRENTE;
+
+            let totais = {
+                dev: { empenhado: 0, liquidado: 0, comprometido: 0 },
+                hosp: { empenhado: 0, liquidado: 0, comprometido: 0 },
+                 rap: { empenhado: 0, liquidado: 0 } // RAP não tem comprometido futuro
+            };
+
+             // Agrega valores empenhados apenas dos Empenhos Iniciais
+             empenhos.filter(e => e.tipoEmpenho === 'Inicial').forEach(e => {
+                 if (!e || e.statusEmpenho === 'Cancelado') return;
+
+                 const valorEmpenhadoTotal = e.valorOriginalEmpenho || 0; // Usa o valor total atualizado
+
+                 if (e.anoEmpenho === anoAtual) {
+                     if (e.contrato === CONTRATO_DEV) {
+                         totais.dev.empenhado += valorEmpenhadoTotal;
+                     } else if (e.contrato === CONTRATO_HOSP) {
+                         totais.hosp.empenhado += valorEmpenhadoTotal;
+                     }
+                 } else if (e.anoEmpenho < anoAtual) { // Restos a Pagar (Empenhos Iniciais de anos anteriores)
+                     if (e.statusEmpenho !== 'Encerrado') { // Apenas RAP de empenhos não encerrados
+                         totais.rap.empenhado += valorEmpenhadoTotal;
+                     }
+                 }
+             });
+
+            // Agrega valores liquidados e comprometidos de TODOS os faturamentos, vinculando-os ao seu respectivo Empenho Inicial
+            faturamentos.forEach(f => {
+                 if (!f || f.status === 'Cancelada') return;
+                 const empenho = empenhos.find(e => e.id === f.empenhoVinculado && e.tipoEmpenho === 'Inicial');
+                 if (!empenho || empenho.statusEmpenho === 'Cancelado') return; // Ignora faturamentos sem empenho inicial válido ou empenho cancelado
+
+                 const valorFat = f.valorPreFat || 0;
+
+                 if (empenho.anoEmpenho === ANO_CORRENTE) {
+                     if (empenho.contrato === CONTRATO_DEV) {
+                         if (f.dataLiquidacao) {
+                             totais.dev.liquidado += valorFat;
+                         } else { // Comprometido (não liquidado)
+                              totais.dev.comprometido += valorFat;
+                         }
+                     } else if (empenho.contrato === CONTRATO_HOSP) {
+                          if (f.dataLiquidacao) {
+                             totais.hosp.liquidado += valorFat;
+                         } else { // Comprometido (não liquidado)
+                              totais.hosp.comprometido += valorFat;
+                         }
+                     }
+                 } else if (empenho.anoEmpenho < ANO_CORRENTE) { // Restos a Pagar
+                      if (empenho.statusEmpenho !== 'Encerrado') { // Apenas se o empenho RAP não estiver encerrado
+                          if (f.dataLiquidacao) {
+                             totais.rap.liquidado += valorFat;
+                          }
+                          // RAP geralmente não tem 'comprometido' futuro neste contexto simples
+                      }
+                 }
+            });
+
+
+             // Atualiza cartão Desenvolvimento
+             const saldoDispDev = totais.dev.empenhado - totais.dev.liquidado;
+             const elTotalEmpDev = document.getElementById('totalEmpenhadoDev');
+             const elSaldoLiqDev = document.getElementById('saldoLiquidadoDev');
+             const elSaldoCompDev = document.getElementById('saldoComprometidoDev');
+             const elSaldoDispDev = document.getElementById('saldoDisponivelDev');
+             if(elTotalEmpDev) elTotalEmpDev.textContent = formatarMoeda(totais.dev.empenhado);
+             if(elSaldoLiqDev) elSaldoLiqDev.textContent = formatarMoeda(totais.dev.liquidado);
+             if(elSaldoCompDev) elSaldoCompDev.textContent = formatarMoeda(totais.dev.comprometido);
+             if(elSaldoDispDev) {
+                 elSaldoDispDev.textContent = formatarMoeda(saldoDispDev);
+                 elSaldoDispDev.classList.toggle('saldo-negativo', saldoDispDev < 0);
+             }
+
+             // Atualiza cartão Hospedagem
+             const saldoDispHosp = totais.hosp.empenhado - totais.hosp.liquidado;
+             const elTotalEmpHosp = document.getElementById('totalEmpenhadoHosp');
+             const elSaldoLiqHosp = document.getElementById('saldoLiquidadoHosp');
+             const elSaldoCompHosp = document.getElementById('saldoComprometidoHosp');
+             const elSaldoDispHosp = document.getElementById('saldoDisponivelHosp');
+             if(elTotalEmpHosp) elTotalEmpHosp.textContent = formatarMoeda(totais.hosp.empenhado);
+             if(elSaldoLiqHosp) elSaldoLiqHosp.textContent = formatarMoeda(totais.hosp.liquidado);
+             if(elSaldoCompHosp) elSaldoCompHosp.textContent = formatarMoeda(totais.hosp.comprometido);
+             if(elSaldoDispHosp) {
+                 elSaldoDispHosp.textContent = formatarMoeda(saldoDispHosp);
+                 elSaldoDispHosp.classList.toggle('saldo-negativo', saldoDispHosp < 0);
+             }
+
+             // Atualiza cartão Restos a Pagar
+             const saldoDispRap = totais.rap.empenhado - totais.rap.liquidado;
+             const elTotalEmpRap = document.getElementById('totalEmpenhadoRap');
+             const elSaldoLiqRap = document.getElementById('saldoLiquidadoRap');
+             const elSaldoDispRap = document.getElementById('saldoDisponivelRap');
+             if(elTotalEmpRap) elTotalEmpRap.textContent = formatarMoeda(totais.rap.empenhado);
+             if(elSaldoLiqRap) elSaldoLiqRap.textContent = formatarMoeda(totais.rap.liquidado);
+             if(elSaldoDispRap) {
+                 elSaldoDispRap.textContent = formatarMoeda(saldoDispRap);
+                 elSaldoDispRap.classList.toggle('saldo-negativo', saldoDispRap < 0);
+             }
+
+            // Chamar funções para atualizar os gráficos aqui, se implementados
+            // ex: atualizarGraficos(totais);
+        }
+
+
+        // Funções de Ação (Manipulação de Dados - CRUD)
+
+        // openModal agora só lida com criação/edição do Empenho Inicial
+        const openModal = (tipo, id = null) => {
+            const modalElement = document.getElementById(`${tipo}Modal`);
+            if (!modalElement) {
+                console.error(`Modal ${tipo} não encontrado.`);
+                return;
+            }
+
+             // Resetar formulário e estado de edição
+             if (tipo === 'empenho') {
+                 const form = document.getElementById('formEmpenho');
+                 const tipoEmpenhoSelect = document.getElementById('tipoEmpenho'); // Mantém referência, embora escondido
+
+                 if (id === null) { // Novo Empenho (Sempre Inicial)
+                     editEmpenhoId = null;
+                     form.reset();
+                     document.getElementById('empenhoId').value = ''; // Garante que ID oculto está limpo
+                     document.getElementById('statusEmpenho').value = 'Ativo'; // Default status
+                     document.getElementById('anoEmpenho').value = ANO_CORRENTE; // Default ano
+                     if(tipoEmpenhoSelect) tipoEmpenhoSelect.value = 'Inicial'; // Garante que "Inicial" está selecionado (campo escondido)
+                     modalElement.querySelector('h3').textContent = '📄 Novo Empenho Inicial'; // Atualiza título
+                     document.getElementById('valorEmpenho').placeholder = 'Valor inicial do empenho'; // Atualiza placeholder
+
+                 } else { // Editar Empenho Inicial existente
+                     editEmpenhoId = id;
+                     const empenho = empenhos.find(e => e.id === id && e.tipoEmpenho === 'Inicial'); // Busca apenas Empenho Inicial
+                     if (!empenho) {
+                         console.error("Empenho Inicial não encontrado para edição:", id);
+                         exibirAlerta("Erro ao carregar empenho para edição. Certifique-se que é um Empenho Inicial.", "error");
+                         editEmpenhoId = null; // Reseta ID
+                         return; // Sai da função se o empenho não for encontrado ou não for Inicial
+                     }
+                     document.getElementById('empenhoId').value = empenho.id;
+                     document.getElementById('contratoEmpenho').value = empenho.contrato;
+                     document.getElementById('numeroEmpenho').value = empenho.numeroEmpenho;
+                     document.getElementById('anoEmpenho').value = empenho.anoEmpenho;
+                     if(tipoEmpenhoSelect) tipoEmpenhoSelect.value = 'Inicial'; // Garante que o tipo é 'Inicial' (campo escondido)
+                     document.getElementById('valorEmpenho').value = empenho.valorOriginalEmpenho; // Mostra o valor TOTAL atual
+                     document.getElementById('statusEmpenho').value = empenho.statusEmpenho || 'Ativo';
+
+                     modalElement.querySelector('h3').textContent = '✏️ Editar Empenho Inicial'; // Atualiza título
+                      document.getElementById('valorEmpenho').placeholder = 'Valor total atualizado'; // Atualiza placeholder
+                 }
+             } else if (tipo === 'faturamento') {
+                  const form = document.getElementById('formFaturamento');
+                 if (id === null) { // Novo Pré-Faturamento
+                     editFaturamentoId = null;
+                     form.reset();
+                     document.getElementById('faturamentoId').value = '';
+                     document.getElementById('empenhoVinculado').innerHTML = '<option value="">Selecione contrato e mês/ano primeiro</option>';
+                     document.getElementById('saldoEmpenhoInfo').textContent = 'Saldo disponível: R$ 0,00';
+                     document.getElementById('saldoEmpenhoInfo').classList.remove('saldo-negativo');
+                     document.getElementById('groupDocAceiteSprint').style.display = 'none';
+                      modalElement.querySelector('h3').textContent = '📋 Novo Pré-Faturamento'; // Atualiza título
+                 } else { // Editar Pré-Faturamento existente
+                     editFaturamentoId = id;
+                     const fat = faturamentos.find(f => f.id === id);
+                     if (!fat) {
+                          console.error("Faturamento não encontrado para edição:", id);
+                          exibirAlerta("Erro ao carregar faturamento para edição.", "error");
+                          return;
+                     }
+                     document.getElementById('faturamentoId').value = fat.id;
+                     document.getElementById('contratoFaturamento').value = fat.contrato;
+                     document.getElementById('mesAnoServico').value = fat.mesAnoServico;
+
+                     // Chama para popular empenhos E seleciona o correto
+                     // Passa o ID do faturamento para a função de filtro, pois ela precisa saber qual empenho já está vinculado
+                     filtrarEmpenhosDisponiveis(id); // Passa o ID do faturamento sendo editado
+
+                     document.getElementById('valorPreFat').value = fat.valorPreFat;
+                     document.getElementById('numeroNF').value = fat.numeroNF || '';
+                     document.getElementById('dataNF').value = fat.dataNF || '';
+                     document.getElementById('dataAteste').value = fat.dataAteste || '';
+                     document.getElementById('docAceiteSprint').value = fat.docAceiteSprint || '';
+                     document.getElementById('dataLiquidacao').value = fat.dataLiquidacao || '';
+                     document.getElementById('dataPagamento').value = fat.dataPagamento || '';
+                     document.getElementById('observacoesFat').value = fat.observacoes || '';
+
+                     // Controla visibilidade campo Aceite Sprint
+                     document.getElementById('groupDocAceiteSprint').style.display = fat.contrato === CONTRATO_DEV ? 'block' : 'none';
+                      modalElement.querySelector('h3').textContent = '✏️ Editar Pré-Faturamento'; // Atualiza título
+
+                 }
+             }
+
+
+            modalElement.style.display = 'flex';
+
+             // Focar no primeiro campo útil após a modal abrir completamente (pequeno delay)
+             setTimeout(() => {
+                try {
+                    if(tipo === 'empenho') document.getElementById('contratoEmpenho').focus();
+                    if(tipo === 'faturamento') document.getElementById('contratoFaturamento').focus();
+                } catch(e) { console.warn("Erro ao focar no elemento do modal", e); }
+             }, 50); // Pequeno delay
+        }
+
+
+        const fecharModal = (tipo) => {
+             try {
+                document.getElementById(`${tipo}Modal`).style.display = 'none';
+             } catch(e) { console.error("Erro ao fechar modal:", tipo, e); }
+             editEmpenhoId = null; // Reseta IDs de edição ao fechar
+             editFaturamentoId = null;
+             // Limpa alertas dentro do modal? Ou os gerais? Limpar os gerais pode ser confuso.
+             // document.getElementById('alertas').innerHTML = '';
+        }
+
+        const exibirAlerta = (mensagem, tipo = 'success') => {
+            const containerAlertas = document.getElementById('alertas');
+            if (!containerAlertas) return;
+
+            const divAlerta = document.createElement('div');
+            divAlerta.className = `alert alert-${tipo}`;
+            // divAlerta.textContent = mensagem; // Removido para evitar duplicidade com textNode
+            // Botão para fechar o alerta
+            const closeButton = document.createElement('button');
+             closeButton.innerHTML = '&times;'; // X HTML entity
+             closeButton.style.cssText = 'float: right; background: none; border: none; font-size: 1.2em; line-height: 1; cursor: pointer; color: inherit; padding: 0 0 0 10px; margin-left: 10px;';
+             closeButton.onclick = () => divAlerta.remove();
+
+            // Adiciona o texto e o botão
+             const textNode = document.createTextNode(mensagem);
+             divAlerta.appendChild(closeButton); // Adiciona botão primeiro para float funcionar
+             divAlerta.appendChild(textNode); // Adiciona texto
+
+
+            containerAlertas.appendChild(divAlerta);
+
+            // Remove alerta após 7 segundos se não for fechado manualmente
+            const timeoutId = setTimeout(() => {
+                 if (divAlerta.parentNode) { // Verifica se ainda existe antes de remover
+                     divAlerta.remove();
+                 }
+             }, 7000);
+
+             // Cancela o timeout se o botão de fechar for clicado
+             closeButton.addEventListener('click', () => clearTimeout(timeoutId));
+        }
+
+
+        // salvarEmpenho agora lida apenas com a criação e edição do Empenho Inicial
+        const salvarEmpenho = (event) => {
+            event.preventDefault();
+
+            const id = document.getElementById('empenhoId').value; // Pega o ID do campo hidden
+            const numeroEmpenhoInput = document.getElementById('numeroEmpenho').value.trim();
+            const anoEmpenhoInput = parseInt(document.getElementById('anoEmpenho').value);
+            const valorInput = parseFloat(document.getElementById('valorEmpenho').value); // Valor Inicial ou Valor Total atualizado
+            const contratoInput = document.getElementById('contratoEmpenho').value;
+            const statusInput = document.getElementById('statusEmpenho').value;
+            const tipoInput = 'Inicial'; // Hardcoded, pois o select está escondido
+
+             if (!numeroEmpenhoInput || isNaN(anoEmpenhoInput) || isNaN(valorInput)) {
+                 exibirAlerta('Preencha todos os campos obrigatórios do empenho corretamente.', 'error');
+                 return;
+             }
+
+            // Validação: O valor inicial ou o valor total atualizado não deve ser negativo
+             if (valorInput < 0) {
+                 exibirAlerta('O valor total do empenho não pode ser negativo.', 'error');
+                 return;
+             }
+
+
+            // Verifica se é um empenho existente sendo editado
+             const isModifyingExisting = id && empenhos.some(e => e.id === id && e.tipoEmpenho === 'Inicial');
+
+
+            // Validação: Checar se já existe outro empenho Inicial com mesmo número e ano
+             const existe = empenhos.some(e =>
+                 e.tipoEmpenho === 'Inicial' && // Compara apenas com outros empenhos Iniciais
+                 e.numeroEmpenho === numeroEmpenhoInput &&
+                 e.anoEmpenho === anoEmpenhoInput &&
+                 e.id !== id // Exclui o próprio empenho se for edição
+             );
+             if (existe) {
+                 exibirAlerta('Já existe um empenho Inicial com este número para este ano.', 'error');
+                 return;
+             }
+
+
+            // Prepara os dados do Empenho Inicial
+            const empenhoData = {
+                id: isModifyingExisting ? id : Date.now().toString(), // Usa o ID existente ou gera um novo
+                contrato: contratoInput,
+                numeroEmpenho: numeroEmpenhoInput,
+                anoEmpenho: anoEmpenhoInput,
+                tipoEmpenho: tipoInput, // Sempre 'Inicial' para entradas criadas/editadas aqui
+                valorOriginalEmpenho: valorInput, // O valor é o valor inicial ou o total atualizado na edição
+                statusEmpenho: statusInput,
+            };
+
+            if (isModifyingExisting) { // Edição
+                empenhos = empenhos.map(e => e.id === id ? empenhoData : e);
+                exibirAlerta('Empenho Inicial atualizado com sucesso!', 'success');
+            } else { // Novo
+                empenhos.push(empenhoData);
+                exibirAlerta('Empenho Inicial adicionado com sucesso!', 'success');
+            }
+
+            salvarDados();
+            carregarDados(); // Atualiza a UI completa
+            fecharModal('empenho');
+        }
+
+        // Função para adicionar Reforço ou Anulação a um Empenho Inicial existente
+        const addMovimentoEmpenho = (empenhoId, tipoMovimento) => {
+            // Encontra o empenho Inicial pelo ID
+            const empenho = empenhos.find(e => e.id === empenhoId && e.tipoEmpenho === 'Inicial');
+
+            if (!empenho) {
+                exibirAlerta('Empenho Inicial não encontrado para adicionar movimento.', 'error');
+                return;
+            }
+
+            if (empenho.statusEmpenho === 'Cancelado' || empenho.statusEmpenho === 'Encerrado') {
+                 exibirAlerta(`Não é possível adicionar movimento a um empenho com status "${empenho.statusEmpenho}".`, 'warning');
+                 return;
+            }
+
+
+            let promptMessage = `Digite o valor para ${tipoMovimento === 'Reforço' ? 'o Reforço' : 'a Anulação Parcial'} no Empenho ${empenho.numeroEmpenho}/${empenho.anoEmpenho}\n(Valor Atual Total: ${formatarMoeda(empenho.valorOriginalEmpenho)}):`;
+            const valorStr = prompt(promptMessage);
+
+            if (valorStr === null) {
+                 exibirAlerta('Operação cancelada.', 'warning');
+                return; // Usuário cancelou
+            }
+
+             if (valorStr.trim() === '') {
+                 exibirAlerta('Nenhum valor digitado.', 'warning');
+                 return;
+             }
+
+            const valor = parseFloat(valorStr.replace(',', '.')); // Tenta converter para número, aceita vírgula
+
+            if (isNaN(valor) || valor <= 0) {
+                exibirAlerta('Valor inválido. Digite um número positivo maior que zero.', 'error');
+                return;
+            }
+
+            // Confirmação adicional
+             if (!confirm(`Confirmar ${tipoMovimento} de ${formatarMoeda(valor)} no empenho ${empenho.numeroEmpenho}/${empenho.anoEmpenho}?`)) {
+                 exibirAlerta('Operação cancelada pelo usuário.', 'warning');
+                 return;
+             }
+
+
+            // Encontra o índice do empenho na array para modificá-lo diretamente
+            const empenhoIndex = empenhos.findIndex(e => e.id === empenhoId && e.tipoEmpenho === 'Inicial');
+
+            if (empenhoIndex === -1) {
+                exibirAlerta('Erro interno: Empenho não encontrado na lista.', 'error');
+                return;
+            }
+
+            // Atualiza o valor do empenho Inicial somando ou subtraindo
+            let novoValor = empenhos[empenhoIndex].valorOriginalEmpenho;
+
+            if (tipoMovimento === 'Reforço') {
+                novoValor += valor;
+                 exibirAlerta(`Reforço de ${formatarMoeda(valor)} aplicado ao empenho ${empenho.numeroEmpenho}. Novo total: ${formatarMoeda(novoValor)}.`, 'success');
+            } else if (tipoMovimento.startsWith('Anulação')) {
+                // Validação: Não permitir saldo negativo após anulação? (Opcional, depende da regra de negócio)
+                 if (novoValor - valor < 0) {
+                     // Permite ficar negativo, mas avisa
+                     exibirAlerta(`Atenção: Anulação de ${formatarMoeda(valor)} deixará o saldo disponível negativo.`, 'warning');
+                     // Se não quiser permitir, descomente o return abaixo:
+                     // exibirAlerta(`Anulação de ${formatarMoeda(valor)} excede o saldo disponível (${formatarMoeda(novoValor)}) do empenho. Operação cancelada.`, 'error');
+                     // return;
+                 }
+                novoValor -= valor;
+                 exibirAlerta(`${tipoMovimento} de ${formatarMoeda(valor)} aplicado ao empenho ${empenho.numeroEmpenho}. Novo total: ${formatarMoeda(novoValor)}.`, 'success');
+            } else {
+                 exibirAlerta('Tipo de movimento desconhecido.', 'error');
+                 return;
+            }
+
+
+            // Atualiza o objeto empenho na array com o novo valor total
+            empenhos[empenhoIndex].valorOriginalEmpenho = novoValor;
+
+            // Opcional: Adicionar um registro histórico de movimentação ao objeto empenho
+            // Se quiséssemos um histórico detalhado, a estrutura do objeto empenho precisaria mudar.
+            // No momento, apenas o valor total é atualizado no objeto Empenho Inicial.
+
+
+            salvarDados();
+            carregarDados(); // Recarrega a UI para mostrar o novo saldo
+        }
+
+        // A função editarEmpenho agora é redundante, openModal faz o trabalho.
+        // Deixaremos apenas a chamada no HTML da tabela mudar para openModal.
+
+
+        const excluirEmpenho = (id) => {
+             // Verifica se o empenho é o Inicial e se tem faturamentos vinculados
+             const empenho = empenhos.find(e => e.id === id && e.tipoEmpenho === 'Inicial');
+             if (!empenho) {
+                  exibirAlerta('Empenho não encontrado ou não é do tipo Inicial.', 'error');
+                  return;
+             }
+
+             const temFaturamentoVinculado = faturamentos.some(f => f.empenhoVinculado === id);
+            if (temFaturamentoVinculado) {
+                exibirAlerta('Não é possível excluir este empenho. Existem faturamentos vinculados a ele.', 'error');
+                return;
+            }
+            if (confirm(`Tem certeza que deseja excluir o empenho ${empenho.numeroEmpenho}/${empenho.anoEmpenho} (Inicial)? Esta ação não pode ser desfeita.`)) {
+                 // Remove apenas o empenho Inicial com este ID
+                empenhos = empenhos.filter(e => !(e.id === id && e.tipoEmpenho === 'Inicial'));
+                salvarDados();
+                carregarDados(); // Atualiza UI
+                exibirAlerta('Empenho excluído.', 'success');
+            }
+        }
+
+        // filtrarEmpenhosDisponiveis agora pode receber o ID do faturamento sendo editado
+        const filtrarEmpenhosDisponiveis = (faturamentoId = null) => {
+            const contrato = document.getElementById('contratoFaturamento').value;
+            const mesAnoServico = document.getElementById('mesAnoServico').value;
+            const selectEmpenho = document.getElementById('empenhoVinculado');
+            const saldoInfo = document.getElementById('saldoEmpenhoInfo');
+            selectEmpenho.innerHTML = '<option value="">Carregando...</option>'; // Limpa opções
+            saldoInfo.textContent = 'Saldo disponível: R$ 0,00';
+            saldoInfo.classList.remove('saldo-negativo');
+
+            // Encontra o faturamento sendo editado para manter seu empenho atual na lista, mesmo que inativo
+             const faturamentoEmEdicao = faturamentoId ? faturamentos.find(f => f.id === faturamentoId) : null;
+
+
+            if (!contrato || !mesAnoServico) {
+                selectEmpenho.innerHTML = '<option value="">Selecione contrato e mês/ano</option>';
+                return;
+            }
+
+             try {
+                 const anoServico = parseInt(mesAnoServico.split('-')[0]);
+                 if (isNaN(anoServico)) {
+                      selectEmpenho.innerHTML = '<option value="">Mês/Ano inválido</option>';
+                      return;
+                 }
+
+                 // Empenhos elegíveis para vínculo: Empenhos Iniciais do mesmo contrato e ano igual ou anterior ao do serviço
+                 // Se estiver editando, o empenho atual é sempre incluído, mesmo que não ativo.
+                 const empenhosElegiveis = empenhos.filter(e => e.tipoEmpenho === 'Inicial')
+                     .filter(e =>
+                         (e.contrato === contrato &&
+                         e.anoEmpenho && // Garante que tem ano definido
+                         (e.anoEmpenho === anoServico || e.anoEmpenho < anoServico) && // Permite empenho do ano ou RAP
+                          (e.statusEmpenho === 'Ativo')) // Só permite vincular a empenhos Ativos
+                         || (faturamentoEmEdicao && e.id === faturamentoEmEdicao.empenhoVinculado) // SEMPRE inclui o empenho já vinculado se estiver editando
+                     );
+
+                 selectEmpenho.innerHTML = '<option value="">Selecione o empenho</option>';
+                 if (empenhosElegiveis.length === 0) {
+                      selectEmpenho.innerHTML = '<option value="">Nenhum empenho ativo encontrado</option>';
+                 }
+
+                 empenhosElegiveis.forEach(e => {
+                     const saldo = calcularSaldoDisponivelEmpenho(e); // Calcula saldo do Empenho Inicial (Total Empenhado - Liquidado)
+                     const option = document.createElement('option');
+                     option.value = e.id;
+                      // Adiciona informação de status para empenhos que não estão ativos (quando editando)
+                      const statusInfo = (e.statusEmpenho !== 'Ativo' && e.id === faturamentoEmEdicao?.empenhoVinculado) ? ` (Status: ${e.statusEmpenho || 'N/A'})` : '';
+
+                     option.textContent = `${e.numeroEmpenho} (${e.anoEmpenho}) - Saldo Disp: ${formatarMoeda(saldo)}${statusInfo}`;
+                     option.dataset.saldo = saldo; // Guarda o saldo para validação
+                     // Desabilita se não estiver ativo, A MENOS que seja o que já está vinculado no faturamento em edição
+                     option.disabled = (e.statusEmpenho !== 'Ativo' && e.id !== faturamentoEmEdicao?.empenhoVinculado);
+                     selectEmpenho.appendChild(option);
+                 });
+
+                 // Atualiza saldo ao selecionar
+                selectEmpenho.onchange = () => {
+                     const selectedOption = selectEmpenho.options[selectEmpenho.selectedIndex];
+                     // Recalcula o saldo disponível para exibição
+                     let saldoParaExibir = 0;
+                     const empenhoSelecionadoNoDropdown = empenhos.find(e => e.id === selectedOption.value);
+                     if (empenhoSelecionadoNoDropdown) {
+                         saldoParaExibir = calcularSaldoDisponivelEmpenho(empenhoSelecionadoNoDropdown);
+                     }
+                     // Ao editar, o saldo mostrado deve ser o saldo REAL do empenho, a validação ao salvar considera o valor do faturamento.
+                     saldoInfo.textContent = `Saldo disponível: ${formatarMoeda(saldoParaExibir)}`;
+                     saldoInfo.classList.toggle('saldo-negativo', saldoParaExibir < 0);
+                 };
+
+                // Se estiver editando, seleciona o valor e aciona o change para mostrar o saldo correto
+                if (faturamentoEmEdicao && faturamentoEmEdicao.empenhoVinculado) {
+                    selectEmpenho.value = faturamentoEmEdicao.empenhoVinculado;
+                    // Garante que o evento change seja disparado APÓS o valor ser definido
+                    setTimeout(() => {
+                        const event = new Event('change');
+                        selectEmpenho.dispatchEvent(event);
+                    }, 0);
+                } else {
+                    // Se for novo, dispara change para limpar/resetar o saldo info
+                     const event = new Event('change');
+                     selectEmpenho.dispatchEvent(event);
+                }
+
+
+                 // Controla visibilidade campo Aceite Sprint
+                document.getElementById('groupDocAceiteSprint').style.display = contrato === CONTRATO_DEV ? 'block' : 'none';
+
+             } catch (error) {
+                  console.error("Erro ao filtrar empenhos:", error);
+                  selectEmpenho.innerHTML = '<option value="">Erro ao carregar</option>';
+             }
+        }
+
+
+        const salvarFaturamento = (event) => {
+            event.preventDefault();
+             const id = document.getElementById('faturamentoId').value; // Pega o ID do campo hidden
+             const contrato = document.getElementById('contratoFaturamento').value;
+             const empenhoSelect = document.getElementById('empenhoVinculado');
+             const empenhoId = empenhoSelect.value; // ID do Empenho Inicial vinculado
+             const valorPreFatInput = parseFloat(document.getElementById('valorPreFat').value);
+             const dataAtesteInput = document.getElementById('dataAteste').value || null; // Garante null se vazio
+             const docAceiteSprintInput = document.getElementById('docAceiteSprint').value.trim() || null;
+             const dataLiquidacaoInput = document.getElementById('dataLiquidacao').value || null;
+             const numeroNFInput = document.getElementById('numeroNF').value.trim() || null; // Número NF
+             const dataNFEmissaoInput = document.getElementById('dataNF').value || null; // Data NF
+             const dataPagamentoInput = document.getElementById('dataPagamento').value || null;
+             const mesAnoServicoInput = document.getElementById('mesAnoServico').value;
+             const observacoesInput = document.getElementById('observacoesFat').value.trim() || null;
+
+
+             // Validações
+             if (!contrato || !mesAnoServicoInput || !empenhoId || isNaN(valorPreFatInput)) {
+                  exibirAlerta('Preencha todos os campos obrigatórios (Contrato, Mês/Ano, Empenho, Valor).', 'error');
+                 return;
+             }
+             if (valorPreFatInput <= 0) {
+                 exibirAlerta('O valor do pré-faturamento deve ser positivo.', 'error');
+                 return;
+             }
+
+             const empenhoSelecionado = empenhos.find(e => e.id === empenhoId && e.tipoEmpenho === 'Inicial'); // Busca o Empenho Inicial
+              if (!empenhoSelecionado) {
+                 exibirAlerta('Empenho Inicial selecionado inválido ou não encontrado.', 'error');
+                 return;
+             }
+
+             const isNewEntry = !id;
+             const faturamentoSendoEditado = isNewEntry ? null : faturamentos.find(f => f.id === id);
+             const valorOriginalFaturamento = faturamentoSendoEditado?.valorPreFat ?? 0;
+
+            // Checa saldo DISPONÍVEL do Empenho Inicial (Total Empenhado - Total Liquidado)
+            // Adiciona de volta o valor original do faturamento sendo editado (se for o caso) para a checagem
+             const saldoAtualDoEmpenho = calcularSaldoDisponivelEmpenho(empenhoSelecionado);
+             const saldoConsiderandoEdicao = saldoAtualDoEmpenho + (isNewEntry ? 0 : valorOriginalFaturamento);
+
+             // A validação de saldo só deve impedir se o valor exceder E o empenho estiver ATIVO
+             // Não impede se o empenho já estiver Encerrado ou Cancelado (apenas avisa?) ou se for RAP
+             if (empenhoSelecionado.statusEmpenho === 'Ativo' && valorPreFatInput > saldoConsiderandoEdicao) {
+                 exibirAlerta(`Valor ${formatarMoeda(valorPreFatInput)} excede o saldo disponível ${formatarMoeda(saldoConsiderandoEdicao)} do empenho ${empenhoSelecionado.numeroEmpenho}.`, 'error');
+                 // Impedir ou apenas avisar? Depende da regra. Aqui, vamos impedir.
+                  return;
+             } else if (empenhoSelecionado.statusEmpenho !== 'Ativo' && valorPreFatInput > saldoConsiderandoEdicao) {
+                  // Se o empenho não está ativo, mas o valor excede, apenas avisa
+                  exibirAlerta(`Atenção: O valor ${formatarMoeda(valorPreFatInput)} excede o saldo disponível ${formatarMoeda(saldoConsiderandoEdicao)} do empenho ${empenhoSelecionado.numeroEmpenho}, que não está ativo.`, 'warning');
+             }
+
+
+             // Validação Aceite Sprint para Ateste (Contrato Desenvolvimento)
+             if (contrato === CONTRATO_DEV && dataAtesteInput && !docAceiteSprintInput) {
+                 exibirAlerta('Documento de Aceite da Sprint é obrigatório para registrar o Ateste no contrato de Desenvolvimento.', 'error');
+                 return;
+             }
+
+             // Validação de Sequência de Datas
+             if (dataAtesteInput && dataNFEmissaoInput && dataAtesteInput < dataNFEmissaoInput) {
+                 exibirAlerta('Data do Ateste não pode ser anterior à Data da NF.', 'warning');
+             }
+              if (dataLiquidacaoInput && dataAtesteInput && dataLiquidacaoInput < dataAtesteInput) {
+                 exibirAlerta('Data da Liquidação não pode ser anterior à Data do Ateste.', 'error');
+                 return; // Bloqueia se liquidação < ateste
+             }
+              if (dataPagamentoInput && dataLiquidacaoInput && dataPagamentoInput < dataLiquidacaoInput) {
+                  exibirAlerta('Data do Pagamento não pode ser anterior à Data da Liquidação.', 'error');
+                  return; // Bloqueia se pagamento < liquidação
+              }
+
+              // Prepara o objeto final
+              const faturamentoData = {
+                 id: isNewEntry ? Date.now().toString() : id, // Usa o ID existente ou gera um novo
+                 contrato: contrato,
+                 mesAnoServico: mesAnoServicoInput,
+                 empenhoVinculado: empenhoId, // ID do Empenho Inicial
+                 valorPreFat: valorPreFatInput,
+                 numeroNF: numeroNFInput,
+                 dataNF: dataNFEmissaoInput,
+                 dataAteste: dataAtesteInput,
+                 docAceiteSprint: docAceiteSprintInput,
+                 dataLiquidacao: dataLiquidacaoInput,
+                 dataPagamento: dataPagamentoInput,
+                 observacoes: observacoesInput,
+                 status: 'Pendente' // Status será recalculado abaixo
+             };
+             // Determina o status final baseado nas datas preenchidas
+              faturamentoData.status = determinarStatusFaturamento(faturamentoData);
+
+             // Se estava cancelado, mantém cancelado (a menos que uma lógica de reativação seja implementada explicitamente)
+             if (!isNewEntry && faturamentoSendoEditado?.status === 'Cancelada') {
+                 faturamentoData.status = 'Cancelada';
+                 // Opcional: exibirAlerta('Faturamento permanece Cancelado.');
+             }
+
+
+             // Adiciona ou atualiza na lista
+              if (isNewEntry) {
+                 faturamentos.push(faturamentoData);
+                 exibirAlerta('Pré-faturamento adicionado com sucesso!', 'success');
+             } else {
+                 faturamentos = faturamentos.map(f => f.id === id ? faturamentoData : f);
+                 exibirAlerta('Faturamento atualizado com sucesso!', 'success');
+             }
+
+             salvarDados();
+             carregarDados(); // Atualiza UI
+             fecharModal('faturamento');
+        }
+
+        // A função editarFaturamento agora chama openModal com ID
+        // const editarFaturamento = (id) => { openModal('faturamento', id); }
+
+
+        const excluirFaturamento = (id) => {
+            const fatIndex = faturamentos.findIndex(f => f.id === id);
+            if (fatIndex === -1) return;
+
+             const fat = faturamentos[fatIndex];
+
+             // Não permite excluir se já foi liquidado ou pago? Ou permite estornar? Definir regra.
+             // Aqui, vamos permitir excluir mesmo se pago, mas avisando.
+             let confirmationMessage = `Tem certeza que deseja excluir o registro de faturamento ID ${id}? Esta ação não pode ser desfeita.`;
+            if (fat.dataLiquidacao || fat.dataPagamento) {
+                 confirmationMessage = `ATENÇÃO: Este faturamento já foi ${fat.dataPagamento ? 'pago' : 'liquidado'}. \nExcluí-lo pode causar inconsistências nos saldos e histórico. \n\nTem certeza que deseja excluir PERMANENTEMENTE o registro ID ${id}?`;
+            }
+
+
+             if (confirm(confirmationMessage)) {
+                faturamentos = faturamentos.filter(f => f.id !== id);
+                salvarDados();
+                carregarDados(); // Atualiza UI
+                exibirAlerta('Registro de faturamento excluído.', 'success');
+             }
+        }
+
+        const cancelarFaturamento = (id) => {
+            const fatIndex = faturamentos.findIndex(f => f.id === id);
+            if (fatIndex === -1) return;
+
+             const fat = faturamentos[fatIndex];
+
+             // Não permite cancelar se já foi pago? Ou permite estornar? Definir regra.
+             // Aqui, vamos permitir cancelar mesmo se pago, mas avisando.
+             let confirmationMessage = `Tem certeza que deseja marcar o faturamento ID ${id} como CANCELADO?`;
+              if (fat.dataPagamento) {
+                  confirmationMessage += `\n\nATENÇÃO: Este faturamento já está PAGO. Cancelá-lo pode requerer ações adicionais (estorno, etc.) e afetará os cálculos de saldo.`;
+              } else if (fat.dataLiquidacao) {
+                   confirmationMessage += `\n\nATENÇÃO: Este faturamento já está LIQUIDADO. Cancelá-lo afetará os cálculos de saldo.`;
+              }
+              confirmationMessage += `\n\nEsta ação NÃO exclui o registro, apenas o marca como inválido para cálculos futuros de saldo disponível.`
+
+             if (fat.status === 'Cancelada') {
+                  exibirAlerta('Este faturamento já está cancelado.', 'warning');
+                  return;
+             }
+
+             if (confirm(confirmationMessage)) {
+                // Atualiza o status para Cancelada. Não zera as datas anteriores para histórico.
+                faturamentos[fatIndex] = { ...fat, status: 'Cancelada' };
+
+                salvarDados();
+                carregarDados(); // Atualiza UI
+                exibirAlerta('Faturamento marcado como Cancelado.', 'warning');
+             }
+        }
+
+         // Função para limpar todos os dados salvos no localStorage
+         const clearAllData = () => {
+            if (confirm("ATENÇÃO: Tem certeza que deseja LIMPAR TODOS os dados salvos (Empenhos e Faturamentos)? Esta ação é irreversível!")) {
+                 localStorage.removeItem('empenhos_visa');
+                 localStorage.removeItem('faturamentos_visa');
+                 empenhos = []; // Limpa as arrays em memória
+                 faturamentos = [];
+                 carregarDados(); // Recarrega a interface com dados vazios
+                 exibirAlerta('Todos os dados foram limpos.', 'success');
+            }
+         }
+
+
+        // ========== IMPORT/EXPORT ==========
+        function exportarJson() {
+            if (empenhos.length === 0 && faturamentos.length === 0) {
+                 exibirAlerta('Não há dados para exportar.', 'warning');
+                 return;
+            }
+            try {
+                // Exporta apenas os empenhos iniciais (que já contêm o valor total)
+                 const empenhosParaExportar = empenhos.filter(e => e.tipoEmpenho === 'Inicial');
+                const dataToExport = {
+                    empenhos: empenhosParaExportar,
+                    faturamentos: faturamentos
+                };
+                const dataStr = JSON.stringify(dataToExport, null, 2); // Pretty print JSON
+                const dataBlob = new Blob([dataStr], { type: "application/json;charset=utf-8;" });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                const timestamp = new Date().toISOString().slice(0, 10); //YYYY-MM-DD
+                link.download = `dados_faturamento_${timestamp}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                // Não mostra alerta aqui, pois o download inicia
+            } catch (error) {
+                console.error("Erro ao exportar JSON:", error);
+                exibirAlerta('Erro ao exportar dados para JSON.', 'error');
+            }
+        }
+
+        function importarJson(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            if (!file.name.toLowerCase().endsWith('.json')) {
+                 exibirAlerta('Por favor, selecione um arquivo .json válido.', 'warning');
+                 event.target.value = null; // Limpa seleção
+                 return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    // Validação básica da estrutura
+                    if (!importedData || typeof importedData !== 'object' || !Array.isArray(importedData.empenhos) || !Array.isArray(importedData.faturamentos)) {
+                        throw new Error("Estrutura do arquivo JSON inválida. Esperado objeto com chaves 'empenhos' e 'faturamentos' contendo arrays.");
+                    }
+
+                    // Validação mais detalhada (opcional - verificar campos essenciais)
+                    // Verifica se os empenhos importados têm os campos necessários e tipo 'Inicial' (ou nenhum tipo)
+                     const empenhosValidos = importedData.empenhos.every(e => e.id && e.contrato && e.numeroEmpenho && e.anoEmpenho && e.valorOriginalEmpenho !== undefined && (e.tipoEmpenho === 'Inicial' || e.tipoEmpenho === undefined));
+                     const faturamentosValidos = importedData.faturamentos.every(f => f.id && f.contrato && f.mesAnoServico && f.empenhoVinculado && f.valorPreFat !== undefined);
+
+                     if (!empenhosValidos || !faturamentosValidos) {
+                          console.warn("Dados importados parecem ter registros inválidos ou faltando campos essenciais.", importedData);
+                          if (!confirm("Atenção: Alguns registros no arquivo JSON podem estar inválidos ou faltando campos essenciais. Continuar a importação assim mesmo?")) {
+                              event.target.value = null;
+                              return;
+                          }
+                     }
+
+
+                    if (confirm("Importar dados deste arquivo JSON? \n\nATENÇÃO: Isso substituirá TODOS os dados atuais! \n\nRecomendado fazer um backup (Exportar JSON) antes.")) {
+                        // Substitui os dados atuais pelos importados, aplicando conversões necessárias
+                        empenhos = importedData.empenhos.map(e => ({
+                            ...e,
+                            anoEmpenho: e.anoEmpenho ? parseInt(e.anoEmpenho) : null,
+                            // Garante que valorOriginalEmpenho é float
+                            valorOriginalEmpenho: e.valorOriginalEmpenho ? parseFloat(e.valorOriginalEmpenho) : 0,
+                            // Garante que o tipo seja 'Inicial' ao importar (descarta tipos antigos se existirem no JSON)
+                            tipoEmpenho: 'Inicial'
+                        }));
+                        // Remove quaisquer empenhos que não sejam 'Inicial' após a importação, se houver
+                        empenhos = empenhos.filter(e => e.tipoEmpenho === 'Inicial');
+
+                        faturamentos = importedData.faturamentos.map(f => ({
+                            ...f,
+                            valorPreFat: f.valorPreFat ? parseFloat(f.valorPreFat) : 0,
+                            dataNF: f.dataNF || null,
+                            dataAteste: f.dataAteste || null,
+                            dataLiquidacao: f.dataLiquidacao || null,
+                            dataPagamento: f.dataPagamento || null,
+                             status: f.status || determinarStatusFaturamento(f), // Recalcula status se não veio no import
+                        }));
+
+                        salvarDados(); // Salva os novos dados no localStorage
+                        carregarDados(); // Recarrega a interface
+                        exibirAlerta('Dados importados com sucesso!', 'success');
+                    }
+                } catch (error) {
+                    console.error("Erro ao importar JSON:", error);
+                    exibirAlerta(`Erro ao importar arquivo: ${error.message}`, 'error');
+                } finally {
+                     event.target.value = null; // Limpa seleção do input file em qualquer caso
+                }
+            };
+            reader.onerror = function() {
+                 exibirAlerta('Erro ao ler o arquivo selecionado.', 'error');
+                 event.target.value = null;
+            };
+            reader.readAsText(file);
+        }
+
+        function escapeCsvValue(value) {
+            if (value == null) return ''; // Trata null/undefined
+            const stringValue = String(value);
+             // Usa ponto e vírgula como separador padrão para Excel PT-BR
+             const separator = ';';
+            // Se contém o separador, aspas ou quebra de linha, envolve com aspas duplas
+            if (stringValue.includes(separator) || stringValue.includes('"') || stringValue.includes('\n')) {
+                // Escapa aspas duplas internas duplicando-as
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+        }
+
+        function exportarCsv(tipoDados) { // tipoDados: 'empenhos' ou 'faturamentos'
+             let dataArray = [];
+             let headers = [];
+             let filename = '';
+             const timestamp = new Date().toISOString().slice(0, 10);
+             const separator = ';'; // Ponto e vírgula para Excel PT-BR
+
+             if (tipoDados === 'empenhos') {
+                 // Exporta apenas Empenhos Iniciais com o valor total atualizado
+                 const empenhosParaExportar = empenhos.filter(e => e.tipoEmpenho === 'Inicial');
+
+                 if (empenhosParaExportar.length === 0) {
+                     exibirAlerta('Não há dados de empenhos para exportar.', 'warning');
+                     return;
+                 }
+                 filename = `empenhos_${timestamp}.csv`;
+                 // Headers mais descritivos
+                 headers = ["ID", "Contrato Num", "Contrato Nome", "Numero Empenho", "Ano", "Valor Empenhado (Total R$)", "Valor Liquidado (R$)", "Saldo Disponível (R$)", "Status"];
+                 dataArray = empenhosParaExportar.map(e => {
+                      const liquidado = calcularTotalLiquidadoEmpenho(e.id);
+                      const saldo = calcularSaldoDisponivelEmpenho(e);
+                     return [
+                         e.id,
+                         e.contrato,
+                         getNomeContrato(e.contrato),
+                         e.numeroEmpenho,
+                         e.anoEmpenho,
+                         e.valorOriginalEmpenho, // Exporta o valor total
+                         liquidado,
+                         saldo,
+                         e.statusEmpenho || 'Ativo'
+                     ];
+                 });
+             } else if (tipoDados === 'faturamentos') {
+                  if (faturamentos.length === 0) {
+                     exibirAlerta('Não há dados de faturamento para exportar.', 'warning');
+                     return;
+                 }
+                 filename = `faturamento_${timestamp}.csv`;
+                 // Headers mais descritivos
+                 headers = ["ID Faturamento", "Contrato Num", "Contrato Nome", "Mes/Ano Serviço", "Empenho Vinculado ID", "Empenho Num", "Ano Empenho", "Valor (R$)", "Numero NF", "Data NF", "Data Ateste", "Doc Aceite Sprint", "Data Liquidacao", "Data Pagamento", "Status", "Observacoes"];
+                 dataArray = faturamentos.map(f => {
+                      const empenho = empenhos.find(e => e.id === f.empenhoVinculado && e.tipoEmpenho === 'Inicial'); // Busca o Empenho Inicial vinculado
+                      const status = determinarStatusFaturamento(f);
+                     return [
+                         f.id,
+                         f.contrato,
+                         getNomeContrato(f.contrato),
+                         formatarCompetencia(f.mesAnoServico), // Exporta formatado MM/YYYY
+                         f.empenhoVinculado, // Exporta o ID do empenho Inicial vinculado
+                         empenho ? empenho.numeroEmpenho : 'N/A',
+                         empenho ? empenho.anoEmpenho : 'N/A',
+                         f.valorPreFat, // Exporta número puro
+                         f.numeroNF,
+                         formatarData(f.dataNF), // Exporta formatado DD/MM/YYYY
+                         formatarData(f.dataAteste),
+                         f.docAceiteSprint,
+                         formatarData(f.dataLiquidacao),
+                         formatarData(f.dataPagamento),
+                         status,
+                         f.observacoes
+                     ];
+                 });
+             } else {
+                 exibirAlerta('Tipo de dados para exportar CSV inválido.', 'error');
+                 return;
+             }
+
+             // Monta CSV
+             const headerString = headers.map(h => escapeCsvValue(h)).join(separator);
+             const rowsString = dataArray.map(row =>
+                 row.map(cell => escapeCsvValue(cell)).join(separator)
+             ).join('\n');
+
+             const csvString = `${headerString}\n${rowsString}`;
+
+             // Cria Blob e faz download
+             const bom = new Uint8Array([0xEF, 0xBB, 0xBF]); // BOM para UTF-8
+             const dataBlob = new Blob([bom, csvString], { type: `text/csv;charset=utf-8;header=${(tipoDados === 'empenhos' ? 'present' : 'present')}` }); // Adiciona header info para Excel?
+             const url = URL.createObjectURL(dataBlob);
+             const link = document.createElement('a');
+             link.href = url;
+             link.download = filename;
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+             URL.revokeObjectURL(url);
+             // Não mostra alerta aqui
+         }
+
+
+        // Inicialização da Aplicação
+        const carregarDados = () => {
+            carregarFiltros(); // Atualiza opções dos filtros
+            renderizarTabelaEmpenhos(); // Renderiza apenas Empenhos Iniciais
+            renderizarTabelaFaturamento();
+            calcularSaldosDashboard();
+            // Chamar renderização de gráficos aqui, se implementado
+        }
+
+        // Event Listener para carregar tudo quando o DOM estiver pronto
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarDadosDoStorage(); // Carrega do localStorage primeiro
+            carregarDados(); // Renderiza tudo com os dados carregados
+        });
+
+    </script>
+</body>
+</html>
