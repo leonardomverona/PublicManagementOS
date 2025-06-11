@@ -924,10 +924,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Configurações para sincronização opcional com o GitHub
         const GITHUB_STORAGE = {
-            enabled: false,               // Altere para true para ativar
+            enabled: true,               // Altere para true para ativar
             repo: 'usuario/repositorio',  // Formato "usuario/repositorio"
             filePath: 'dados/fs.json',    // Caminho do arquivo no repositório
-            token: null                   // Token pessoal (necessário para salvar)
+            token: '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' // Token pessoal (necessário para salvar)
         };
         const USER_SETTINGS_KEY = "github_user_settings";
         function loadUserSettings() {
