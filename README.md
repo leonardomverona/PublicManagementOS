@@ -12,7 +12,7 @@ Esta aplicação é fornecida "NO ESTADO EM QUE SE ENCONTRA" (“AS IS”), sem 
 
 ## Licença
 
-Este projeto está licenciado sob a Licença MIT. Consulte o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a Licença MIT. Consulte o arquivo [[LICENSE](LICENSE)](https://github.com/leonardomverona/PublicManagementOS/blob/bef1f31802fdc2a03b46555fbdfe9bacc8ccc5ed/license.md) para mais detalhes.
 
 ## Privacidade e Segurança
 
