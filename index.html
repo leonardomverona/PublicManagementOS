@@ -1160,13 +1160,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <script type="module">
     // [MODIFICADO] Módulo Firebase com mais imports
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-analytics.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     
     // Deixa os módulos disponíveis globalmente para o script legado que virá a seguir
     window.firebase = {
         initializeApp,
+        getAnalytics,
         getAuth,
         GoogleAuthProvider,
         signInWithPopup,
@@ -1198,6 +1200,8 @@ document.addEventListener('DOMContentLoaded', () => {
           measurementId: "G-JQ2XPCN68T"
         };
         const IS_FIREBASE_CONFIGURED = firebaseConfig.apiKey !== "AIzaSy...";
+        const firebaseApp = window.firebase.initializeApp(firebaseConfig);
+        const analytics = window.firebase.getAnalytics(firebaseApp);
         let dataManager = null; // Instância do gerenciador de dados (Firebase ou Local)
 
         /** Classe Abstrata para Gerenciador de Dados */
@@ -1293,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // [MODIFICADO] Função de Inicialização Principal com o novo fluxo de auth
         function startApp() {
             const { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } = window.firebase;
-            const auth = getAuth(initializeApp(firebaseConfig));
+            const auth = getAuth(firebaseApp);
 
             const authModal = document.getElementById('auth-modal');
             const googleBtn = document.getElementById('google-signin-btn');
