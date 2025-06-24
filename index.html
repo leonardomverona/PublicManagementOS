@@ -2953,6 +2953,20 @@ document.addEventListener('DOMContentLoaded', () => {
             return winId;
         }
 
+        /**
+         * Abre a janela do aplicativo de Quadro Kanban.
+         */
+        function openKanbanBoard() {
+            const uniqueSuffix = generateId('kanban');
+            const winId = windowManager.createWindow('Quadro Kanban', '', { width: '1000px', height: '700px', appType: 'kanban-board' });
+            const content = `<div class="kanban-board-app"><div class="kanban-toolbar"><span style="font-weight:600;">Kanban Board</span></div><div class="kanban-board-container" id="kanbanArea_${uniqueSuffix}" style="padding:20px;">Em desenvolvimento...</div></div>`;
+            const winData = windowManager.windows.get(winId);
+            if (winData) {
+                winData.element.querySelector(".window-content").innerHTML = content;
+            }
+            return winId;
+        }
+
 
         // ... O restante das funções de abrir aplicativos (SWOT, OKR, etc.) continua aqui, sem alterações...
         // ... pois elas já usam o sistema de salvamento de arquivos que por sua vez usa o FileSystem sincronizado.
@@ -3074,6 +3088,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let longPressTimer, touchStartX, touchStartY;
         const longPressDuration = 700;
         document.addEventListener('touchstart', (e) => { if(e.target.closest('.desktop')) { if (e.touches.length > 1) return; touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; longPressTimer = setTimeout(() => { if (longPressTimer) { e.preventDefault(); showDesktopContextMenu(touchStartX, touchStartY); } }, longPressDuration); }}, {passive: false});
+        function clearLongPressTimer() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }
         document.addEventListener('touchend', clearLongPressTimer);
         document.addEventListener('touchcancel', clearLongPressTimer);
         document.addEventListener('touchmove', (e) => { if(e.target.closest('.desktop')) { if (longPressTimer && touchStartX && touchStartY && (Math.abs(e.touches[0].clientX-touchStartX) > 10 || Math.abs(e.touches[0].clientY-touchStartY) > 10)) clearLongPressTimer(); }});
