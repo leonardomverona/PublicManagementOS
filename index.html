@@ -1200,8 +1200,8 @@ document.addEventListener('DOMContentLoaded', () => {
           measurementId: "G-JQ2XPCN68T"
         };
         const IS_FIREBASE_CONFIGURED = firebaseConfig.apiKey !== "AIzaSy...";
-        const firebaseApp = window.firebase.initializeApp(firebaseConfig);
-        const analytics = window.firebase.getAnalytics(firebaseApp);
+        let firebaseApp; // inicializado após o módulo Firebase carregar
+        let analytics;
         let dataManager = null; // Instância do gerenciador de dados (Firebase ou Local)
 
         /** Classe Abstrata para Gerenciador de Dados */
@@ -1296,7 +1296,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // [MODIFICADO] Função de Inicialização Principal com o novo fluxo de auth
         function startApp() {
-            const { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously } = window.firebase;
+            const { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInAnonymously, getAnalytics, initializeApp } = window.firebase;
+            if (!firebaseApp) {
+                firebaseApp = initializeApp(firebaseConfig);
+                analytics = getAnalytics(firebaseApp);
+            }
             const auth = getAuth(firebaseApp);
 
             const authModal = document.getElementById('auth-modal');
