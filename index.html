@@ -2519,7 +2519,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         };
         const windowManager = new WindowManager();
-        const themeManager = new ThemeManager(palettes);
+        const themeManager = new ThemeManager(accentPalettes);
         const fileSystem = new FileSystem(); // Agora controlado pelo DataManager
         let desktopMenuInitialized = false; // Flag para inicializar listeners do menu de contexto apenas uma vez
 
@@ -2936,6 +2936,20 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.listContainerUl.addEventListener('click', (e) => { const targetButton = e.target.closest('button'); const targetCheckbox = e.target.closest('.task-checkbox'); let hasChanged = false; if (targetCheckbox) { const taskId = targetCheckbox.dataset.id; const task = appState.findTaskById(taskId); if (task) task.completed = targetCheckbox.checked; hasChanged = true; } else if (targetButton) { const action = targetButton.dataset.action; const taskId = targetButton.dataset.id; const task = appState.findTaskById(taskId); if (action === 'delete') { if (confirm("Tem certeza que deseja excluir esta tarefa e suas subtarefas?")) { appState.deleteTaskRecursive(taskId); hasChanged = true; } } else if (action === 'add-subtask' && task) { const subtaskText = prompt("Descrição da nova subtarefa:"); if (subtaskText) { if (!task.subtasks) task.subtasks = []; task.subtasks.push({ id: generateId('subtask'), text: subtaskText, responsible: task.responsible, dueDate: task.dueDate, priority: task.priority, completed: false, subtasks: [] }); hasChanged = true; } } else if (action === 'edit' && task) { appState.taskInput.value = task.text; appState.responsibleInput.value = task.responsible || ''; appState.dueDateInput.value = task.dueDate || ''; appState.priorityInput.value = task.priority || 'media'; appState.addBtn.innerHTML = '<i class="fas fa-save" style="margin-right:5px;"></i> Atualizar'; appState.editingTaskId = taskId; } else if (action === 'ai-feedback-important' && task) { mapNeuralManager.addTrainingSample(task, 0.9); showNotification(`Feedback "Importante" registrado.`, 2000); } else if (action === 'ai-feedback-not-important' && task) { mapNeuralManager.addTrainingSample(task, 0.1); showNotification(`Feedback "Menos Importante" registrado.`, 2000); } } if(hasChanged) { appState.markDirty(); appState.renderTasks(); } });
             appState.trainAiBtn.onclick = () => { mapNeuralManager.trainNetwork(); showNotification("IA MapNeural treinada!", 2500); appState.renderTasks(); };
             appState.renderTasks();
+            return winId;
+        }
+
+        /**
+         * Abre a janela do aplicativo de Cronograma (Gantt).
+         */
+        function openGanttChart() {
+            const uniqueSuffix = generateId('gantt');
+            const winId = windowManager.createWindow('Cronograma do Projeto', '', { width: '1000px', height: '700px', appType: 'gantt-chart' });
+            const content = `<div class="gantt-chart-app"><div class="gantt-controls"><span style="font-weight:600;">Gantt Chart</span></div><div class="gantt-main-area" id="ganttArea_${uniqueSuffix}" style="padding:20px;">Em desenvolvimento...</div></div>`;
+            const winData = windowManager.windows.get(winId);
+            if (winData) {
+                winData.element.querySelector('.window-content').innerHTML = content;
+            }
             return winId;
         }
 
