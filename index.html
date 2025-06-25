@@ -1047,7 +1047,6 @@
 </div>
 
 <div class="desktop" id="desktop">
-<!-- Janelas dos aplicativos serão adicionadas aqui pelo JavaScript -->
 </div>
 
 <div class="dock" id="appDock">
@@ -1071,8 +1070,7 @@
 <div class="taskbar">
     <div class="taskbar-left-cluster">
         <div class="taskbar-items" id="taskbarItems">
-            <!-- Itens da barra de tarefas (janelas abertas) serão adicionados aqui -->
-        </div>
+            </div>
     </div>
     <div class="taskbar-right-cluster">
         <button class="app-button secondary" id="stageManagerToggle" title="Organizador Visual">🔳</button>
@@ -1089,207 +1087,305 @@
 <div id="notification">Mensagem de Notificação</div>
 
 <div class="desktop-context-menu" id="desktopContextMenu">
-<!-- Conteúdo do menu de contexto será preenchido via JS -->
 </div>
 <div class="stage-manager-overlay" id="stageManagerOverlay">
 <div class="stage-sidebar" id="stageManagerSidebar">
-<!-- Miniaturas das janelas no Stage Manager -->
 </div>
 <div class="stage-main-window-area" id="stageManagerMainArea">
-<!-- Janela principal do Stage Manager -->
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.draggable.js"></script>
 
-<!-- [REWRITTEN] Google API Integration (Firebase Removed) -->
 <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+    
     // --- API Configuration ---
+    // IMPORTANTE: Preencha estes valores com suas próprias credenciais de projeto.
+    // Eles NÃO podem ser as strings de placeholder.
     const ApiConfig = {
+        firebase: {
+            apiKey: "AIzaSyCbpWXt9stM8jnIL3UIggZuvr3V7nwvPcQ", // <-- SUBSTITUA AQUI
+            authDomain: "publicmanagementos.firebaseapp.com",
+            projectId: "publicmanagementos",
+            storageBucket: "publicmanagementos.appspot.com",
+            messagingSenderId: "829309037744",
+            appId: "1:829309037744:web:3276773141117bb8255f75",
+        },
         google: {
-            API_KEY: "AIzaSyBtskgDCVKenrStQGqliHOlm3YWsPZergo",      // <-- PASTE YOUR API KEY HERE (from Google Cloud Console)
-            CLIENT_ID: "440256548339-j3v1doq7ckbon6g9h3g2jlp5258d6hko.apps.googleusercontent.com",  // <-- PASTE YOUR OAuth 2.0 CLIENT ID HERE
-            SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile",
+            API_KEY: "AIzaSyBtskgDCVKenrStQGqliHOlm3YWsPZergo", // <-- SUBSTITUA AQUI (do Google Cloud Console)
+            CLIENT_ID: "440256548339-j3v1doq7ckbon6g9h3g2jlp5258d6hko.apps.googleusercontent.com",  // <-- SUBSTITUA AQUI seu OAuth 2.0 Client ID
+            SCOPES: "https://www.googleapis.com/auth/drive.file",
             DISCOVERY_DOCS: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
         }
     };
 
-    // --- Global Instances & State ---
-    let googleDriveManager;
-    let tokenClient;
+    // --- Global Instances ---
+    let authManager, googleDriveManager;
     let gapiLoaded = false;
-    let gisLoaded = false;
-    let googleAccessToken = null;
-    let userProfile = null;
-
+    
     /**
-     * Handles authorization and interaction with Google Drive. (UNCHANGED)
+     * Handles authorization and interaction with Google Drive.
      */
     class GoogleDriveManager {
         constructor() {
             this.appFolderName = 'PublicManagementOS_Files';
             this.appFolderId = null;
         }
+
         async getAppFolderId() {
             if (this.appFolderId) return this.appFolderId;
+
             try {
-                const response = await gapi.client.drive.files.list({ q: `mimeType='application/vnd.google-apps.folder' and name='${this.appFolderName}' and trashed=false`, fields: 'files(id, name)' });
+                const response = await gapi.client.drive.files.list({
+                    q: `mimeType='application/vnd.google-apps.folder' and name='${this.appFolderName}' and trashed=false`,
+                    fields: 'files(id, name)'
+                });
+
                 if (response.result.files.length > 0) {
                     this.appFolderId = response.result.files[0].id;
                     return this.appFolderId;
                 } else {
-                    const fileMetadata = { name: this.appFolderName, mimeType: 'application/vnd.google-apps.folder' };
-                    const createResponse = await gapi.client.drive.files.create({ resource: fileMetadata, fields: 'id' });
+                    const fileMetadata = {
+                        name: this.appFolderName,
+                        mimeType: 'application/vnd.google-apps.folder'
+                    };
+                    const createResponse = await gapi.client.drive.files.create({
+                        resource: fileMetadata,
+                        fields: 'id'
+                    });
                     this.appFolderId = createResponse.result.id;
                     return this.appFolderId;
                 }
-            } catch (error) { console.error("Error finding/creating app folder:", error); showNotification("Erro ao acessar pasta no Google Drive.", 4000); throw error; }
+            } catch (error) {
+                console.error("Error finding/creating app folder:", error);
+                showNotification("Erro ao acessar pasta no Google Drive.", 4000);
+                throw error;
+            }
         }
+
         async listFiles() {
             const folderId = await this.getAppFolderId();
             try {
-                const response = await gapi.client.drive.files.list({ q: `'${folderId}' in parents and trashed=false`, fields: 'files(id, name, mimeType, modifiedTime, description)', orderBy: 'modifiedTime desc' });
+                const response = await gapi.client.drive.files.list({
+                    q: `'${folderId}' in parents and trashed=false`,
+                    fields: 'files(id, name, mimeType, modifiedTime, description)',
+                    orderBy: 'modifiedTime desc'
+                });
                 return response.result.files;
-            } catch (error) { console.error("Error listing files:", error); showNotification("Erro ao listar arquivos do Drive.", 4000); return []; }
+            } catch (error) {
+                console.error("Error listing files:", error);
+                showNotification("Erro ao listar arquivos do Drive.", 4000);
+                return [];
+            }
         }
+        
         async readFile(fileId) {
             try {
-                const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
+                const response = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
+                });
                 return response.body;
-            } catch (error) { console.error("Error reading file:", error); showNotification("Erro ao ler arquivo do Drive.", 4000); throw error; }
+            } catch (error) {
+                console.error("Error reading file:", error);
+                showNotification("Erro ao ler arquivo do Drive.", 4000);
+                throw error;
+            }
         }
-        async saveFile(fileMetadata, content) {
-            const boundary = '-------314159265358979323846', delimiter = "\r\n--" + boundary + "\r\n", close_delim = "\r\n--" + boundary + "--";
-            const contentType = 'application/json';
-            const metadata = { name: fileMetadata.name, mimeType: contentType, description: fileMetadata.appDataType || 'pmo-file' };
-            let path, method;
-            if (fileMetadata.fileId) { path = `/upload/drive/v3/files/${fileMetadata.fileId}?uploadType=multipart`; method = 'PATCH'; }
-            else { const folderId = await this.getAppFolderId(); metadata.parents = [folderId]; path = '/upload/drive/v3/files?uploadType=multipart'; method = 'POST'; }
-            const multipartRequestBody = delimiter + 'Content-Type: application/json\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: ' + contentType + '\r\n\r\n' + content + close_delim;
-            try {
-                const response = await gapi.client.request({ path: path, method: method, params: { fields: 'id,name' }, headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' }, body: multipartRequestBody });
-                return response.result;
-            } catch (error) { console.error("Error saving file:", error); showNotification("Erro ao salvar arquivo no Drive.", 4000); throw error; }
-        }
-        async renameFile(fileId, newName) { try { await gapi.client.drive.files.update({ fileId: fileId, resource: { name: newName } }); } catch (error) { console.error("Error renaming file:", error); showNotification("Erro ao renomear arquivo.", 4000); } }
-        async deleteFile(fileId) { try { await gapi.client.drive.files.delete({ fileId: fileId }); } catch (error) { console.error("Error deleting file:", error); showNotification("Erro ao excluir arquivo.", 4000); } }
-    }
-
-    /**
-     * Handles the response from the Google OAuth 2.0 token client.
-     */
-    async function handleAuthResponse(response) {
-        if (response.error) {
-            console.error('Google Auth Error:', response.error);
-            showNotification('Falha na autenticação com o Google.', 4000);
-            return;
-        }
-        googleAccessToken = response.access_token;
-        gapi.client.setToken(response);
-        await getUserProfile();
-        updateUI(true);
-        initializeWebOS();
-    }
-    
-    /**
-     * Fetches user profile information (name, picture) from Google.
-     */
-    async function getUserProfile() {
-        try {
-            const response = await gapi.client.request({
-                'path': 'https://www.googleapis.com/oauth2/v3/userinfo'
-            });
-            userProfile = response.result;
-            window.userProfile = userProfile; // Make globally accessible to other scripts
-        } catch (err) {
-            console.error("Error fetching user profile:", err);
-            userProfile = { name: "Usuário", picture: "" }; // Fallback
-        }
-    }
-
-    /**
-     * Updates the UI based on login state.
-     */
-    function updateUI(isLoggedIn) {
-        document.body.classList.toggle('logged-in', isLoggedIn);
-        document.body.classList.toggle('logged-out', !isLoggedIn);
-        if (isLoggedIn && userProfile) {
-            document.getElementById('userProfilePic').src = userProfile.picture;
-            document.getElementById('userProfileName').textContent = userProfile.name;
-        }
-    }
-    
-    // --- Main Authentication Logic ---
-
-    function signIn() {
-        if (!gisLoaded || !gapiLoaded) {
-            showNotification("Serviços do Google ainda não carregaram. Tente novamente em um instante.", 3000);
-            return;
-        }
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-    }
-
-    function signOut() {
-        if (googleAccessToken) {
-            google.accounts.oauth2.revoke(googleAccessToken, () => {
-                gapi.client.setToken(null);
-                window.location.reload();
-            });
-        } else {
-             window.location.reload();
-        }
-    }
-    
-    // --- Initialization on DOM Load ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // Expose the drive manager globally for the other script
-        googleDriveManager = new GoogleDriveManager();
-        window.googleDriveManager = googleDriveManager;
-
-        // Load Google API Client (gapi)
-        const gapiScript = document.createElement('script');
-        gapiScript.src = 'https://apis.google.com/js/api.js';
-		gapiScript.onload = () => { // Removido async daqui
-		    // Usa o padrão de callback de gapi.load
-		    gapi.load('client:picker', async () => {
-		        // Este código só executa DEPOIS que 'client' e 'picker' estão prontos
-		        await gapi.client.init({
-		            apiKey: ApiConfig.google.API_KEY,
-		            discoveryDocs: ApiConfig.google.DISCOVERY_DOCS,
-		        });
-		        gapiLoaded = true; // Agora podemos definir o flag com segurança
-		    });
-		};
-        document.body.appendChild(gapiScript);
-
-        // Load Google Identity Services (gis)
-        const gisScript = document.createElement('script');
-        gisScript.src = 'https://accounts.google.com/gsi/client';
-        gisScript.async = true;
-        gisScript.defer = true;
-        gisScript.onload = () => {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: ApiConfig.google.CLIENT_ID,
-                scope: ApiConfig.google.SCOPES,
-                callback: handleAuthResponse,
-            });
-            gisLoaded = true;
-        };
-        document.body.appendChild(gisScript);
         
-        // Setup button listeners
-        document.getElementById('googleSignInBtn').onclick = signIn;
-        document.getElementById('logoutBtn').onclick = signOut;
+        async saveFile(fileMetadata, content) {
+            const boundary = '-------314159265358979323846';
+            const delimiter = "\r\n--" + boundary + "\r\n";
+            const close_delim = "\r\n--" + boundary + "--";
+
+            const contentType = 'application/json';
+            const metadata = {
+                name: fileMetadata.name,
+                mimeType: contentType,
+                description: fileMetadata.appDataType || 'pmo-file' // Store app type in description
+            };
+
+            let path, method;
+            if (fileMetadata.fileId) { // Update existing file
+                path = `/upload/drive/v3/files/${fileMetadata.fileId}?uploadType=multipart`;
+                method = 'PATCH';
+            } else { // Create new file
+                const folderId = await this.getAppFolderId();
+                metadata.parents = [folderId];
+                path = '/upload/drive/v3/files?uploadType=multipart';
+                method = 'POST';
+            }
+            
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: ' + contentType + '\r\n\r\n' +
+                content +
+                close_delim;
+            
+            try {
+                const response = await gapi.client.request({
+                    path: path,
+                    method: method,
+                    params: { fields: 'id,name' },
+                    headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
+                    body: multipartRequestBody
+                });
+                return response.result;
+            } catch (error) {
+                console.error("Error saving file:", error);
+                showNotification("Erro ao salvar arquivo no Drive.", 4000);
+                throw error;
+            }
+        }
+        
+        async renameFile(fileId, newName) {
+            try {
+                await gapi.client.drive.files.update({
+                    fileId: fileId,
+                    resource: { name: newName }
+                });
+            } catch (error) {
+                 console.error("Error renaming file:", error);
+                 showNotification("Erro ao renomear arquivo.", 4000);
+            }
+        }
+        
+        async deleteFile(fileId) {
+             try {
+                await gapi.client.drive.files.delete({ fileId: fileId });
+            } catch (error) {
+                 console.error("Error deleting file:", error);
+                 showNotification("Erro ao excluir arquivo.", 4000);
+            }
+        }
+    }
+    
+    /**
+     * Manages Firebase authentication and coordinates with Google API.
+     */
+    class AuthManager {
+        constructor() {
+            this.firebaseApp = initializeApp(ApiConfig.firebase);
+            this.auth = getAuth(this.firebaseApp);
+            this.user = null;
+        }
+
+        init() {
+            const gapiScript = document.createElement('script');
+            gapiScript.src = 'https://apis.google.com/js/api.js';
+            gapiScript.onload = () => gapi.load('client', () => {
+                gapiLoaded = true;
+                if (this.user) {
+                    this.initGapiClient();
+                }
+            });
+            document.body.appendChild(gapiScript);
+            
+            // Esta função é CRÍTICA para o método de redirecionamento.
+            // Ela captura o resultado do login quando o usuário volta para a página.
+            getRedirectResult(this.auth)
+                .then((result) => {
+                    if (result) {
+                        const credential = GoogleAuthProvider.credentialFromResult(result);
+                        const token = credential.accessToken;
+                        gapi.client.setToken({ access_token: token });
+                    }
+                }).catch((error) => {
+                    console.error("Erro no login por redirecionamento:", error);
+                    showNotification("Falha na autenticação via redirecionamento.", 5000);
+                });
+
+            onAuthStateChanged(this.auth, this.handleAuthState.bind(this));
+            document.getElementById('googleSignInBtn').onclick = () => this.signIn();
+            document.getElementById('logoutBtn').onclick = () => this.signOut();
+        }
+        
+        async signIn() {
+            const provider = new GoogleAuthProvider();
+            provider.addScope('profile');
+            provider.addScope('email');
+            provider.addScope(ApiConfig.google.SCOPES);
+
+            // Alterado para usar signInWithRedirect diretamente.
+            // Este método é mais robusto e evita problemas com pop-ups e políticas de segurança.
+            try {
+                await signInWithRedirect(this.auth, provider);
+                // A página será redirecionada pelo Firebase. O resultado será
+                // capturado pela função getRedirectResult quando o usuário retornar ao site.
+            } catch (error) {
+                console.error("Erro ao iniciar o redirecionamento de login:", error);
+                showNotification("Não foi possível iniciar o processo de login.", 5000);
+            }
+        }
+        
+        signOut() {
+            signOut(this.auth).then(() => {
+                if (gapi && gapi.client) {
+                    gapi.client.setToken(null);
+                }
+                window.location.reload(); 
+            });
+        }
+        
+        handleAuthState(user) {
+            if (user) {
+                this.user = user;
+                document.body.classList.add('logged-in');
+                document.body.classList.remove('logged-out');
+                if(gapiLoaded) {
+                   this.initGapiClient().then(() => this.updateUI(true));
+                }
+            } else {
+                this.user = null;
+                document.body.classList.remove('logged-in');
+                document.body.classList.add('logged-out');
+                this.updateUI(false);
+            }
+        }
+        
+        async initGapiClient() {
+            try {
+                await gapi.client.init({
+                    apiKey: ApiConfig.google.API_KEY,
+                    discoveryDocs: ApiConfig.google.DISCOVERY_DOCS
+                });
+            } catch (error) {
+                console.error("Erro ao inicializar Google API Client:", error);
+                showNotification("Não foi possível conectar ao Google Drive.", 4000);
+            }
+        }
+        
+        updateUI(isLoggedIn) {
+            if (isLoggedIn && this.user) {
+                document.getElementById('userProfilePic').src = this.user.photoURL;
+                document.getElementById('userProfileName').textContent = this.user.displayName;
+                initializeWebOS();
+            }
+        }
+    }
+    
+    // --- Global Entry Point for Auth/API logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        authManager = new AuthManager();
+        authManager.init();
+        window.authManager = authManager;
+        googleDriveManager = new GoogleDriveManager();
+        window.googleDriveManager = googleDriveManager; // Make it globally accessible
     });
 </script>
-
 
 <script>
         // --- Início do Script Principal ---
         // This script now runs within the context of a logged-in user.
 
         // --- Global instances (defined in the module script) ---
-        // googleDriveManager, userProfile
+        // authManager, googleDriveManager
         
         // --- Redefined Constants ---
         const STORAGE_KEYS = { // Only non-data keys remain
@@ -1399,6 +1495,7 @@
 
        /**
          * [UNCHANGED] Centralizes the logic for exporting a window's content to PDF.
+         * @param {string} winId - The ID of the window to export.
          */
         function handleExportToPDF(winId) {
             const winData = windowManager.windows.get(winId);
@@ -1576,8 +1673,6 @@
                 return winId;
             }
 
-            // Other WindowManager methods (makeActive, closeWindow, minimizeWindow, etc.) remain largely UNCHANGED.
-            // ... (The rest of the class is omitted for brevity but should be copied from the original) ...
             makeActive(winId) {
                 if (this.activeWindowId && this.windows.has(this.activeWindowId)) {
                     this.windows.get(this.activeWindowId).element.classList.remove('active');
@@ -1802,7 +1897,6 @@
         }
 
         // --- Classe: ThemeManager ---
-        // UNCHANGED
         class ThemeManager {
             constructor(palettes) {
                 this.isDark = localStorage.getItem(STORAGE_KEYS.THEME_DARK_MODE) === 'true';
@@ -1917,7 +2011,6 @@
         }
 
         // --- Classe StageManager ---
-        // UNCHANGED
         class StageManager {
             constructor(windowMgr) { this.windowManager = windowMgr; this.isActive = false; this.overlay = document.getElementById('stageManagerOverlay'); this.sidebar = document.getElementById('stageManagerSidebar'); this.mainArea = document.getElementById('stageManagerMainArea'); this.toggleButton = document.getElementById('stageManagerToggle'); this.focusedAppId = null; this.originalWindowStates = new Map(); if(this.toggleButton) this.toggleButton.onclick = () => this.toggle(); }
             toggle() { this.isActive = !this.isActive; this.overlay.classList.toggle('active', this.isActive); if(this.toggleButton) this.toggleButton.classList.toggle('active', this.isActive); if (this.isActive) { this.windowManager.windows.forEach((winData, winId) => { if (!winData.minimized && winData.element.style.display !== 'none') { this.originalWindowStates.set(winId, { left: winData.element.style.left, top: winData.element.style.top, width: winData.element.style.width, height: winData.element.style.height, zIndex: winData.element.style.zIndex, transform: winData.element.style.transform || '' }); } }); const activeOrFirstVisible = this.windowManager.activeWindowId || Array.from(this.windowManager.windows.keys()).find(id => !this.windowManager.windows.get(id).minimized && this.windowManager.windows.get(id).element.style.display !== 'none' ); if (activeOrFirstVisible) { this.focusApp(activeOrFirstVisible); } else { this.updateStageThumbnails(); } } else { this.restoreWindows(); this.originalWindowStates.clear(); } }
@@ -1929,13 +2022,11 @@
         // --- Global Instances ---
         let windowManager, themeManager;
 
-        // Paletas de cores - UNCHANGED
+        // Paletas de cores
         const accentPalettes = { light: [{ name: "Azul Padrão", color: "var(--accent-light)" }, { name: "Rosa", color: "#FF2D55" }, { name: "Verde", color: "#34C759" }, { name: "Laranja", color: "#FF9500" }, { name: "Roxo", color: "#AF52DE" }, { name: "Amarelo", color: "#FFCC00" }, { name: "Grafite", color: "#8E8E93"}, { name: "Ciano", color: "#5AC8FA"}], dark: [{ name: "Azul Padrão", color: "var(--accent-dark)" }, { name: "Rosa", color: "#FF375F" }, { name: "Verde", color: "#30D158" }, { name: "Laranja", color: "#FF9F0A" }, { name: "Roxo", color: "#BF5AF2" }, { name: "Amarelo", color: "#FFD60A" }, { name: "Grafite", color: "#98989D"}, { name: "Ciano", color: "#64D2FF"} ] };
         
         /**
-         * [NEW] Helper function to get the appropriate app opener based on a file's name or metadata.
-         * @param {object} file - Google Drive file object with name and description
-         * @returns {Function|null} The function to open the corresponding app, or null.
+         * Helper function to get the appropriate app opener based on a file's name or metadata.
          */
         function getAppOpenerForFile(file) {
             const appFileMap = {
@@ -1955,12 +2046,10 @@
                 '.sipoc': openSIPOCMatrix, 'sipoc-matrix': openSIPOCMatrix
             };
             
-            // First, try matching based on the description (appDataType)
             if (file.description && appFileMap[file.description]) {
                 return appFileMap[file.description];
             }
             
-            // Fallback to extension matching
             for (const ext in appFileMap) {
                 if (ext.startsWith('.') && file.name.endsWith(ext)) {
                     return appFileMap[ext];
@@ -1971,9 +2060,6 @@
 
         // --- Início das Funções de Abertura de Aplicativos ---
         
-        /**
-         * [MODIFIED] Returns standardized HTML for an app's toolbar with Drive integration.
-         */
         function getStandardAppToolbarHTML(winId) {
             return `
                 <button data-action="save" class="app-button" title="Salvar (Ctrl+S)"><i class="fas fa-save"></i> Salvar no Drive</button>
@@ -1983,9 +2069,6 @@
             `;
         }
 
-        /**
-         * [MODIFIED] Initializes file state for an app instance with Drive context.
-         */
         function initializeFileState(appState, defaultTitle, defaultFileName, appDataType) {
             appState.isDirty = false;
             appState.fileId = null; // Google Drive file ID
@@ -2013,9 +2096,6 @@
             windowManager.updateWindowTitle(appState.winId, defaultTitle);
         }
 
-        /**
-         * [REWRITTEN] Opens the File Explorer, now powered by Google Drive.
-         */
         async function openFileSystem() {
             const uniqueSuffix = generateId('fs');
             const content = `
@@ -2130,7 +2210,6 @@
             renderFileList(); // Initial render
         }
 
-        // [MODIFIED] Helper to set up toolbar actions for apps.
         function setupAppToolbarActions(appState, winId) {
              const toolbar = windowManager.windows.get(winId).element.querySelector('.app-toolbar');
              if(!toolbar) return;
@@ -2142,14 +2221,11 @@
                 
                 if (action === 'save') await handleSaveAction(appState);
                 else if (action === 'save-as') await handleSaveAsAction(appState);
-                else if (action === 'open-drive') await openFileWithPicker(appState.appDataType);
+                else if (action === 'open-drive') await openFileWithPicker();
                 else if (action === 'export-pdf') handleExportToPDF(winId);
              });
         }
         
-        /**
-         * [NEW] Opens a Google Drive file picker to select and load a file.
-         */
         async function openFileWithPicker() {
             if (typeof google === 'undefined' || !google.picker) {
                 showNotification("Google Picker API não está pronto.", 3000);
@@ -2198,9 +2274,6 @@
             picker.setVisible(true);
         }
 
-        /**
-         * Opens the Mind Map app. [MODIFIED] for Drive integration.
-         */
         function openMindMap() {
             const uniqueSuffix = generateId('mm');
             const winId = windowManager.createWindow('Novo Mapa Mental', '', {
@@ -2263,7 +2336,6 @@
                         winData.jmInstance.show(mindData);
                         
                         const toolbar = winData.element.querySelector(`#mmToolbar_${uniqueSuffix}`);
-                        // Handle app-specific actions
                         toolbar.addEventListener('click', (e) => {
                              const button = e.target.closest('button[data-action]');
                              if(!button) return;
@@ -2284,61 +2356,20 @@
             return winId;
         }
 
-        // --- Other App Functions (openProjectTasks, openSWOTAnalysis, etc.) ---
-        // All these functions need to be modified in a similar pattern:
-        // 1. In `initializeFileState`, add the `appDataType`.
-        // 2. Add `setupAppToolbarActions(appState, winId)` after creating `appState`.
-        // 3. The `loadData` method signature becomes `function(dataString, fileMeta)`
-        //    - It should parse the `dataString` from JSON.
-        //    - It should set `this.fileId = fileMeta.id`.
-        //    - It should update the window title with `fileMeta.name`.
-        
-        // --- Remaining app functions and helper scripts (UNCHANGED logic but adapted for the new file model) ---
-        // (The full code for every single app function is omitted here for brevity, 
-        // but the pattern described above should be applied to each one.)
-        
-        function openProjectTasks() {
-            // NOTE: This is an example of how other functions should be adapted.
-            // The rest of the `open...` functions are not included here for brevity but should follow this pattern.
-            const winId = windowManager.createWindow("Nova Lista de Tarefas", "Carregando...", { appType: 'project-tasks'});
-            const winData = windowManager.windows.get(winId);
-
-            const appState = {
-                winId: winId,
-                tasks: [],
-                // ... (other app-specific properties)
-                appDataType: 'project-tasks',
-                getData: function() { return this.tasks; },
-                loadData: function(dataString, fileMeta) {
-                    try {
-                        const data = JSON.parse(dataString);
-                        this.tasks = Array.isArray(data) ? data : [];
-                        this.fileId = fileMeta.id; // SET fileId
-                        this.markClean();
-                        windowManager.updateWindowTitle(this.winId, fileMeta.name); // UPDATE title
-                        this.renderTasks(); // A function you need to implement inside the app
-                    } catch (e) { showNotification("Erro ao carregar dados de tarefas.", 3000); }
-                },
-                renderTasks: function() {
-                    // Placeholder for your task rendering logic
-                    const contentEl = winData.element.querySelector('.window-content');
-                    contentEl.innerHTML = `<h2>Tarefas Carregadas</h2><p>Total de tarefas: ${this.tasks.length}</p>`;
-                }
-            };
-            
-            winData.currentAppInstance = appState;
-            initializeFileState(appState, "Nova Lista de Tarefas", "projeto_tarefas.tasks", 'project-tasks');
-            
-            // Add app-specific HTML content and toolbar
-            const contentEl = winData.element.querySelector('.window-content');
-            contentEl.innerHTML = `<div class="app-toolbar">${getStandardAppToolbarHTML(winId)}</div><div class="project-tasks-list-container"></div>`;
-            setupAppToolbarActions(appState, winId);
-            
-            return winId;
-        }
-        
-        // --- NOTE: Apply the same pattern to ALL other `open...` functions ---
-        // openSWOTAnalysis, openOKRTracker, openGanttChart, openIshikawaDiagram, etc.
+        // Placeholder for other app functions. You would implement them similarly to openMindMap
+        function openGanttChart() { showNotification("Função 'Cronograma (Gantt)' ainda não implementada.", 2000); }
+        function openProjectTasks() { showNotification("Função 'Tarefas de Projeto' ainda não implementada.", 2000); }
+        function openKanbanBoard() { showNotification("Função 'Kanban Board' ainda não implementada.", 2000); }
+        function openSWOTAnalysis() { showNotification("Função 'Matriz SWOT' ainda não implementada.", 2000); }
+        function openSIPOCMatrix() { showNotification("Função 'Matriz SIPOC' ainda não implementada.", 2000); }
+        function openOKRTracker() { showNotification("Função 'Monitor OKR' ainda não implementada.", 2000); }
+        function openIshikawaDiagram() { showNotification("Função 'Diagrama de Ishikawa' ainda não implementada.", 2000); }
+        function openBPMNModeler() { showNotification("Função 'Modelador BPMN' ainda não implementada.", 2000); }
+        function openContractManager() { showNotification("Função 'Gestão de Contratos' ainda não implementada.", 2000); }
+        function openChecklistTool() { showNotification("Função 'Ferramenta de Checklist' ainda não implementada.", 2000); }
+        function openNCRTool() { showNotification("Função 'Relatório de Não Conformidade' ainda não implementada.", 2000); }
+        function openPDCATool() { showNotification("Função 'Ciclo PDCA' ainda não implementada.", 2000); }
+        function open5W2HTool() { showNotification("Função 'Ferramenta 5W2H' ainda não implementada.", 2000); }
 
         function exportMindMapPNG(jmInstance, containerId) {
              const mind = jmInstance.mind;
@@ -2353,14 +2384,12 @@
         function addMindMapNodeInteractive(jm, appState) { const n = jm.get_selected_node(); if(!n) return; const t=prompt("Nome:"); if(t) {jm.add_node(n.id, jsMind.util.uuid.newid(),t); appState.markDirty();}}
         function removeMindMapNodeInteractive(jm, appState) {const n=jm.get_selected_node(); if(n && !n.isroot && confirm("Remover?")){jm.remove_node(n.id);appState.markDirty();}}
         function setMindMapNodeColor(jm, bg, fg, appState){const n=jm.get_selected_node(); if(n){jm.set_node_color(n.id,bg,fg); appState.markDirty();}}
-        // [All other app functions and their helpers should be here, modified as described]
         
         /**
          * The new entry point for the application logic, called after successful login.
          */
         function initializeWebOS() {
-            // Check if already initialized to prevent re-running
-            if (window.webOSInitialized) return;
+            if (window.webOSInitialized) return; // Prevent double initialization
             window.webOSInitialized = true;
 
             windowManager = new WindowManager();
@@ -2370,7 +2399,6 @@
             updateClockTime();
             setInterval(updateClockTime, 10000);
 
-            // Add an unsaved changes warning before leaving
             window.addEventListener('beforeunload', (e) => {
                 let hasUnsavedChanges = false;
                 windowManager.windows.forEach(winData => { if (winData.currentAppInstance?.isDirty) hasUnsavedChanges = true; });
@@ -2378,7 +2406,7 @@
             });
 
             // Set up app launchers from the Dock
-            windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': function() { alert('App Cronograma (Gantt) não implementado neste snippet.'); }, 'open-project-tasks': openProjectTasks, 'open-kanban-board': function() { alert('App Kanban não implementado neste snippet.'); }, 'open-swot-analysis': function() { alert('App SWOT não implementado neste snippet.'); }, 'open-sipoc-matrix': function() { alert('App SIPOC não implementado neste snippet.'); }, 'open-okr-tracker': function() { alert('App OKR não implementado neste snippet.'); }, 'open-ishikawa-diagram': function() { alert('App Ishikawa não implementado neste snippet.'); }, 'open-bpmn-modeler': function() { alert('App BPMN não implementado neste snippet.'); }, 'open-mind-map': openMindMap, 'open-contract-manager': function() { alert('App Gestão de Contratos não implementado neste snippet.'); }, 'open-checklist-tool': function() { alert('App Checklist não implementado neste snippet.'); }, 'open-ncr-tool': function() { alert('App NCR não implementado neste snippet.'); }, 'open-pdca-tool': function() { alert('App PDCA não implementado neste snippet.'); }, 'open-5w2h-tool': function() { alert('App 5W2H não implementado neste snippet.'); } };
+            windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': openGanttChart, 'open-project-tasks': openProjectTasks, 'open-kanban-board': openKanbanBoard, 'open-swot-analysis': openSWOTAnalysis, 'open-sipoc-matrix': openSIPOCMatrix, 'open-okr-tracker': openOKRTracker, 'open-ishikawa-diagram': openIshikawaDiagram, 'open-bpmn-modeler': openBPMNModeler, 'open-mind-map': openMindMap, 'open-contract-manager': openContractManager, 'open-checklist-tool': openChecklistTool, 'open-ncr-tool': openNCRTool, 'open-pdca-tool': openPDCATool, 'open-5w2h-tool': open5W2HTool };
             document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => {
                 const action = item.dataset.action;
                 if (windowManager.appLaunchActions[action]) {
@@ -2386,7 +2414,6 @@
                 }
             });
             
-            // Set up desktop context menu (unchanged)
             const desktopEl = document.getElementById('desktop');
             if (desktopEl) {
                  desktopEl.oncontextmenu = (e) => { e.preventDefault(); showDesktopContextMenu(e.clientX, e.clientY); };
@@ -2394,13 +2421,11 @@
             document.onclick = (e) => { const dm = document.getElementById('desktopContextMenu'); if (dm && dm.style.display === 'block' && !dm.contains(e.target)) { hideDesktopContextMenu(); } };
             document.addEventListener('keydown', (e) => { if (e.key === "Escape") { hideDesktopContextMenu(); if(windowManager.stageManager.isActive) windowManager.stageManager.toggle(); } });
             
-            // Setup wallpaper
             const savedWallpaper = localStorage.getItem(STORAGE_KEYS.WALLPAPER);
             if (savedWallpaper) document.body.style.backgroundImage = `url(${savedWallpaper})`;
             const wallpaperInputEl = document.getElementById('wallpaperInput');
             if(wallpaperInputEl) { wallpaperInputEl.addEventListener('change', e => { if (!e.target.files[0]?.type.startsWith('image/')) { if (e.target.files[0]) showNotification("Selecione um arquivo de imagem.", 3000); return; } const reader = new FileReader(); reader.onload = ev => { document.body.style.backgroundImage = `url(${ev.target.result})`; localStorage.setItem(STORAGE_KEYS.WALLPAPER, ev.target.result); }; reader.readAsDataURL(e.target.files[0]); }); }
 
-            // Theme and context menu setup
             themeManager.applyThemeVariables();
             document.getElementById('darkModeToggle').onclick = () => themeManager.toggleDarkMode();
             const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Drive) </div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><input type="file" id="wallpaperInput" accept="image/*" style="display:none"><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div>`;
@@ -2408,14 +2433,11 @@
             if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
             setupDesktopContextMenuListeners();
             
-            // Load AI model (unchanged)
             mapNeuralManager.loadState();
             
-            showNotification(`Bem-vindo(a), ${window.userProfile.name}!`, 3500);
+            showNotification(`Bem-vindo(a), ${authManager.user.displayName}!`, 3500);
         }
 
-    // [All other original functions like updateClockTime, shutdown, context menu handlers, etc. remain here]
-    // ... For brevity, these are not repeated but should be included ...
      function updateClockTime() { const clockEl = document.getElementById('clock'); if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
     function chooseWallpaper() { document.getElementById('wallpaperInput').click(); }
     function showDesktop() { windowManager.windows.forEach((wData, winId) => { if (!wData.minimized) windowManager.minimizeWindow(winId); }); }
@@ -2445,7 +2467,6 @@
         deskMenu.style.zIndex = (windowManager.zIndex || 100) + 5000;
     }
     function hideDesktopContextMenu() { const dm = document.getElementById('desktopContextMenu'); if(dm) dm.style.display = 'none'; }
-    // Touch event handlers for context menu
     let longPressTimer, touchStartX, touchStartY; const longPressDuration = 700;
     document.getElementById('desktop').addEventListener('touchstart', (e) => { if (e.touches.length > 1) return; touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; longPressTimer = setTimeout(() => { if (longPressTimer) { e.preventDefault(); showDesktopContextMenu(touchStartX, touchStartY); } }, longPressDuration); }, {passive: false});
     function clearLongPressTimer() { clearTimeout(longPressTimer); longPressTimer = null; }
@@ -2478,7 +2499,6 @@ class MapNeuralManager {
 const mapNeuralManager = new MapNeuralManager();
 </script>
 
-<!-- Scripts para drag/resize e touch - UNCHANGED -->
 <script>
     (function(){
         const SNAP_THRESHOLD = 40; const SNAP_ANIM = 'all 0.18s cubic-bezier(.34,1.56,.64,1)';
