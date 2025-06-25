@@ -1102,340 +1102,191 @@
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.draggable.js"></script>
 
-<!-- Firebase and Google API Integration -->
+<!-- [REWRITTEN] Google API Integration (Firebase Removed) -->
 <script type="module">
-    // Import Firebase modules
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
-    
     // --- API Configuration ---
-    // IMPORTANT: Fill these values with your own project credentials.
     const ApiConfig = {
-        firebase: {
-            // [FIXED] Using the Google API key for Firebase as well. This is a common setup.
-            // If you have a separate key for Firebase, replace it here.
-            apiKey: "AIzaSyCbpWXt9stM8jnIL3UIggZuvr3V7nwvPcQ", 
-            authDomain: "publicmanagementos.firebaseapp.com",
-            projectId: "publicmanagementos",
-            storageBucket: "publicmanagementos.appspot.com",
-            messagingSenderId: "829309037744",
-            appId: "1:829309037744:web:3276773141117bb8255f75",
-        },
         google: {
             API_KEY: "AIzaSyBtskgDCVKenrStQGqliHOlm3YWsPZergo",      // <-- PASTE YOUR API KEY HERE (from Google Cloud Console)
             CLIENT_ID: "440256548339-j3v1doq7ckbon6g9h3g2jlp5258d6hko.apps.googleusercontent.com",  // <-- PASTE YOUR OAuth 2.0 CLIENT ID HERE
-            SCOPES: "https://www.googleapis.com/auth/drive.file",
+            SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile",
             DISCOVERY_DOCS: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
         }
     };
 
-    // --- Global Instances ---
-    let authManager, googleDriveManager;
+    // --- Global Instances & State ---
+    let googleDriveManager;
+    let tokenClient;
     let gapiLoaded = false;
-    
+    let gisLoaded = false;
+    let googleAccessToken = null;
+    let userProfile = null;
+
     /**
-     * Handles authorization and interaction with Google Drive.
+     * Handles authorization and interaction with Google Drive. (UNCHANGED)
      */
     class GoogleDriveManager {
         constructor() {
             this.appFolderName = 'PublicManagementOS_Files';
             this.appFolderId = null;
         }
-
-        /**
-         * Finds or creates the main application folder in Google Drive.
-         * @returns {Promise<string>} The ID of the application folder.
-         */
         async getAppFolderId() {
             if (this.appFolderId) return this.appFolderId;
-
             try {
-                const response = await gapi.client.drive.files.list({
-                    q: `mimeType='application/vnd.google-apps.folder' and name='${this.appFolderName}' and trashed=false`,
-                    fields: 'files(id, name)'
-                });
-
+                const response = await gapi.client.drive.files.list({ q: `mimeType='application/vnd.google-apps.folder' and name='${this.appFolderName}' and trashed=false`, fields: 'files(id, name)' });
                 if (response.result.files.length > 0) {
                     this.appFolderId = response.result.files[0].id;
                     return this.appFolderId;
                 } else {
-                    const fileMetadata = {
-                        name: this.appFolderName,
-                        mimeType: 'application/vnd.google-apps.folder'
-                    };
-                    const createResponse = await gapi.client.drive.files.create({
-                        resource: fileMetadata,
-                        fields: 'id'
-                    });
+                    const fileMetadata = { name: this.appFolderName, mimeType: 'application/vnd.google-apps.folder' };
+                    const createResponse = await gapi.client.drive.files.create({ resource: fileMetadata, fields: 'id' });
                     this.appFolderId = createResponse.result.id;
                     return this.appFolderId;
                 }
-            } catch (error) {
-                console.error("Error finding/creating app folder:", error);
-                showNotification("Erro ao acessar pasta no Google Drive.", 4000);
-                throw error;
-            }
+            } catch (error) { console.error("Error finding/creating app folder:", error); showNotification("Erro ao acessar pasta no Google Drive.", 4000); throw error; }
         }
-
-        /**
-         * Lists all application-specific files in the app folder.
-         * @returns {Promise<Array>} A list of file objects {id, name, mimeType, modifiedTime}.
-         */
         async listFiles() {
             const folderId = await this.getAppFolderId();
             try {
-                const response = await gapi.client.drive.files.list({
-                    q: `'${folderId}' in parents and trashed=false`,
-                    fields: 'files(id, name, mimeType, modifiedTime, description)',
-                    orderBy: 'modifiedTime desc'
-                });
+                const response = await gapi.client.drive.files.list({ q: `'${folderId}' in parents and trashed=false`, fields: 'files(id, name, mimeType, modifiedTime, description)', orderBy: 'modifiedTime desc' });
                 return response.result.files;
-            } catch (error) {
-                console.error("Error listing files:", error);
-                showNotification("Erro ao listar arquivos do Drive.", 4000);
-                return [];
-            }
+            } catch (error) { console.error("Error listing files:", error); showNotification("Erro ao listar arquivos do Drive.", 4000); return []; }
         }
-        
-        /**
-         * Reads the content of a file from Google Drive.
-         * @param {string} fileId The ID of the file to read.
-         * @returns {Promise<string>} The content of the file.
-         */
         async readFile(fileId) {
             try {
-                const response = await gapi.client.drive.files.get({
-                    fileId: fileId,
-                    alt: 'media'
-                });
+                const response = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
                 return response.body;
-            } catch (error) {
-                console.error("Error reading file:", error);
-                showNotification("Erro ao ler arquivo do Drive.", 4000);
-                throw error;
-            }
+            } catch (error) { console.error("Error reading file:", error); showNotification("Erro ao ler arquivo do Drive.", 4000); throw error; }
         }
-        
-        /**
-         * Saves or updates a file in Google Drive.
-         * @param {object} fileMetadata - { fileId, name, appDataType }. fileId is null for new files.
-         * @param {string} content - The content to save.
-         * @returns {Promise<object>} The saved file metadata {id, name}.
-         */
         async saveFile(fileMetadata, content) {
-            const boundary = '-------314159265358979323846';
-            const delimiter = "\r\n--" + boundary + "\r\n";
-            const close_delim = "\r\n--" + boundary + "--";
-
+            const boundary = '-------314159265358979323846', delimiter = "\r\n--" + boundary + "\r\n", close_delim = "\r\n--" + boundary + "--";
             const contentType = 'application/json';
-            const metadata = {
-                name: fileMetadata.name,
-                mimeType: contentType,
-                description: fileMetadata.appDataType || 'pmo-file' // Store app type in description
-            };
-
+            const metadata = { name: fileMetadata.name, mimeType: contentType, description: fileMetadata.appDataType || 'pmo-file' };
             let path, method;
-            if (fileMetadata.fileId) { // Update existing file
-                path = `/upload/drive/v3/files/${fileMetadata.fileId}?uploadType=multipart`;
-                method = 'PATCH';
-            } else { // Create new file
-                const folderId = await this.getAppFolderId();
-                metadata.parents = [folderId];
-                path = '/upload/drive/v3/files?uploadType=multipart';
-                method = 'POST';
-            }
-            
-            const multipartRequestBody =
-                delimiter +
-                'Content-Type: application/json\r\n\r\n' +
-                JSON.stringify(metadata) +
-                delimiter +
-                'Content-Type: ' + contentType + '\r\n\r\n' +
-                content +
-                close_delim;
-            
+            if (fileMetadata.fileId) { path = `/upload/drive/v3/files/${fileMetadata.fileId}?uploadType=multipart`; method = 'PATCH'; }
+            else { const folderId = await this.getAppFolderId(); metadata.parents = [folderId]; path = '/upload/drive/v3/files?uploadType=multipart'; method = 'POST'; }
+            const multipartRequestBody = delimiter + 'Content-Type: application/json\r\n\r\n' + JSON.stringify(metadata) + delimiter + 'Content-Type: ' + contentType + '\r\n\r\n' + content + close_delim;
             try {
-                const response = await gapi.client.request({
-                    path: path,
-                    method: method,
-                    params: { fields: 'id,name' },
-                    headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
-                    body: multipartRequestBody
-                });
+                const response = await gapi.client.request({ path: path, method: method, params: { fields: 'id,name' }, headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' }, body: multipartRequestBody });
                 return response.result;
-            } catch (error) {
-                console.error("Error saving file:", error);
-                showNotification("Erro ao salvar arquivo no Drive.", 4000);
-                throw error;
-            }
+            } catch (error) { console.error("Error saving file:", error); showNotification("Erro ao salvar arquivo no Drive.", 4000); throw error; }
         }
-        
-        /**
-         * Renames a file in Google Drive.
-         * @param {string} fileId The ID of the file to rename.
-         * @param {string} newName The new name for the file.
-         */
-        async renameFile(fileId, newName) {
-            try {
-                await gapi.client.drive.files.update({
-                    fileId: fileId,
-                    resource: { name: newName }
-                });
-            } catch (error) {
-                 console.error("Error renaming file:", error);
-                 showNotification("Erro ao renomear arquivo.", 4000);
-            }
+        async renameFile(fileId, newName) { try { await gapi.client.drive.files.update({ fileId: fileId, resource: { name: newName } }); } catch (error) { console.error("Error renaming file:", error); showNotification("Erro ao renomear arquivo.", 4000); } }
+        async deleteFile(fileId) { try { await gapi.client.drive.files.delete({ fileId: fileId }); } catch (error) { console.error("Error deleting file:", error); showNotification("Erro ao excluir arquivo.", 4000); } }
+    }
+
+    /**
+     * Handles the response from the Google OAuth 2.0 token client.
+     */
+    async function handleAuthResponse(response) {
+        if (response.error) {
+            console.error('Google Auth Error:', response.error);
+            showNotification('Falha na autenticação com o Google.', 4000);
+            return;
         }
-        
-        /**
-         * Deletes a file from Google Drive.
-         * @param {string} fileId The ID of the file to delete.
-         */
-        async deleteFile(fileId) {
-             try {
-                await gapi.client.drive.files.delete({ fileId: fileId });
-            } catch (error) {
-                 console.error("Error deleting file:", error);
-                 showNotification("Erro ao excluir arquivo.", 4000);
-            }
-        }
+        googleAccessToken = response.access_token;
+        gapi.client.setToken(response);
+        await getUserProfile();
+        updateUI(true);
+        initializeWebOS();
     }
     
     /**
-     * Manages Firebase authentication and coordinates with Google API.
+     * Fetches user profile information (name, picture) from Google.
      */
-    class AuthManager {
-        constructor() {
-            this.firebaseApp = initializeApp(ApiConfig.firebase);
-            this.auth = getAuth(this.firebaseApp);
-            this.user = null;
-        }
-
-        init() {
-            // GAPI client load
-            const gapiScript = document.createElement('script');
-            gapiScript.src = 'https://apis.google.com/js/api.js';
-            gapiScript.onload = () => gapi.load('client:picker', () => gapiLoaded = true);
-            document.body.appendChild(gapiScript);
-
-            // GIS client load (needed for Google Picker API)
-            const gisScript = document.createElement('script');
-            gisScript.src = 'https://accounts.google.com/gsi/client';
-            gisScript.async = true;
-            gisScript.defer = true;
-            document.body.appendChild(gisScript);
-            
-            // Set up listeners
-            onAuthStateChanged(this.auth, this.handleAuthState.bind(this));
-            document.getElementById('googleSignInBtn').onclick = () => this.signIn();
-            document.getElementById('logoutBtn').onclick = () => this.signOut();
-        }
-        
-        /**
-         * [REWRITTEN] Handles sign-in using a single, robust pop-up flow.
-         */
-        async signIn() {
-            const provider = new GoogleAuthProvider();
-            // Add all required scopes here for a single consent screen.
-            provider.addScope('profile');
-            provider.addScope('email');
-            provider.addScope(ApiConfig.google.SCOPES); // e.g., 'https://www.googleapis.com/auth/drive.file'
-
-            try {
-                const result = await signInWithPopup(this.auth, provider);
-                
-                // Get the OAuth access token from the result.
-                const credential = GoogleAuthProvider.credentialFromResult(result);
-                if (!credential || !credential.accessToken) {
-                    throw new Error("Não foi possível obter o token de acesso do Google.");
-                }
-                const accessToken = credential.accessToken;
-                
-                // Set the token for the GAPI client to use for Drive, Picker, etc.
-                gapi.client.setToken({ access_token: accessToken });
-
-                // onAuthStateChanged will automatically be triggered by the successful sign-in,
-                // which will then call initGapiClient() and updateUI().
-                showNotification(`Autenticação bem-sucedida!`, 2500);
-
-            } catch(error) {
-                console.error("Firebase sign-in error:", error);
-                let message = "Erro de autenticação desconhecido.";
-                if (error.code === 'auth/popup-closed-by-user') {
-                    message = "A janela de login foi fechada antes de completar.";
-                } else if (error.code === 'auth/cancelled-popup-request') {
-                    message = "Múltiplas janelas de login abertas. Tente novamente.";
-                } else if (error.code === 'auth/popup-blocked') {
-                    message = "O pop-up de login foi bloqueado. Por favor, habilite os pop-ups para este site.";
-                } else if (error.code === 'auth/api-key-not-valid') {
-                    message = "A chave de API não é válida. Verifique a configuração.";
-                }
-                showNotification(message, 5000);
-            }
-        }
-        
-        signOut() {
-            signOut(this.auth);
-            if(typeof gapi !== 'undefined' && gapi.client) {
-                gapi.client.setToken(null); // Clear the GAPI token
-            }
-            window.location.reload(); // Reload to clear all state
-        }
-        
-        handleAuthState(user) {
-            if (user) {
-                this.user = user;
-                // Wait for gapi to be loaded before initializing the rest of the app
-                const checkGapiReady = setInterval(() => {
-                    if (gapiLoaded) {
-                        clearInterval(checkGapiReady);
-                        this.initGapiClient().then(() => this.updateUI(true));
-                    }
-                }, 100);
-            } else {
-                this.user = null;
-                this.updateUI(false);
-            }
-        }
-        
-        async initGapiClient() {
-            await gapi.client.init({
-                apiKey: ApiConfig.google.API_KEY,
-                discoveryDocs: ApiConfig.google.DISCOVERY_DOCS
+    async function getUserProfile() {
+        try {
+            const response = await gapi.client.request({
+                'path': 'https://www.googleapis.com/oauth2/v3/userinfo'
             });
+            userProfile = response.result;
+            window.userProfile = userProfile; // Make globally accessible to other scripts
+        } catch (err) {
+            console.error("Error fetching user profile:", err);
+            userProfile = { name: "Usuário", picture: "" }; // Fallback
         }
-        
-        updateUI(isLoggedIn) {
-            document.body.classList.toggle('logged-in', isLoggedIn);
-            document.body.classList.toggle('logged-out', !isLoggedIn);
+    }
 
-            if (isLoggedIn) {
-                document.getElementById('userProfilePic').src = this.user.photoURL;
-                document.getElementById('userProfileName').textContent = this.user.displayName;
-                
-                // Only initialize the main OS once user is fully logged in and APIs are ready.
-                initializeWebOS();
-
-            }
+    /**
+     * Updates the UI based on login state.
+     */
+    function updateUI(isLoggedIn) {
+        document.body.classList.toggle('logged-in', isLoggedIn);
+        document.body.classList.toggle('logged-out', !isLoggedIn);
+        if (isLoggedIn && userProfile) {
+            document.getElementById('userProfilePic').src = userProfile.picture;
+            document.getElementById('userProfileName').textContent = userProfile.name;
         }
     }
     
-    // --- Global Entry Point for Auth/API logic ---
+    // --- Main Authentication Logic ---
+
+    function signIn() {
+        if (!gisLoaded || !gapiLoaded) {
+            showNotification("Serviços do Google ainda não carregaram. Tente novamente em um instante.", 3000);
+            return;
+        }
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    }
+
+    function signOut() {
+        if (googleAccessToken) {
+            google.accounts.oauth2.revoke(googleAccessToken, () => {
+                gapi.client.setToken(null);
+                window.location.reload();
+            });
+        } else {
+             window.location.reload();
+        }
+    }
+    
+    // --- Initialization on DOM Load ---
     document.addEventListener('DOMContentLoaded', () => {
-        authManager = new AuthManager();
-        authManager.init();
-        window.authManager = authManager;
+        // Expose the drive manager globally for the other script
         googleDriveManager = new GoogleDriveManager();
-        window.googleDriveManager = googleDriveManager; // Make it globally accessible
+        window.googleDriveManager = googleDriveManager;
+
+        // Load Google API Client (gapi)
+        const gapiScript = document.createElement('script');
+        gapiScript.src = 'https://apis.google.com/js/api.js';
+        gapiScript.onload = async () => {
+            await gapi.load('client:picker');
+            await gapi.client.init({
+                apiKey: ApiConfig.google.API_KEY,
+                discoveryDocs: ApiConfig.google.DISCOVERY_DOCS,
+            });
+            gapiLoaded = true;
+        };
+        document.body.appendChild(gapiScript);
+
+        // Load Google Identity Services (gis)
+        const gisScript = document.createElement('script');
+        gisScript.src = 'https://accounts.google.com/gsi/client';
+        gisScript.async = true;
+        gisScript.defer = true;
+        gisScript.onload = () => {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: ApiConfig.google.CLIENT_ID,
+                scope: ApiConfig.google.SCOPES,
+                callback: handleAuthResponse,
+            });
+            gisLoaded = true;
+        };
+        document.body.appendChild(gisScript);
+        
+        // Setup button listeners
+        document.getElementById('googleSignInBtn').onclick = signIn;
+        document.getElementById('logoutBtn').onclick = signOut;
     });
 </script>
+
 
 <script>
         // --- Início do Script Principal ---
         // This script now runs within the context of a logged-in user.
 
         // --- Global instances (defined in the module script) ---
-        // authManager, googleDriveManager
+        // googleDriveManager, userProfile
         
         // --- Redefined Constants ---
         const STORAGE_KEYS = { // Only non-data keys remain
@@ -1545,7 +1396,6 @@
 
        /**
          * [UNCHANGED] Centralizes the logic for exporting a window's content to PDF.
-         * @param {string} winId - The ID of the window to export.
          */
         function handleExportToPDF(winId) {
             const winData = windowManager.windows.get(winId);
@@ -2445,29 +2295,42 @@
         // but the pattern described above should be applied to each one.)
         
         function openProjectTasks() {
-            // ... (setup as before)
-            // ...
-            const appState = {
-                // ... (app state props as before)
-                appDataType: 'project-tasks', // ADD this
-                loadData: function(dataString, fileMeta) {
-                    const data = JSON.parse(dataString);
-                    this.tasks = Array.isArray(data) ? data : [];
-                    this.fileId = fileMeta.id; // SET fileId
-                    this.markClean();
-                    windowManager.updateWindowTitle(this.winId, fileMeta.name); // UPDATE title
-                    this.renderTasks();
-                },
-                // ... (rest of methods)
-            };
-            // NOTE: This is an example of how other functions should be adapted. The rest of the `open...`
-            // functions are not included here for brevity but should follow this pattern.
+            // NOTE: This is an example of how other functions should be adapted.
+            // The rest of the `open...` functions are not included here for brevity but should follow this pattern.
             const winId = windowManager.createWindow("Nova Lista de Tarefas", "Carregando...", { appType: 'project-tasks'});
             const winData = windowManager.windows.get(winId);
+
+            const appState = {
+                winId: winId,
+                tasks: [],
+                // ... (other app-specific properties)
+                appDataType: 'project-tasks',
+                getData: function() { return this.tasks; },
+                loadData: function(dataString, fileMeta) {
+                    try {
+                        const data = JSON.parse(dataString);
+                        this.tasks = Array.isArray(data) ? data : [];
+                        this.fileId = fileMeta.id; // SET fileId
+                        this.markClean();
+                        windowManager.updateWindowTitle(this.winId, fileMeta.name); // UPDATE title
+                        this.renderTasks(); // A function you need to implement inside the app
+                    } catch (e) { showNotification("Erro ao carregar dados de tarefas.", 3000); }
+                },
+                renderTasks: function() {
+                    // Placeholder for your task rendering logic
+                    const contentEl = winData.element.querySelector('.window-content');
+                    contentEl.innerHTML = `<h2>Tarefas Carregadas</h2><p>Total de tarefas: ${this.tasks.length}</p>`;
+                }
+            };
+            
             winData.currentAppInstance = appState;
             initializeFileState(appState, "Nova Lista de Tarefas", "projeto_tarefas.tasks", 'project-tasks');
-            setupAppToolbarActions(appState, winId); // ADD this line
-            // ... (rest of the function, including rendering HTML)
+            
+            // Add app-specific HTML content and toolbar
+            const contentEl = winData.element.querySelector('.window-content');
+            contentEl.innerHTML = `<div class="app-toolbar">${getStandardAppToolbarHTML(winId)}</div><div class="project-tasks-list-container"></div>`;
+            setupAppToolbarActions(appState, winId);
+            
             return winId;
         }
         
@@ -2512,7 +2375,7 @@
             });
 
             // Set up app launchers from the Dock
-            windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': function() { alert('Gantt Chart app not fully implemented in this snippet.'); }, 'open-project-tasks': openProjectTasks, 'open-kanban-board': function() { alert('Kanban app not fully implemented in this snippet.'); }, 'open-swot-analysis': function() { alert('SWOT app not fully implemented in this snippet.'); }, 'open-sipoc-matrix': function() { alert('SIPOC app not fully implemented in this snippet.'); }, 'open-okr-tracker': function() { alert('OKR app not fully implemented in this snippet.'); }, 'open-ishikawa-diagram': function() { alert('Ishikawa app not fully implemented in this snippet.'); }, 'open-bpmn-modeler': function() { alert('BPMN app not fully implemented in this snippet.'); }, 'open-mind-map': openMindMap, 'open-contract-manager': function() { alert('Contract app not fully implemented in this snippet.'); }, 'open-checklist-tool': function() { alert('Checklist app not fully implemented in this snippet.'); }, 'open-ncr-tool': function() { alert('NCR app not fully implemented in this snippet.'); }, 'open-pdca-tool': function() { alert('PDCA app not fully implemented in this snippet.'); }, 'open-5w2h-tool': function() { alert('5W2H app not fully implemented in this snippet.'); } };
+            windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': function() { alert('App Cronograma (Gantt) não implementado neste snippet.'); }, 'open-project-tasks': openProjectTasks, 'open-kanban-board': function() { alert('App Kanban não implementado neste snippet.'); }, 'open-swot-analysis': function() { alert('App SWOT não implementado neste snippet.'); }, 'open-sipoc-matrix': function() { alert('App SIPOC não implementado neste snippet.'); }, 'open-okr-tracker': function() { alert('App OKR não implementado neste snippet.'); }, 'open-ishikawa-diagram': function() { alert('App Ishikawa não implementado neste snippet.'); }, 'open-bpmn-modeler': function() { alert('App BPMN não implementado neste snippet.'); }, 'open-mind-map': openMindMap, 'open-contract-manager': function() { alert('App Gestão de Contratos não implementado neste snippet.'); }, 'open-checklist-tool': function() { alert('App Checklist não implementado neste snippet.'); }, 'open-ncr-tool': function() { alert('App NCR não implementado neste snippet.'); }, 'open-pdca-tool': function() { alert('App PDCA não implementado neste snippet.'); }, 'open-5w2h-tool': function() { alert('App 5W2H não implementado neste snippet.'); } };
             document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => {
                 const action = item.dataset.action;
                 if (windowManager.appLaunchActions[action]) {
@@ -2545,7 +2408,7 @@
             // Load AI model (unchanged)
             mapNeuralManager.loadState();
             
-            showNotification(`Bem-vindo(a), ${authManager.user.displayName}!`, 3500);
+            showNotification(`Bem-vindo(a), ${window.userProfile.name}!`, 3500);
         }
 
     // [All other original functions like updateClockTime, shutdown, context menu handlers, etc. remain here]
