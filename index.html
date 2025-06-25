@@ -1249,14 +1249,17 @@
         // Load Google API Client (gapi)
         const gapiScript = document.createElement('script');
         gapiScript.src = 'https://apis.google.com/js/api.js';
-        gapiScript.onload = async () => {
-            await gapi.load('client:picker');
-            await gapi.client.init({
-                apiKey: ApiConfig.google.API_KEY,
-                discoveryDocs: ApiConfig.google.DISCOVERY_DOCS,
-            });
-            gapiLoaded = true;
-        };
+		gapiScript.onload = () => { // Removido async daqui
+		    // Usa o padrão de callback de gapi.load
+		    gapi.load('client:picker', async () => {
+		        // Este código só executa DEPOIS que 'client' e 'picker' estão prontos
+		        await gapi.client.init({
+		            apiKey: ApiConfig.google.API_KEY,
+		            discoveryDocs: ApiConfig.google.DISCOVERY_DOCS,
+		        });
+		        gapiLoaded = true; // Agora podemos definir o flag com segurança
+		    });
+		};
         document.body.appendChild(gapiScript);
 
         // Load Google Identity Services (gis)
