@@ -20,7 +20,6 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Public Management OS (Firebase Auth)</title>
-    <!-- O CSS permanece o mesmo, sem alterações necessárias -->
     <style>
         :root {
             /* Tema Sonoma Claro (Padrão) */
@@ -123,7 +122,6 @@
         #loginContainer h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); color: #fff; }
         #loginContainer p { font-size: 1.2em; margin-bottom: 30px; color: #f0f0f0; text-shadow: 0 1px 3px rgba(0,0,0,0.3);}
         
-        /* [MODIFICADO] Estilos para o formulário de login */
         .login-form {
             background-color: var(--window-bg-light);
             padding: 30px;
@@ -1120,12 +1118,12 @@
     // [MODIFICADO] Configuração da API - Google foi removido
     const ApiConfig = {
         firebase: {
-            apiKey: "AIzaSyCbpWXt9stM8jnIL3UIggZuvr3V7nwvPcQ", // <-- MANTENHA SUAS CREDENCIAIS AQUI
-            authDomain: "publicmanagementos.firebaseapp.com",
-            projectId: "publicmanagementos",
-            storageBucket: "publicmanagementos.appspot.com",
-            messagingSenderId: "829309037744",
-            appId: "1:829309037744:web:3276773141117bb8255f75",
+            apiKey: "COLOQUE_SUA_API_KEY_AQUI",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJETO_ID",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID",
         }
     };
 
@@ -1341,7 +1339,9 @@
     // 2. Simplificar `openFileWithPicker` pois não usamos mais o Google Picker.
     // 3. Ajustar `openFileSystem` para ler do Firestore.
     // 4. `handleSaveAction` e `handleSaveAsAction` usarão `firestoreManager`.
+    
     // ... O código completo e adaptado continua abaixo ...
+
 </script>
 
 <!-- Script Principal Adaptado -->
@@ -2076,7 +2076,7 @@
                             <td>${appType}</td>
                             <td>${new Date(file.modifiedTime).toLocaleString('pt-BR')}</td>
                             <td>
-                                <button class="app-button action-button" data-action="open" data-file-id="${file.id}" title="Abrir"><i class="fas fa-folder-open"></i></button>
+                                <button class="app-button action-button" data-action="open" data-file-id="${file.id}" data-file-name="${file.name}" title="Abrir"><i class="fas fa-folder-open"></i></button>
                                 <button class="app-button secondary action-button" data-action="rename" data-file-id="${file.id}" data-file-name="${file.name}" title="Renomear"><i class="fas fa-edit"></i></button>
                                 <button class="app-button danger action-button" data-action="delete" data-file-id="${file.id}" data-file-name="${file.name}" title="Excluir"><i class="fas fa-trash"></i></button>
                             </td>
@@ -2176,145 +2176,747 @@
              });
         }
     
-    // Todas as outras funções de abertura de app (openGanttChart, openProjectTasks, etc.)
-    // são inseridas aqui, sem modificações na sua lógica interna, apenas na
-    // chamada para `setupAppToolbarActions(appState)` que agora usa a nova toolbar.
-    // Para economizar espaço, elas serão omitidas aqui, mas devem ser copiadas do seu código original.
-
+    // ... Colar aqui todas as funções `open...` completas do arquivo anterior ...
+    // Exemplo:
     function openMindMap() {
-            const uniqueSuffix = generateId('mm');
-            const winId = windowManager.createWindow('Novo Mapa Mental', '', {
-                width: '950px',
-                height: '650px',
-                appType: 'mindmap'
-            });
-            const content = `
-                <div class="mindmap-toolbar app-toolbar" id="mmToolbar_${uniqueSuffix}">
-                    ${getStandardAppToolbarHTML()}
-                    <span class="toolbar-separator" style="width:1px; background-color: var(--separator-color); margin:0 4px;"></span>
-                     <button class="app-button secondary" data-action="export-png" title="Exportar PNG"><i class="fas fa-image"></i> PNG</button>
-                    <button class="app-button" data-action="add-node" title="Adicionar Nó Filho"><i class="fas fa-plus-circle"></i> Nó</button>
-                    <button class="app-button" data-action="remove-node" title="Remover Nó"><i class="fas fa-minus-circle"></i> Remover</button>
-                    <span class="toolbar-separator" style="width:1px; background-color: var(--separator-color); margin:0 4px;"></span>
-                    <label for="bgColorPicker_${uniqueSuffix}">Fundo:</label>
-                    <input type="color" id="bgColorPicker_${uniqueSuffix}" value="${themeManager.isDark ? '#555555' : '#FFFFFF'}">
-                    <label for="fgColorPicker_${uniqueSuffix}">Texto:</label>
-                    <input type="color" id="fgColorPicker_${uniqueSuffix}" value="${themeManager.isDark ? '#FFFFFF' : '#000000'}">
-                </div>
-                <div class="mindmap-container" id="jsmindContainer_${uniqueSuffix}"></div>`;
-            const winData = windowManager.windows.get(winId);
-            if (!winData) return winId;
-            winData.element.querySelector('.window-content').innerHTML = content;
-            winData.element.querySelector('.window-content').style.padding = '0';
+        const uniqueSuffix = generateId('mm');
+        const winId = windowManager.createWindow('Novo Mapa Mental', '', {
+            width: '950px',
+            height: '650px',
+            appType: 'mindmap'
+        });
+        const content = `
+            <div class="mindmap-toolbar app-toolbar" id="mmToolbar_${uniqueSuffix}">
+                ${getStandardAppToolbarHTML()}
+                <span class="toolbar-separator" style="width:1px; background-color: var(--separator-color); margin:0 4px;"></span>
+                 <button class="app-button secondary" data-action="export-png" title="Exportar PNG"><i class="fas fa-image"></i> PNG</button>
+                <button class="app-button" data-action="add-node" title="Adicionar Nó Filho"><i class="fas fa-plus-circle"></i> Nó</button>
+                <button class="app-button" data-action="remove-node" title="Remover Nó"><i class="fas fa-minus-circle"></i> Remover</button>
+                <span class="toolbar-separator" style="width:1px; background-color: var(--separator-color); margin:0 4px;"></span>
+                <label for="bgColorPicker_${uniqueSuffix}">Fundo:</label>
+                <input type="color" id="bgColorPicker_${uniqueSuffix}" value="${themeManager.isDark ? '#555555' : '#FFFFFF'}">
+                <label for="fgColorPicker_${uniqueSuffix}">Texto:</label>
+                <input type="color" id="fgColorPicker_${uniqueSuffix}" value="${themeManager.isDark ? '#FFFFFF' : '#000000'}">
+            </div>
+            <div class="mindmap-container" id="jsmindContainer_${uniqueSuffix}"></div>`;
+        const winData = windowManager.windows.get(winId);
+        if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+        winData.element.querySelector('.window-content').style.padding = '0';
 
-            const appState = {
-                winId,
-                appDataType: 'mindmap',
-                getData: function() { return winData.jmInstance ? winData.jmInstance.get_data('node_tree') : {}; },
-                loadData: function(dataString, fileMeta) {
-                    try {
-                        const data = JSON.parse(dataString);
-                        if (data.format === "node_tree" && data.data) {
-                            winData.jmInstance.show(data);
-                            this.fileId = fileMeta.id;
-                            this.markClean();
-                            windowManager.updateWindowTitle(this.winId, fileMeta.name);
-                        } else {
-                            showNotification("Formato de arquivo inválido.", 3000);
-                        }
-                    } catch (e) {
-                         showNotification("Erro: Arquivo de mapa mental inválido.", 3000);
+        const appState = {
+            winId,
+            appDataType: 'mindmap',
+            getData: function() { return winData.jmInstance ? winData.jmInstance.get_data('node_tree') : {}; },
+            loadData: function(dataString, fileMeta) {
+                try {
+                    const data = JSON.parse(dataString);
+                    if (data.format === "node_tree" && data.data) {
+                        winData.jmInstance.show(data);
+                        this.fileId = fileMeta.id;
+                        this.markClean();
+                        windowManager.updateWindowTitle(this.winId, fileMeta.name);
+                    } else {
+                        showNotification("Formato de arquivo inválido.", 3000);
                     }
-                },
-                jsmindContainerId: `jsmindContainer_${uniqueSuffix}`,
-                cleanup: () => { winData.jmInstance = null; }
-            };
-            
-            initializeFileState(appState, "Novo Mapa Mental", "novo_mapa.wosmm", "mindmap");
-            winData.currentAppInstance = appState;
-            setupAppToolbarActions(appState);
-            
-            setTimeout(() => {
-                if (typeof jsMind !== 'undefined') {
-                    try {
-                        const mindData = { meta: { name: "WebOS_MindMap", author: "User", version: "1.0" }, format: "node_tree", data: { id: "root", topic: "Tema Central", children: [] } };
-                        const options = { container: appState.jsmindContainerId, editable: true, theme: themeManager.isDark ? 'dark' : 'primary' };
-                        winData.jmInstance = new jsMind(options);
-                        winData.jmInstance.show(mindData);
-                        
-                        const toolbar = winData.element.querySelector(`#mmToolbar_${uniqueSuffix}`);
-                        toolbar.addEventListener('click', (e) => {
-                             const button = e.target.closest('button[data-action]');
-                             if(!button) return;
-                             const action = button.dataset.action;
-                             const jm = winData.jmInstance;
-                             
-                             if (action === 'export-png') exportMindMapPNG(jm, appState.jsmindContainerId);
-                             else if(action === 'add-node') addMindMapNodeInteractive(jm, appState);
-                             else if(action === 'remove-node') removeMindMapNodeInteractive(jm, appState);
-                        });
-                        
-                        toolbar.querySelector(`#bgColorPicker_${uniqueSuffix}`).oninput = (e) => setMindMapNodeColor(winData.jmInstance, e.target.value, null, appState);
-                        toolbar.querySelector(`#fgColorPicker_${uniqueSuffix}`).oninput = (e) => setMindMapNodeColor(winData.jmInstance, null, e.target.value, appState);
-                        winData.element.querySelector('.jsmind_editor').addEventListener('input', () => appState.markDirty());
-                    } catch (e) { console.error("Erro ao inicializar Mapa Mental:", e); }
+                } catch (e) {
+                     showNotification("Erro: Arquivo de mapa mental inválido.", 3000);
                 }
-            }, 150);
-            return winId;
-        }
-
-    // ... (cole aqui as outras funções `open...` como `openGanttChart`, etc., sem modificá-las internamente)
-    // A única mudança necessária nelas é a chamada `initializeFileState`, que agora recebe o `appDataType`.
-    // Exemplo para openSWOTAnalysis:
-    // initializeFileState(appState, "Nova Análise SWOT", "analise.swot", "swot-analysis");
-
-
-    // ... O restante das funções de inicialização e helpers (shutdown, showDesktop, etc.)
-    // podem ser mantidas como estão.
-
-        function initializeWebOS() {
-            if (window.webOSInitialized) return;
-            window.webOSInitialized = true;
-
-            windowManager = new WindowManager();
-            themeManager = new ThemeManager(accentPalettes);
-            window.windowManager = windowManager;
-            
-            updateClockTime();
-            setInterval(updateClockTime, 10000);
-
-            window.addEventListener('beforeunload', (e) => {
-                let hasUnsavedChanges = false;
-                windowManager.windows.forEach(winData => { if (winData.currentAppInstance?.isDirty) hasUnsavedChanges = true; });
-                if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
-            });
-
-            windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': openGanttChart, 'open-project-tasks': openProjectTasks, 'open-kanban-board': openKanbanBoard, 'open-swot-analysis': openSWOTAnalysis, 'open-sipoc-matrix': openSIPOCMatrix, 'open-okr-tracker': openOKRTracker, 'open-ishikawa-diagram': openIshikawaDiagram, 'open-bpmn-modeler': openBPMNModeler, 'open-mind-map': openMindMap, 'open-contract-manager': openContractManager, 'open-checklist-tool': openChecklistTool, 'open-ncr-tool': openNCRTool, 'open-pdca-tool': openPDCATool, 'open-5w2h-tool': open5W2HTool };
-            document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => { const action = item.dataset.action; if (windowManager.appLaunchActions[action]) { item.onclick = (e) => { e.stopPropagation(); windowManager.appLaunchActions[action](); }; } });
-            
-            const desktopEl = document.getElementById('desktop');
-            if (desktopEl) {
-                 desktopEl.oncontextmenu = (e) => { e.preventDefault(); showDesktopContextMenu(e.clientX, e.clientY); };
+            },
+            jsmindContainerId: `jsmindContainer_${uniqueSuffix}`,
+            cleanup: () => { winData.jmInstance = null; }
+        };
+        
+        initializeFileState(appState, "Novo Mapa Mental", "novo_mapa.wosmm", "mindmap");
+        winData.currentAppInstance = appState;
+        setupAppToolbarActions(appState);
+        
+        setTimeout(() => {
+            if (typeof jsMind !== 'undefined') {
+                try {
+                    const mindData = { meta: { name: "WebOS_MindMap", author: "User", version: "1.0" }, format: "node_tree", data: { id: "root", topic: "Tema Central", children: [] } };
+                    const options = { container: appState.jsmindContainerId, editable: true, theme: themeManager.isDark ? 'dark' : 'primary' };
+                    winData.jmInstance = new jsMind(options);
+                    winData.jmInstance.show(mindData);
+                    
+                    const toolbar = winData.element.querySelector(`#mmToolbar_${uniqueSuffix}`);
+                    toolbar.addEventListener('click', (e) => {
+                         const button = e.target.closest('button[data-action]');
+                         if(!button) return;
+                         const action = button.dataset.action;
+                         const jm = winData.jmInstance;
+                         
+                         if (action === 'export-png') exportMindMapPNG(jm, appState.jsmindContainerId);
+                         else if(action === 'add-node') addMindMapNodeInteractive(jm, appState);
+                         else if(action === 'remove-node') removeMindMapNodeInteractive(jm, appState);
+                    });
+                    
+                    toolbar.querySelector(`#bgColorPicker_${uniqueSuffix}`).oninput = (e) => setMindMapNodeColor(winData.jmInstance, e.target.value, null, appState);
+                    toolbar.querySelector(`#fgColorPicker_${uniqueSuffix}`).oninput = (e) => setMindMapNodeColor(winData.jmInstance, null, e.target.value, appState);
+                    winData.element.querySelector('.jsmind_editor').addEventListener('input', () => appState.markDirty());
+                } catch (e) { console.error("Erro ao inicializar Mapa Mental:", e); }
             }
-            document.onclick = (e) => { const dm = document.getElementById('desktopContextMenu'); if (dm && dm.style.display === 'block' && !dm.contains(e.target)) { hideDesktopContextMenu(); } };
-            document.addEventListener('keydown', (e) => { if (e.key === "Escape") { hideDesktopContextMenu(); if(windowManager.stageManager.isActive) windowManager.stageManager.toggle(); } });
-            
-            const savedWallpaper = localStorage.getItem(STORAGE_KEYS.WALLPAPER);
-            if (savedWallpaper) document.body.style.backgroundImage = `url(${savedWallpaper})`;
-            
-            themeManager.applyThemeVariables();
-            document.getElementById('darkModeToggle').onclick = () => themeManager.toggleDarkMode();
-            const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><input type="file" id="wallpaperInput" accept="image/*" style="display:none"><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
-            const desktopContextMenuEl = document.getElementById('desktopContextMenu');
-            if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
-            setupDesktopContextMenuListeners();
-            
-            mapNeuralManager.loadState();
-            
-            showNotification(`Bem-vindo(a) de volta!`, 3500);
-        }
+        }, 150);
+        return winId;
+    }
+    function exportMindMapPNG(jmInstance, containerId) {
+         const mind = jmInstance.mind;
+         const filename = (mind.data.topic || mind.meta.name || 'mapa_mental') + '.png';
+         html2canvas(document.getElementById(containerId)).then(canvas => {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+         });
+    }
+    function addMindMapNodeInteractive(jm, appState) { const n = jm.get_selected_node(); if(!n) return; const t=prompt("Nome:"); if(t) {jm.add_node(n.id, jsMind.util.uuid.newid(),t); appState.markDirty();}}
+    function removeMindMapNodeInteractive(jm, appState) {const n=jm.get_selected_node(); if(n && !n.isroot && confirm("Remover?")){jm.remove_node(n.id);appState.markDirty();}}
+    function setMindMapNodeColor(jm, bg, fg, appState){const n=jm.get_selected_node(); if(n){jm.set_node_color(n.id,bg,fg); appState.markDirty();}}
+        
+    // --- Funções Completas de Abertura de Aplicativos (Coladas de `index(49).html`) ---
+    
+    function openGanttChart() {
+        const uniqueSuffix = generateId('gantt');
+        const winId = windowManager.createWindow('Cronograma Gantt', '', { width: '1150px', height: '650px', appType: 'gantt-chart' });
+        const content = `
+            <div class="app-toolbar gantt-controls">
+                 ${getStandardAppToolbarHTML()}
+                 <button id="addGanttTaskBtn_${uniqueSuffix}" class="app-button" style="margin-left: auto;"><i class="fas fa-plus"></i> Nova Tarefa</button>
+                <span style="margin-left:15px; font-size:0.9em;">Escala:</span>
+                <select id="ganttTimeScale_${uniqueSuffix}" class="app-select" style="width:100px;"> <option value="days">Dias</option> <option value="weeks">Semanas</option> <option value="months">Meses</option> </select>
+                <span style="margin-left:10px; font-size:0.9em;">Zoom: </span>
+                <input type="range" id="ganttZoom_${uniqueSuffix}" min="20" max="150" value="30" style="width:100px;">
+            </div>
+            <div class="gantt-main-area">
+                <div class="gantt-table-wrapper" id="ganttTableWrapper_${uniqueSuffix}">
+                    <div class="gantt-table-header"> <span>ID</span><span>Nome</span><span>Início</span><span>Fim</span><span>Dura.</span><span>%</span><span>Recursos</span><span>Deps.</span><span>Ações</span> </div>
+                    <div id="ganttTableBody_${uniqueSuffix}" style="flex-grow:1; overflow-y:auto;"></div>
+                </div>
+                <div class="gantt-chart-area-wrapper" id="ganttChartAreaWrapper_${uniqueSuffix}">
+                    <div class="gantt-timeline-header" id="ganttTimelineHeader_${uniqueSuffix}"></div>
+                    <div id="ganttChartBars_${uniqueSuffix}" style="position:relative;"></div>
+                </div>
+            </div>`;
+        const winData = windowManager.windows.get(winId); if(!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
 
-    // O restante das funções utilitárias (updateClockTime, etc.) permanecem iguais.
+        const appState = {
+            winId, tasks: [], appDataType: 'gantt-chart',
+            tableBody: winData.element.querySelector(`#ganttTableBody_${uniqueSuffix}`), chartBarsContainer: winData.element.querySelector(`#ganttChartBars_${uniqueSuffix}`), timelineHeader: winData.element.querySelector(`#ganttTimelineHeader_${uniqueSuffix}`), addTaskBtn: winData.element.querySelector(`#addGanttTaskBtn_${uniqueSuffix}`), zoomSlider: winData.element.querySelector(`#ganttZoom_${uniqueSuffix}`), timeScaleSelect: winData.element.querySelector(`#ganttTimeScale_${uniqueSuffix}`),
+            getData: function() { return this.tasks; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.tasks = Array.isArray(data) ? data : []; 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderAll(); 
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo Gantt.", 3000); 
+                } 
+            },
+            init: function() { setupAppToolbarActions(this); this.addTaskBtn.onclick = () => this.addTask(); this.zoomSlider.oninput = () => this.renderChart(); this.timeScaleSelect.onchange = () => this.renderChart(); this.tableBody.addEventListener('input', (e) => this.handleTableInput(e)); this.tableBody.addEventListener('click', (e) => this.handleTableAction(e)); this.renderAll(); },
+            renderAll: function() { this.renderTable(); this.renderChart(); },
+            renderTable: function() { this.tableBody.innerHTML = ''; this.tasks.forEach((task) => { const row = document.createElement('div'); row.className = 'gantt-task-table-row'; row.dataset.taskId = task.id; row.innerHTML = `<span>${task.id.slice(-4)}</span> <input type="text" class="app-input" value="${task.name}" data-field="name" title="${task.name}"> <input type="date" class="app-input" value="${task.start || ''}" data-field="start"> <input type="date" class="app-input" value="${task.end || ''}" data-field="end"> <input type="number" class="app-input" value="${task.duration || ''}" data-field="duration" min="0" title="Duração (dias)"> <input type="number" class="app-input" value="${task.progress || 0}" data-field="progress" min="0" max="100" title="% Concluída"> <input type="text" class="app-input" value="${task.resources || ''}" data-field="resources" placeholder="Ex: Rec1, Rec2"> <input type="text" class="app-input" value="${task.dependencies || ''}" data-field="dependencies" placeholder="IDs: ${task.id.slice(-4)}"> <div><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></div>`; this.tableBody.appendChild(row); }); },
+            renderChart: function() { this.chartBarsContainer.innerHTML = ''; this.timelineHeader.innerHTML = ''; if (this.tasks.length === 0) return; let minDateOverall = null, maxDateOverall = null; this.tasks.forEach(task => { if (task.start) { const startDate = new Date(task.start + "T00:00:00Z"); if (!minDateOverall || startDate < minDateOverall) minDateOverall = startDate; } if (task.end) { const endDate = new Date(task.end + "T00:00:00Z"); if (!maxDateOverall || endDate > maxDateOverall) maxDateOverall = endDate; } }); if (!minDateOverall || !maxDateOverall || minDateOverall > maxDateOverall) { this.chartBarsContainer.innerHTML = '<p style="padding:10px; color:var(--secondary-text-color)">Datas inválidas.</p>'; return; } const timeScale = this.timeScaleSelect.value; const unitVisualWidth = parseInt(this.zoomSlider.value) || 30; const paddedMinDate = new Date(minDateOverall); paddedMinDate.setUTCDate(paddedMinDate.getUTCDate() - (timeScale === 'months' ? 30 : (timeScale === 'weeks' ? 14 : 7))); const paddedMaxDate = new Date(maxDateOverall); paddedMaxDate.setUTCDate(paddedMaxDate.getUTCDate() + (timeScale === 'months' ? 60 : (timeScale === 'weeks' ? 28 : 14))); let currentTimelineDate = new Date(paddedMinDate); let timelineHTML = ''; let totalVisualUnits = 0; const getDaysBetween = (d1, d2) => Math.ceil(Math.abs(d1 - d2) / (864e5)); if (timeScale === "days") { while(currentTimelineDate <= paddedMaxDate) { timelineHTML += `<span style="display:inline-block; width:${unitVisualWidth}px; text-align:center; border-right:1px solid var(--separator-color); font-size:0.8em;">${currentTimelineDate.getUTCDate()}/${currentTimelineDate.getUTCMonth()+1}</span>`; currentTimelineDate.setUTCDate(currentTimelineDate.getUTCDate() + 1); totalVisualUnits++; } } else if (timeScale === "weeks") { currentTimelineDate = new Date(paddedMinDate); currentTimelineDate.setUTCDate(currentTimelineDate.getUTCDate() - currentTimelineDate.getUTCDay()); while(currentTimelineDate <= paddedMaxDate) { const weekEnd = new Date(currentTimelineDate); weekEnd.setUTCDate(currentTimelineDate.getUTCDate() + 6); timelineHTML += `<span style="display:inline-block; width:${unitVisualWidth}px; text-align:center; border-right:1px solid var(--separator-color); font-size:0.8em;" title="Semana de ${currentTimelineDate.toLocaleDateString()} a ${weekEnd.toLocaleDateString()}">S${currentTimelineDate.getUTCDate()}/${currentTimelineDate.getUTCMonth()+1}</span>`; currentTimelineDate.setUTCDate(currentTimelineDate.getUTCDate() + 7); totalVisualUnits++; } } else if (timeScale === "months") { currentTimelineDate = new Date(paddedMinDate); currentTimelineDate.setUTCDate(1); while(currentTimelineDate <= paddedMaxDate) { const monthName = currentTimelineDate.toLocaleString('pt-BR', { month: 'short', year: '2-digit' }); timelineHTML += `<span style="display:inline-block; width:${unitVisualWidth}px; text-align:center; border-right:1px solid var(--separator-color); font-size:0.8em;">${monthName}</span>`; currentTimelineDate.setUTCMonth(currentTimelineDate.getUTCMonth() + 1); totalVisualUnits++; } } this.timelineHeader.innerHTML = timelineHTML; this.chartBarsContainer.style.width = `${totalVisualUnits * unitVisualWidth}px`; this.tasks.forEach((task, index) => { const tableRowEl = this.tableBody.querySelector(`.gantt-task-table-row[data-task-id="${task.id}"]`); const rowHeight = tableRowEl ? tableRowEl.offsetHeight : 30; if (!task.start || !task.end) return; const startDate = new Date(task.start + "T00:00:00Z"); const endDate = new Date(task.end + "T00:00:00Z"); if (startDate > endDate) return; let barOffsetUnits, barDurationUnits; let effectivePaddedMinDate = new Date(paddedMinDate); if (timeScale === "days") { barOffsetUnits = getDaysBetween(effectivePaddedMinDate, startDate); barDurationUnits = getDaysBetween(startDate, endDate) + 1; } else if (timeScale === "weeks") { effectivePaddedMinDate.setUTCDate(effectivePaddedMinDate.getUTCDate() - effectivePaddedMinDate.getUTCDay()); barOffsetUnits = Math.floor(getDaysBetween(effectivePaddedMinDate, startDate) / 7); barDurationUnits = Math.ceil((getDaysBetween(startDate, endDate) + 1) / 7); } else if (timeScale === "months") { effectivePaddedMinDate.setUTCDate(1); const startMonthSeq = startDate.getUTCFullYear() * 12 + startDate.getUTCMonth(); const endMonthSeq = endDate.getUTCFullYear() * 12 + endDate.getUTCMonth(); const minMonthSeq = effectivePaddedMinDate.getUTCFullYear() * 12 + effectivePaddedMinDate.getUTCMonth(); barOffsetUnits = startMonthSeq - minMonthSeq; barDurationUnits = (endMonthSeq - startMonthSeq) + 1; } barDurationUnits = Math.max(barDurationUnits, 0.1); const barRow = document.createElement('div'); barRow.className = 'gantt-bar-row'; barRow.style.height = `${rowHeight}px`; barRow.style.lineHeight = `${rowHeight}px`; const bar = document.createElement('div'); bar.className = 'gantt-bar'; bar.style.backgroundColor = task.color || 'var(--accent-color)'; const progress = task.progress || 0; if (progress >= 100) bar.classList.add('gantt-bar-complete'); bar.style.left = `${barOffsetUnits * unitVisualWidth}px`; bar.style.width = `${barDurationUnits * unitVisualWidth - 2}px`; bar.style.top = `calc((${rowHeight}px - 20px) / 2)`; bar.title = `${task.name} (${progress}%) - ${new Date(task.start + "T00:00:00Z").toLocaleDateString()} a ${new Date(task.end + "T00:00:00Z").toLocaleDateString()}`; bar.textContent = `${task.name} (${progress}%)`; const progressBarEl = document.createElement('div'); progressBarEl.className = 'progress'; progressBarEl.style.width = `${progress}%`; bar.appendChild(progressBarEl); barRow.appendChild(bar); this.chartBarsContainer.appendChild(barRow); }); },
+            calculateDuration: function(start, end) { if (!start || !end) return null; const startDate = new Date(start + "T00:00:00Z"); const endDate = new Date(end + "T00:00:00Z"); if (endDate < startDate) return null; return Math.ceil(Math.abs(endDate - startDate) / (864e5)) + 1; },
+            calculateEndDate: function(start, duration) { if (!start || !duration || duration <= 0) return null; const startDate = new Date(start + "T00:00:00Z"); startDate.setUTCDate(startDate.getUTCDate() + parseInt(duration) -1); return startDate.toISOString().split('T')[0]; },
+            handleTableInput: function(e) { const rowEl = e.target.closest('.gantt-task-table-row'); if (!rowEl) return; const taskId = rowEl.dataset.taskId; const task = this.tasks.find(t => t.id === taskId); if (!task) return; const field = e.target.dataset.field; task[field] = e.target.value; if (field === 'start' || field === 'end') { if(task.start && task.end) { task.duration = this.calculateDuration(task.start, task.end); rowEl.querySelector('input[data-field="duration"]').value = task.duration || ''; } } else if (field === 'duration') { if(task.start && task.duration > 0) { task.end = this.calculateEndDate(task.start, task.duration); rowEl.querySelector('input[data-field="end"]').value = task.end || ''; } } this.markDirty(); this.renderChart(); },
+            handleTableAction: function(e) { const button = e.target.closest('button[data-action="delete"]'); if (button) { const taskId = button.closest('.gantt-task-table-row').dataset.taskId; this.tasks = this.tasks.filter(t => t.id !== taskId); this.markDirty(); this.renderAll(); } },
+            addTask: function() { const defaultColors = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5AC8FA', '#FFCC00', '#8E8E93']; const color = defaultColors[this.tasks.length % defaultColors.length]; this.tasks.push({id: generateId('gtsk'), name: 'Nova Tarefa', start: '', end: '', duration: 1, progress: 0, resources: '', dependencies: '', color: color}); this.markDirty(); this.renderAll(); },
+            cleanup: () => {}
+        };
+        
+        initializeFileState(appState, "Novo Cronograma", "cronograma.gantt", "gantt-chart");
+        winData.currentAppInstance = appState;
+        appState.init();
+        return winId;
+    }
+
+    function openProjectTasks() {
+        const uniqueSuffix = generateId('ptasks');
+        const winId = windowManager.createWindow('Tarefas de Projeto', '', { width: '1000px', height: '700px', appType: 'project-tasks' });
+        const content = `
+            <div class="app-toolbar">
+                ${getStandardAppToolbarHTML()}
+                <button id="trainAiBtn_${uniqueSuffix}" class="app-button" style="margin-left:auto;" title="Treinar IA MapNeural com o feedback fornecido"><i class="fas fa-brain"></i> Treinar IA</button>
+            </div>
+            <div class="project-tasks-input-area">
+                <input type="text" id="taskInput_${uniqueSuffix}" class="app-input" placeholder="Nova tarefa de projeto..." style="flex-grow:2;">
+                <input type="text" id="taskResponsibleInput_${uniqueSuffix}" class="app-input" placeholder="Responsável" style="flex-grow:1;">
+                <input type="date" id="taskDueDateInput_${uniqueSuffix}" class="app-input" title="Data de Conclusão" style="flex-grow:1;">
+                <select id="taskPriorityInput_${uniqueSuffix}" class="app-select" style="flex-grow:1;">
+                    <option value="baixa">Baixa Prioridade</option> <option value="media" selected>Média Prioridade</option> <option value="alta">Alta Prioridade</option>
+                </select>
+                <button id="addTaskBtn_${uniqueSuffix}" class="app-button"><i class="fas fa-plus" style="margin-right:5px;"></i> Adicionar</button>
+            </div>
+            <div class="project-tasks-controls">
+                <label for="taskFilterPriority_${uniqueSuffix}" style="font-size:0.9em;">Prioridade:</label>
+                <select id="taskFilterPriority_${uniqueSuffix}" class="app-select" style="width: 150px;"> <option value="todas">Todas</option><option value="baixa">Baixa</option> <option value="media">Média</option> <option value="alta">Alta</option> </select>
+                <label for="taskFilterResponsible_${uniqueSuffix}" style="font-size:0.9em; margin-left:10px;">Responsável:</label>
+                <input type="text" id="taskFilterResponsible_${uniqueSuffix}" class="app-input" style="width:150px; margin-bottom:0;" placeholder="Nome...">
+                <label for="taskSortBy_${uniqueSuffix}" style="font-size:0.9em; margin-left:10px;">Ordenar Por:</label>
+                <select id="taskSortBy_${uniqueSuffix}" class="app-select" style="width: 170px;"> <option value="dataCriacao">Criação</option> <option value="dataConclusao">Conclusão</option> <option value="prioridade">Prioridade</option> <option value="responsavel">Responsável</option> <option value="aiPriority">Prioridade (IA)</option> </select>
+            </div>
+            <div class="project-tasks-list-container" id="taskListContainer_${uniqueSuffix}"><ul></ul></div>`;
+
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+
+        const appState = {
+            winId, tasks: [], editingTaskId: null, appDataType: 'project-tasks',
+            taskInput: winData.element.querySelector(`#taskInput_${uniqueSuffix}`),
+            responsibleInput: winData.element.querySelector(`#taskResponsibleInput_${uniqueSuffix}`),
+            dueDateInput: winData.element.querySelector(`#taskDueDateInput_${uniqueSuffix}`),
+            priorityInput: winData.element.querySelector(`#taskPriorityInput_${uniqueSuffix}`),
+            addBtn: winData.element.querySelector(`#addTaskBtn_${uniqueSuffix}`),
+            listContainerUl: winData.element.querySelector(`#taskListContainer_${uniqueSuffix} ul`),
+            filterPrioritySelect: winData.element.querySelector(`#taskFilterPriority_${uniqueSuffix}`),
+            filterResponsibleInput: winData.element.querySelector(`#taskFilterResponsible_${uniqueSuffix}`),
+            sortBySelect: winData.element.querySelector(`#taskSortBy_${uniqueSuffix}`),
+            trainAiBtn: winData.element.querySelector(`#trainAiBtn_${uniqueSuffix}`),
+
+            getData: function() { return this.tasks.map(({ aiPredictedPriority, ...taskToSave }) => taskToSave); },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.tasks = Array.isArray(data) ? data : []; 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderTasks(); 
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo de tarefas.", 3000); 
+                } 
+            },
+            renderTaskItem: function(task, parentUl, depth = 0) { const li = document.createElement('li'); li.className = 'task-item' + (task.completed ? ' completed' : ''); li.style.marginLeft = `${depth * 20}px`; const aiPrediction = mapNeuralManager.getTaskPriorityPrediction(task); task.aiPredictedPriority = aiPrediction; let aiPriorityDisplay = `<span class="ai-priority-indicator" title="Prioridade Sugerida pela IA MapNeural: ${aiPrediction.toFixed(2)}"><i class="fas fa-brain"></i> IA: ${aiPrediction.toFixed(2)}</span>`; li.innerHTML = `<div class="task-main-info"> <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} data-id="${task.id}"> <div class="task-details"> <span class="task-text">${task.text}</span> <div class="task-meta"> ${task.responsible ? `<span><i class="fas fa-user"></i> ${task.responsible}</span>` : ''} ${task.dueDate ? `<span><i class="fas fa-calendar-alt"></i> ${new Date(task.dueDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''} <span><i class="fas fa-flag"></i> Prioridade: ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span> ${aiPriorityDisplay} </div> </div> <div class="task-actions"> <div class="ai-feedback-buttons"> <button class="app-button secondary action-button" data-action="ai-feedback-important" data-id="${task.id}" title="Marcar como Importante (Treinar IA)"><i class="fas fa-thumbs-up"></i></button> <button class="app-button secondary action-button" data-action="ai-feedback-not-important" data-id="${task.id}" title="Marcar como Menos Importante (Treinar IA)"><i class="fas fa-thumbs-down"></i></button> </div> <button class="app-button secondary action-button" data-action="edit" data-id="${task.id}" title="Editar Tarefa"><i class="fas fa-edit"></i></button> <button class="app-button secondary action-button" data-action="add-subtask" data-id="${task.id}" title="Adicionar Subtarefa"><i class="fas fa-plus"></i></button> <button class="app-button danger action-button" data-action="delete" data-id="${task.id}" title="Excluir Tarefa"><i class="fas fa-trash"></i></button> </div> </div> ${task.subtasks?.length > 0 ? `<div class="subtasks-container" id="subtasksContainer_${task.id}_${uniqueSuffix}"><ul></ul></div>` : ''}`; parentUl.appendChild(li); if (task.subtasks?.length > 0) { const subtasksUl = li.querySelector(`#subtasksContainer_${task.id}_${uniqueSuffix} ul`); task.subtasks.forEach(subtask => this.renderTaskItem(subtask, subtasksUl, depth + 1)); } },
+            renderTasks: function() { this.listContainerUl.innerHTML = ''; let filteredTasks = [...this.tasks]; const filterPriority = this.filterPrioritySelect.value; if (filterPriority !== 'todas') { filteredTasks = filteredTasks.filter(t => this.taskMatchesFilter(t, 'priority', filterPriority)); } const filterResponsible = this.filterResponsibleInput.value.toLowerCase(); if (filterResponsible) { filteredTasks = filteredTasks.filter(t => this.taskMatchesFilter(t, 'responsible', filterResponsible)); } const sortBy = this.sortBySelect.value; filteredTasks.sort((a, b) => { if (sortBy === 'dataCriacao') return new Date(a.id.split('_').pop()) - new Date(b.id.split('_').pop()); if (sortBy === 'dataConclusao') { if (!a.dueDate && !b.dueDate) return 0; if (!a.dueDate) return 1; if (!b.dueDate) return -1; return new Date(a.dueDate) - new Date(b.dueDate); } if (sortBy === 'prioridade') { const pOrder = { alta: 1, media: 2, baixa: 3 }; return (pOrder[a.priority] || 4) - (pOrder[b.priority] || 4); } if (sortBy === 'responsavel') return (a.responsible || '').localeCompare(b.responsible || ''); if (sortBy === 'aiPriority') { return (b.aiPredictedPriority ?? -1) - (a.aiPredictedPriority ?? -1); } return 0; }); filteredTasks.forEach(task => this.renderTaskItem(task, this.listContainerUl)); },
+            taskMatchesFilter: function(task, field, value) { let match = false; if (field === 'priority' && task.priority === value) match = true; if (field === 'responsible' && task.responsible?.toLowerCase().includes(value)) match = true; if (match) return true; return task.subtasks?.some(st => this.taskMatchesFilter(st, field, value)) ?? false; },
+            findTaskById: function(taskId, tasksArray = this.tasks) { for (const task of tasksArray) { if (task.id === taskId) return task; if (task.subtasks) { const foundInSubtask = this.findTaskById(taskId, task.subtasks); if (foundInSubtask) return foundInSubtask; } } return null; },
+            deleteTaskRecursive: function(taskId, tasksArray = this.tasks) { for (let i = 0; i < tasksArray.length; i++) { if (tasksArray[i].id === taskId) { tasksArray.splice(i, 1); return true; } if (tasksArray[i].subtasks && this.deleteTaskRecursive(taskId, tasksArray[i].subtasks)) return true; } return false; },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Nova Lista de Tarefas", "projeto_tarefas.tasks", "project-tasks"); 
+        winData.currentAppInstance = appState;
+        setupAppToolbarActions(appState);
+        appState.addBtn.onclick = () => { const text = appState.taskInput.value.trim(); if (!text) { showNotification("A descrição da tarefa não pode estar vazia.", 2000); return; } const newTaskData = { text: text, responsible: appState.responsibleInput.value.trim(), dueDate: appState.dueDateInput.value || null, priority: appState.priorityInput.value, completed: false, subtasks: [] }; if (appState.editingTaskId) { const taskToUpdate = appState.findTaskById(appState.editingTaskId); if (taskToUpdate) Object.assign(taskToUpdate, { ...newTaskData, id: appState.editingTaskId, subtasks: taskToUpdate.subtasks }); appState.editingTaskId = null; appState.addBtn.innerHTML = '<i class="fas fa-plus" style="margin-right:5px;"></i> Adicionar'; } else { newTaskData.id = generateId('task'); appState.tasks.push(newTaskData); } appState.taskInput.value = ''; appState.responsibleInput.value = ''; appState.dueDateInput.value = ''; appState.priorityInput.value = 'media'; appState.markDirty(); appState.renderTasks(); };
+        [appState.filterPrioritySelect, appState.filterResponsibleInput, appState.sortBySelect].forEach(el => el.oninput = () => appState.renderTasks());
+        appState.listContainerUl.addEventListener('click', (e) => { const targetButton = e.target.closest('button'); const targetCheckbox = e.target.closest('.task-checkbox'); let hasChanged = false; if (targetCheckbox) { const taskId = targetCheckbox.dataset.id; const task = appState.findTaskById(taskId); if (task) task.completed = targetCheckbox.checked; hasChanged = true; } else if (targetButton) { const action = targetButton.dataset.action; const taskId = targetButton.dataset.id; const task = appState.findTaskById(taskId); if (action === 'delete') { if (confirm("Tem certeza que deseja excluir esta tarefa e suas subtarefas?")) { appState.deleteTaskRecursive(taskId); hasChanged = true; } } else if (action === 'add-subtask' && task) { const subtaskText = prompt("Descrição da nova subtarefa:"); if (subtaskText) { if (!task.subtasks) task.subtasks = []; task.subtasks.push({ id: generateId('subtask'), text: subtaskText, responsible: task.responsible, dueDate: task.dueDate, priority: task.priority, completed: false, subtasks: [] }); hasChanged = true; } } else if (action === 'edit' && task) { appState.taskInput.value = task.text; appState.responsibleInput.value = task.responsible || ''; appState.dueDateInput.value = task.dueDate || ''; appState.priorityInput.value = task.priority || 'media'; appState.addBtn.innerHTML = '<i class="fas fa-save" style="margin-right:5px;"></i> Atualizar'; appState.editingTaskId = taskId; } else if (action === 'ai-feedback-important' && task) { mapNeuralManager.addTrainingSample(task, 0.9); showNotification(`Feedback "Importante" registrado.`, 2000); } else if (action === 'ai-feedback-not-important' && task) { mapNeuralManager.addTrainingSample(task, 0.1); showNotification(`Feedback "Menos Importante" registrado.`, 2000); } } if(hasChanged) { appState.markDirty(); appState.renderTasks(); } });
+        appState.trainAiBtn.onclick = () => { mapNeuralManager.trainNetwork(); showNotification("IA MapNeural treinada!", 2500); appState.renderTasks(); };
+        appState.renderTasks();
+        return winId;
+    }
+
+    function openKanbanBoard() {
+        const uniqueSuffix = generateId('kanban');
+        const winId = windowManager.createWindow('Kanban Board', '', { width: '1000px', height: '650px', appType: 'kanban-board' });
+        const content = `
+            <div class="app-toolbar kanban-toolbar">
+                ${getStandardAppToolbarHTML()}
+                <button id="addKanbanColumnBtn_${uniqueSuffix}" class="app-button" style="margin-left:auto;"><i class="fas fa-plus-square"></i> Nova Coluna</button>
+            </div>
+            <div class="kanban-board-container" id="kanbanBoardContainer_${uniqueSuffix}"></div>`;
+
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+        
+        const appState = {
+            winId, boardData: { columns: [] }, appDataType: 'kanban-board',
+            containerEl: winData.element.querySelector(`#kanbanBoardContainer_${uniqueSuffix}`),
+            draggedCard: null, draggedCardData: null, sourceColumnId: null,
+            getData: function() { return this.boardData; },
+            loadData: function(dataString, fileMeta) { 
+                let data;
+                try { data = JSON.parse(dataString); } catch (e) { showNotification("Erro ao ler arquivo Kanban.", 3000); this.loadDefaultBoard(); this.renderBoard(); return; } 
+                this.boardData = (data && data.columns) ? data : { columns: [] }; 
+                (this.boardData.columns || []).forEach(col => { col.id = col.id || generateId('col'); (col.cards || []).forEach(card => { card.id = card.id || generateId('card'); }); }); 
+                this.fileId = fileMeta.id; 
+                this.markClean(); 
+                windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                this.renderBoard(); 
+            },
+            init: function() { 
+                setupAppToolbarActions(this);
+                winData.element.querySelector(`#addKanbanColumnBtn_${uniqueSuffix}`).onclick = () => this.addColumn(); 
+                this.containerEl.addEventListener('click', (e) => this.handleBoardClick(e)); 
+                this.containerEl.addEventListener('input', (e) => this.handleBoardInput(e)); 
+                this.containerEl.addEventListener('dragstart', (e) => this.handleDragStart(e)); 
+                this.containerEl.addEventListener('dragend', (e) => this.handleDragEnd(e)); 
+                this.containerEl.addEventListener('dragover', (e) => this.handleDragOver(e)); 
+                this.containerEl.addEventListener('drop', (e) => this.handleDrop(e)); 
+                if(!this.boardData.columns.length) this.loadDefaultBoard(); 
+                this.renderBoard(); 
+            },
+            loadDefaultBoard: function() { this.boardData = { columns: [ { id: generateId('col'), title: 'A Fazer', cards: [] }, { id: generateId('col'), title: 'Em Andamento', cards: [] }, { id: generateId('col'), title: 'Concluído', cards: [] } ] }; },
+            renderBoard: function() { this.containerEl.innerHTML = ''; this.boardData.columns.forEach(column => this.renderColumn(column)); },
+            renderColumn: function(columnData) { const colEl = document.createElement('div'); colEl.className = 'kanban-column'; colEl.dataset.columnId = columnData.id; colEl.innerHTML = `<div class="kanban-column-header"><input type="text" class="kanban-column-title" value="${columnData.title}" placeholder="Título"><div class="kanban-column-actions"><button class="app-button danger small-action" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button></div></div><div class="kanban-cards-container"></div><button class="app-button secondary kanban-add-card-btn" data-action="add-card"><i class="fas fa-plus"></i> Adicionar Cartão</button>`; const cardsContainer = colEl.querySelector('.kanban-cards-container'); (columnData.cards || []).forEach(card => this.renderCard(cardsContainer, card)); this.containerEl.appendChild(colEl); },
+            renderCard: function(cardsContainerEl, cardData) { const cardEl = document.createElement('div'); cardEl.className = 'kanban-card'; cardEl.dataset.cardId = cardData.id; cardEl.draggable = true; cardEl.innerHTML = `<span class="kanban-card-title">${cardData.title}</span> ${cardData.description ? `<div class="kanban-card-description">${cardData.description}</div>` : ''} <div class="kanban-card-meta"><span class="kanban-card-id">#${cardData.id.slice(-5)}</span> <div class="kanban-card-actions"><button class="app-button secondary action-button" data-action="edit-card" title="Editar"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete-card" title="Excluir"><i class="fas fa-trash"></i></button></div></div>`; cardsContainerEl.appendChild(cardEl); },
+            addColumn: function() { const title = prompt("Nome da nova coluna:", "Nova Coluna"); if (title) { this.boardData.columns.push({ id: generateId('col'), title: title, cards: [] }); this.markDirty(); this.renderBoard(); } },
+            addCard: function(columnId) { const title = prompt("Título do cartão:", "Nova Tarefa"); if (!title) return; const description = prompt("Descrição:", ""); const column = this.boardData.columns.find(c => c.id === columnId); if (column) { column.cards.push({ id: generateId('card'), title, description }); this.markDirty(); this.renderBoard(); } },
+            editCard: function(columnId, cardId) { const column = this.boardData.columns.find(c => c.id === columnId); if (!column) return; const card = column.cards.find(ca => ca.id === cardId); if (!card) return; const newTitle = prompt("Novo título:", card.title); if (newTitle === null) return; const newDescription = prompt("Nova descrição:", card.description || ""); if (newDescription === null) return; card.title = newTitle; card.description = newDescription; this.markDirty(); this.renderBoard(); },
+            deleteColumn: function(columnId) { if (confirm("Excluir coluna e cartões?")) { this.boardData.columns = this.boardData.columns.filter(c => c.id !== columnId); this.markDirty(); this.renderBoard(); } },
+            deleteCard: function(columnId, cardId) { if (confirm("Excluir cartão?")) { const column = this.boardData.columns.find(c => c.id === columnId); if (column) { column.cards = column.cards.filter(c => c.id !== cardId); this.markDirty(); this.renderBoard(); } } },
+            handleBoardClick: function(e) { const button = e.target.closest('button[data-action]'); if (!button) return; const action = button.dataset.action; const columnEl = button.closest('.kanban-column'); const columnId = columnEl?.dataset.columnId; const cardEl = button.closest('.kanban-card'); const cardId = cardEl?.dataset.cardId; if (action === 'add-card') this.addCard(columnId); else if (action === 'delete-column') this.deleteColumn(columnId); else if (action === 'edit-card') this.editCard(columnId, cardId); else if (action === 'delete-card') this.deleteCard(columnId, cardId); },
+            handleBoardInput: function(e) { if (e.target.classList.contains('kanban-column-title')) { const columnId = e.target.closest('.kanban-column').dataset.columnId; const column = this.boardData.columns.find(c => c.id === columnId); if (column) { column.title = e.target.value; this.markDirty();} } },
+            handleDragStart: function(e) { if (!e.target.classList.contains('kanban-card')) return; this.draggedCard = e.target; this.draggedCard.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; this.sourceColumnId = this.draggedCard.closest('.kanban-column').dataset.columnId; const sourceColData = this.boardData.columns.find(c => c.id === this.sourceColumnId); this.draggedCardData = sourceColData.cards.find(c => c.id === this.draggedCard.dataset.cardId); },
+            handleDragEnd: function() { if (this.draggedCard) { this.draggedCard.classList.remove('dragging'); } this.draggedCard = null; this.draggedCardData = null; this.sourceColumnId = null; document.querySelectorAll('.kanban-drop-placeholder').forEach(p => p.remove()); },
+            handleDragOver: function(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const targetColumnEl = e.target.closest('.kanban-column'); if (!targetColumnEl) return; const cardsContainer = targetColumnEl.querySelector('.kanban-cards-container'); const afterElement = [...cardsContainer.querySelectorAll('.kanban-card:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2; return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest; }, { offset: Number.NEGATIVE_INFINITY }).element; document.querySelectorAll('.kanban-drop-placeholder').forEach(p => p.remove()); const placeholder = document.createElement('div'); placeholder.className = 'kanban-drop-placeholder'; if (afterElement == null) { cardsContainer.appendChild(placeholder); } else { cardsContainer.insertBefore(placeholder, afterElement); } },
+            handleDrop: function(e) { e.preventDefault(); document.querySelectorAll('.kanban-drop-placeholder').forEach(p => p.remove()); if (!this.draggedCardData) return; const targetColumnEl = e.target.closest('.kanban-column'); if (!targetColumnEl) return; const targetColumnId = targetColumnEl.dataset.columnId; const afterElement = [...targetColumnEl.querySelectorAll('.kanban-card:not(.dragging)')].reduce((closest, child) => { const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2; return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest; }, { offset: Number.NEGATIVE_INFINITY }).element; const sourceColData = this.boardData.columns.find(c => c.id === this.sourceColumnId); const cardIndex = sourceColData.cards.findIndex(c => c.id === this.draggedCardData.id); if (cardIndex > -1) { sourceColData.cards.splice(cardIndex, 1); } const targetColData = this.boardData.columns.find(c => c.id === targetColumnId); const targetCardId = afterElement ? afterElement.dataset.cardId : null; let insertAtIndex = targetColData.cards.length; if (targetCardId) { insertAtIndex = targetColData.cards.findIndex(c => c.id === targetCardId); } if (insertAtIndex === -1) insertAtIndex = targetColData.cards.length; targetColData.cards.splice(insertAtIndex, 0, this.draggedCardData); this.markDirty(); this.renderBoard(); },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Novo Kanban Board", "board.kanban", "kanban-board");
+        winData.currentAppInstance = appState;
+        appState.init();
+        return winId;
+    }
+
+    function openSWOTAnalysis() {
+        const uniqueSuffix = generateId('swot');
+        const winId = windowManager.createWindow('Análise SWOT', '', { width: '800px', height: '600px', appType: 'swot-analysis' });
+        const content = `
+            <div class="app-toolbar"> ${getStandardAppToolbarHTML()} </div>
+            <div class="swot-grid-container">
+                <div class="swot-quadrant"> <h3><i class="fas fa-thumbs-up" style="color:green;"></i> Forças (Strengths)</h3> <textarea id="swotStrengths_${uniqueSuffix}" placeholder="Pontos fortes internos..."></textarea> </div>
+                <div class="swot-quadrant"> <h3><i class="fas fa-thumbs-down" style="color:red;"></i> Fraquezas (Weaknesses)</h3> <textarea id="swotWeaknesses_${uniqueSuffix}" placeholder="Pontos fracos internos..."></textarea> </div>
+                <div class="swot-quadrant"> <h3><i class="fas fa-lightbulb" style="color:orange;"></i> Oportunidades (Opportunities)</h3> <textarea id="swotOpportunities_${uniqueSuffix}" placeholder="Fatores externos positivos..."></textarea> </div>
+                <div class="swot-quadrant"> <h3><i class="fas fa-exclamation-triangle" style="color:purple;"></i> Ameaças (Threats)</h3> <textarea id="swotThreats_${uniqueSuffix}" placeholder="Fatores externos negativos..."></textarea> </div>
+            </div>`;
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+
+        const appState = {
+            winId, appDataType: 'swot-analysis',
+            strengthsEl: winData.element.querySelector(`#swotStrengths_${uniqueSuffix}`), 
+            weaknessesEl: winData.element.querySelector(`#swotWeaknesses_${uniqueSuffix}`), 
+            opportunitiesEl: winData.element.querySelector(`#swotOpportunities_${uniqueSuffix}`), 
+            threatsEl: winData.element.querySelector(`#swotThreats_${uniqueSuffix}`),
+            getData: function() { return { strengths: this.strengthsEl.value, weaknesses: this.weaknessesEl.value, opportunities: this.opportunitiesEl.value, threats: this.threatsEl.value }; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.strengthsEl.value = data.strengths || ''; 
+                    this.weaknessesEl.value = data.weaknesses || ''; 
+                    this.opportunitiesEl.value = data.opportunities || ''; 
+                    this.threatsEl.value = data.threats || ''; 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo SWOT.", 3000); 
+                } 
+            },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Nova Análise SWOT", "analise.swot", "swot-analysis");
+        winData.currentAppInstance = appState;
+        setupAppToolbarActions(appState);
+        [appState.strengthsEl, appState.weaknessesEl, appState.opportunitiesEl, appState.threatsEl].forEach(el => el.oninput = () => appState.markDirty());
+        return winId;
+    }
+
+    function openSIPOCMatrix() {
+        const uniqueSuffix = generateId('sipoc');
+        const winId = windowManager.createWindow('Matriz SIPOC', '', { width: '1100px', height: '600px', appType: 'sipoc-matrix' });
+        const content = `
+            <div class="app-toolbar sipoc-toolbar">
+                ${getStandardAppToolbarHTML()}
+                <input type="text" id="sipocProcessName_${uniqueSuffix}" class="app-input" placeholder="Nome do Processo Principal" style="margin-left: auto; width: 300px;">
+            </div>
+            <div class="sipoc-main-content" id="sipocMainContent_${uniqueSuffix}"></div>`;
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+        
+        const appState = {
+            winId, appDataType: 'sipoc-matrix',
+            sipocData: { processName: "", suppliers: [], inputs: [], process: [], outputs: [], customers: [] },
+            mainContentEl: winData.element.querySelector(`#sipocMainContent_${uniqueSuffix}`), 
+            processNameInput: winData.element.querySelector(`#sipocProcessName_${uniqueSuffix}`),
+            getData: function() { this.sipocData.processName = this.processNameInput.value; return this.sipocData; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.sipocData = data || { processName: "", suppliers: [], inputs: [], process: [], outputs: [], customers: [] }; 
+                    ['suppliers', 'inputs', 'process', 'outputs', 'customers'].forEach(key => { 
+                        this.sipocData[key] = (this.sipocData[key] || []).map(item => (typeof item === 'string') ? {id: generateId('sipocItem'), text: item} : {...item, id: item.id || generateId('sipocItem')}); 
+                    }); 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderSIPOC();
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo SIPOC.", 3000); 
+                } 
+            },
+            init: function() { 
+                setupAppToolbarActions(this);
+                this.processNameInput.oninput = () => { this.markDirty(); this.sipocData.processName = this.processNameInput.value; }; 
+                this.mainContentEl.addEventListener('click', (e) => this.handleSipocClick(e)); 
+                this.mainContentEl.addEventListener('input', (e) => this.handleSipocInput(e)); 
+                this.renderSIPOC(); 
+            },
+            renderSIPOC: function() { this.mainContentEl.innerHTML = ''; this.processNameInput.value = this.sipocData.processName; const columns = [ { key: 'suppliers', title: 'Fornecedores (S)', icon: 'fa-truck' }, { key: 'inputs', title: 'Entradas (I)', icon: 'fa-sign-in-alt' }, { key: 'process', title: 'Processo (P)', icon: 'fa-cogs' }, { key: 'outputs', title: 'Saídas (O)', icon: 'fa-sign-out-alt' }, { key: 'customers', title: 'Clientes (C)', icon: 'fa-users' }]; columns.forEach(col => { const colEl = document.createElement('div'); colEl.className = 'sipoc-column'; colEl.dataset.columnKey = col.key; colEl.innerHTML = `<h3><i class="fas ${col.icon}"></i> ${col.title}</h3> <ul class="sipoc-items-list"></ul> <button class="app-button secondary small-add-item" data-action="add-item"><i class="fas fa-plus"></i> Item</button>`; const itemsListUl = colEl.querySelector('.sipoc-items-list'); (this.sipocData[col.key] || []).forEach(item => this.renderSipocItem(itemsListUl, item)); this.mainContentEl.appendChild(colEl); }); },
+            renderSipocItem: function(listUl, itemData) { const itemLi = document.createElement('li'); itemLi.className = 'sipoc-item'; itemLi.dataset.itemId = itemData.id; itemLi.innerHTML = `<input type="text" class="app-input" value="${itemData.text}" placeholder="..."><button class="app-button danger small-action" data-action="delete-item" title="Excluir"><i class="fas fa-times"></i></button>`; listUl.appendChild(itemLi); },
+            addItemToColumn: function(columnKey) { if (!this.sipocData[columnKey]) this.sipocData[columnKey] = []; this.sipocData[columnKey].push({ id: generateId('sipocItem'), text: "" }); this.markDirty(); this.renderSIPOC(); },
+            deleteSipocItem: function(columnKey, itemId) { if (this.sipocData[columnKey]) { this.sipocData[columnKey] = this.sipocData[columnKey].filter(item => item.id !== itemId); this.markDirty(); this.renderSIPOC(); } },
+            updateSipocItemText: function(columnKey, itemId, newText) { if (this.sipocData[columnKey]) { const item = this.sipocData[columnKey].find(i => i.id === itemId); if (item) { item.text = newText; this.markDirty(); } } },
+            handleSipocClick: function(e) { const button = e.target.closest('button[data-action]'); if (!button) return; const action = button.dataset.action; const columnEl = button.closest('.sipoc-column'); const columnKey = columnEl?.dataset.columnKey; const itemEl = button.closest('.sipoc-item'); const itemId = itemEl?.dataset.itemId; if (action === 'add-item') this.addItemToColumn(columnKey); else if (action === 'delete-item') this.deleteSipocItem(columnKey, itemId); },
+            handleSipocInput: function(e) { if (e.target.tagName === 'INPUT' && e.target.closest('.sipoc-item')) { const itemEl = e.target.closest('.sipoc-item'); const itemId = itemEl.dataset.itemId; const columnEl = itemEl.closest('.sipoc-column'); const columnKey = columnEl.dataset.columnKey; this.updateSipocItemText(columnKey, itemId, e.target.value); } },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Nova Matriz SIPOC", "matriz.sipoc", "sipoc-matrix");
+        winData.currentAppInstance = appState;
+        appState.init();
+        return winId;
+    }
+
+    function openOKRTracker() {
+        const uniqueSuffix = generateId('okr');
+        const winId = windowManager.createWindow('Monitor de OKRs', '', { width: '950px', height: '700px', appType: 'okr-tracker' });
+        const content = `
+            <div class="app-toolbar"> ${getStandardAppToolbarHTML()} <button id="addObjectiveBtn_${uniqueSuffix}" class="app-button" style="margin-left: auto;"><i class="fas fa-plus-circle"></i> Novo Objetivo</button> </div>
+            <div class="okr-objectives-container" id="objectivesContainer_${uniqueSuffix}"></div>`;
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+
+        const appState = {
+            winId, objectives: [], appDataType: 'okr-tracker',
+            containerEl: winData.element.querySelector(`#objectivesContainer_${uniqueSuffix}`),
+            getData: function() { return this.objectives; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.objectives = Array.isArray(data) ? data.map(obj => ({...obj, keyResults: obj.keyResults || []})) : []; 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderObjectives(); 
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo OKR.", 3000); 
+                } 
+            },
+            renderObjectives: function() { this.containerEl.innerHTML = ''; this.objectives.forEach((obj, objIndex) => { const objEl = document.createElement('div'); objEl.className = 'okr-objective'; objEl.innerHTML = `<div class="okr-objective-header"> <h3><i class="fas fa-bullseye" style="margin-right:8px; opacity:0.7;"></i> Objetivo ${objIndex + 1}:</h3> <input type="text" class="app-input okr-objective-title-input" value="${obj.text}" placeholder="Descrição do Objetivo" data-obj-index="${objIndex}" data-field="text"> <input type="text" class="app-input okr-objective-cycle-input" value="${obj.cycle || ''}" placeholder="Ciclo/Período" data-obj-index="${objIndex}" data-field="cycle"> <button class="app-button secondary" data-action="add-kr" data-obj-index="${objIndex}" title="Adicionar Resultado Chave"><i class="fas fa-plus"></i> KR</button> <button class="app-button danger" data-action="delete-obj" data-obj-index="${objIndex}" title="Excluir Objetivo" style="margin-left:5px;"><i class="fas fa-trash"></i></button> </div> <div class="keyresults-container" id="krContainer_${uniqueSuffix}_${objIndex}"></div>`; this.containerEl.appendChild(objEl); const krContainer = objEl.querySelector(`#krContainer_${uniqueSuffix}_${objIndex}`); obj.keyResults.forEach((kr, krIndex) => this.renderKeyResult(krContainer, objIndex, krIndex, kr)); }); },
+            renderKeyResult: function(krContainerEl, objIndex, krIndex, krData) { const krEl = document.createElement('div'); krEl.className = 'okr-keyresult'; const progress = krData.target > 0 ? ((krData.current || 0) / krData.target) * 100 : 0; krEl.innerHTML = `<input type="text" class="app-input" value="${krData.text}" placeholder="Resultado Chave ${krIndex + 1}" data-obj-index="${objIndex}" data-kr-index="${krIndex}" data-field="text"> <input type="number" class="app-input" value="${krData.current || ''}" placeholder="Atual" title="Valor Atual" data-obj-index="${objIndex}" data-kr-index="${krIndex}" data-field="current"> <input type="number" class="app-input" value="${krData.target || ''}" placeholder="Meta" title="Valor Meta" data-obj-index="${objIndex}" data-kr-index="${krIndex}" data-field="target"> <input type="text" class="app-input" value="${krData.unit || ''}" placeholder="Unid." title="Unidade" style="width:60px;" data-obj-index="${objIndex}" data-kr-index="${krIndex}" data-field="unit"> <select class="app-select" data-obj-index="${objIndex}" data-kr-index="${krIndex}" data-field="confidence" title="Confiança"> <option value="alta" ${krData.confidence === 'alta' ? 'selected' : ''}>Alta</option> <option value="media" ${krData.confidence === 'media' || !krData.confidence ? 'selected' : ''}>Média</option> <option value="baixa" ${krData.confidence === 'baixa' ? 'selected' : ''}>Baixa</option> </select> <div class="progress-bar-container" title="Progresso: ${progress.toFixed(0)}%"><div class="progress-bar" style="width:${Math.min(100,progress)}%;"></div></div> <button class="app-button danger action-button" data-action="delete-kr" data-obj-index="${objIndex}" data-kr-index="${krIndex}" title="Excluir KR"><i class="fas fa-times"></i></button>`; krContainerEl.appendChild(krEl); },
+            addObjective: function() { this.objectives.push({ id: generateId('obj'), text: '', cycle: '', keyResults: [{ id: generateId('kr'), text: '', current: null, target: null, unit: '', confidence: 'media' }] }); this.markDirty(); this.renderObjectives(); },
+            addKeyResult: function(objIndex) { this.objectives[objIndex].keyResults.push({ id: generateId('kr'), text: '', current: null, target: null, unit: '', confidence: 'media' }); this.markDirty(); this.renderObjectives(); },
+            deleteObjective: function(objIndex) { this.objectives.splice(objIndex, 1); this.markDirty(); this.renderObjectives(); },
+            deleteKeyResult: function(objIndex, krIndex) { this.objectives[objIndex].keyResults.splice(krIndex, 1); this.markDirty(); this.renderObjectives(); },
+            updateData: function(objIndex, krIndex, field, value) { if (krIndex === undefined) { this.objectives[objIndex][field] = value; } else { if (field === 'current' || field === 'target') value = parseFloat(value) || null; this.objectives[objIndex].keyResults[krIndex][field] = value; this.renderObjectives(); } this.markDirty(); },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Monitor de OKRs", "okrs.okr", "okr-tracker"); 
+        winData.currentAppInstance = appState;
+        setupAppToolbarActions(appState);
+        winData.element.querySelector('#addObjectiveBtn_'+uniqueSuffix).onclick = () => appState.addObjective();
+        appState.containerEl.addEventListener('click', (e) => { const targetButton = e.target.closest('button'); if (!targetButton) return; const action = targetButton.dataset.action; const objIndex = parseInt(targetButton.dataset.objIndex); const krIndex = e.target.dataset.krIndex !== undefined ? parseInt(e.target.dataset.krIndex) : undefined; if (action === 'add-kr') appState.addKeyResult(objIndex); else if (action === 'delete-obj') appState.deleteObjective(objIndex); else if (action === 'delete-kr') appState.deleteKeyResult(objIndex, krIndex); });
+        appState.containerEl.addEventListener('input', (e) => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') { const objIndex = parseInt(e.target.dataset.objIndex); const krIndex = e.target.dataset.krIndex !== undefined ? parseInt(e.target.dataset.krIndex) : undefined; const field = e.target.dataset.field; appState.updateData(objIndex, krIndex, field, e.target.value); } });
+        if (appState.objectives.length === 0) appState.addObjective();
+        return winId;
+    }
+
+    function openIshikawaDiagram() {
+        const uniqueSuffix = generateId('ishikawa');
+        const winId = windowManager.createWindow('Diagrama de Ishikawa', '', { width: '900px', height: '700px', appType: 'ishikawa-diagram' });
+        const content = `
+            <div class="app-toolbar ishikawa-controls">
+                ${getStandardAppToolbarHTML()}
+                <button id="addCategoryIshikawaBtn_${uniqueSuffix}" class="app-button" style="margin-left:auto;"><i class="fas fa-sitemap"></i> Nova Categoria</button>
+            </div>
+            <div class="ishikawa-main-content" id="ishikawaMainContent_${uniqueSuffix}" style="padding: 15px; overflow: auto; display:block;">
+                <div class="app-section" style="margin-bottom: 20px;">
+                    <h4><i class="fas fa-fish" style="margin-right:8px; opacity:0.7;"></i> Problema / Efeito Central:</h4>
+                    <input type="text" id="ishikawaProblemInput_${uniqueSuffix}" class="app-input" placeholder="Descreva o problema ou efeito a ser analisado" style="font-size:1.1em; font-weight:bold;">
+                </div>
+                <div id="ishikawaCategoriesArea_${uniqueSuffix}" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            </div>`;
+        const winData = windowManager.windows.get(winId); if(!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+
+        const appState = {
+            winId, data: { problem: "", categories: [] }, appDataType: 'ishikawa-diagram',
+            problemInput: winData.element.querySelector(`#ishikawaProblemInput_${uniqueSuffix}`), 
+            categoriesArea: winData.element.querySelector(`#ishikawaCategoriesArea_${uniqueSuffix}`),
+            getData: function() { this.data.problem = this.problemInput.value; return this.data; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.data = data || { problem: "", categories: [] }; 
+                    this.data.categories.forEach(cat => { cat.causes = cat.causes || []; cat.causes.forEach(cause => cause.subCauses = cause.subCauses || []); }); 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderAll();
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo Ishikawa.", 3000); 
+                } 
+            },
+            init: function() { 
+                setupAppToolbarActions(this);
+                const addCategoryBtn = winData.element.querySelector(`#addCategoryIshikawaBtn_${uniqueSuffix}`); 
+                this.problemInput.oninput = () => this.markDirty(); 
+                addCategoryBtn.onclick = () => this.addCategory(); 
+                this.categoriesArea.addEventListener('click', (e) => this.handleCategoryAreaClick(e)); 
+                this.categoriesArea.addEventListener('input', (e) => this.handleCategoryAreaInput(e)); 
+                if (!this.data.categories.length) this.resetToDefaultCategories(); 
+                this.renderAll(); 
+            },
+            resetToDefaultCategories: function() { this.data.problem = ""; this.data.categories = ["Método", "Máquina", "Mão-de-obra", "Material", "Medição", "Meio Ambiente"].map(name => ({ id: generateId('catIsh'), name: name, causes: [] })); },
+            renderAll: function() { this.problemInput.value = this.data.problem; this.categoriesArea.innerHTML = ''; this.data.categories.forEach((cat, catIndex) => this.renderCategory(cat, catIndex)); },
+            renderCategory: function(categoryData, catIndex) { const catDiv = document.createElement('div'); catDiv.className = 'ishikawa-category-content app-section'; catDiv.dataset.catIndex = catIndex; catDiv.innerHTML = `<h5><input type="text" class="app-input category-name-input" value="${categoryData.name}" placeholder="Nome da Categoria"><span><button class="app-button secondary small-action" data-action="add-cause" title="Adicionar Causa"><i class="fas fa-plus"></i> Causa</button><button class="app-button danger small-action" data-action="delete-category" title="Excluir Categoria"><i class="fas fa-trash"></i></button></span></h5><ul class="causes-list"></ul>`; this.categoriesArea.appendChild(catDiv); const causesListUl = catDiv.querySelector('.causes-list'); categoryData.causes.forEach((cause, causeIndex) => this.renderCause(causesListUl, catIndex, cause, causeIndex)); },
+            renderCause: function(causesListUl, catIndex, causeData, causeIndex) { const causeLi = document.createElement('li'); causeLi.className = 'cause-item'; causeLi.dataset.causeIndex = causeIndex; causeLi.innerHTML = `<div style="display:flex; align-items:center; gap:5px;"><input type="text" class="app-input" value="${causeData.text}" placeholder="Causa Principal"><button class="app-button secondary small-action" data-action="add-subcause" title="Adicionar Sub-causa"><i class="fas fa-sitemap"></i></button><button class="app-button danger small-action" data-action="delete-cause" title="Excluir Causa"><i class="fas fa-minus-circle"></i></button></div><ul class="subcauses-list"></ul>`; causesListUl.appendChild(causeLi); const subcausesListUl = causeLi.querySelector('.subcauses-list'); causeData.subCauses.forEach((subCauseText, subCauseIndex) => this.renderSubCause(subcausesListUl, catIndex, causeIndex, subCauseText, subCauseIndex)); },
+            renderSubCause: function(subcausesListUl, catIndex, causeIndex, subCauseText, subCauseIndex) { const subCauseLi = document.createElement('li'); subCauseLi.className = 'subcause-item'; subCauseLi.dataset.subcauseIndex = subCauseIndex; subCauseLi.innerHTML = `<div style="display:flex; align-items:center; gap:5px;"><input type="text" class="app-input" value="${subCauseText}" placeholder="Sub-causa"><button class="app-button danger small-action" data-action="delete-subcause" title="Excluir Sub-causa"><i class="fas fa-times"></i></button></div>`; subcausesListUl.appendChild(subCauseLi); },
+            addCategory: function() { this.data.categories.push({ id: generateId('catIsh'), name: "Nova Categoria", causes: [] }); this.markDirty(); this.renderAll(); },
+            handleCategoryAreaClick: function(e) { const button = e.target.closest('button[data-action]'); if (!button) return; const action = button.dataset.action; const catDiv = button.closest('.ishikawa-category-content'); const catIndex = parseInt(catDiv?.dataset.catIndex); const causeLi = button.closest('.cause-item'); const causeIndex = parseInt(causeLi?.dataset.causeIndex); const subCauseLi = button.closest('.subcause-item'); const subCauseIndex = parseInt(subCauseLi?.dataset.subcauseIndex); if (action === 'delete-category') this.data.categories.splice(catIndex, 1); else if (action === 'add-cause') this.data.categories[catIndex].causes.push({ id: generateId('cauIsh'), text: "", subCauses: [] }); else if (action === 'delete-cause') this.data.categories[catIndex].causes.splice(causeIndex, 1); else if (action === 'add-subcause') this.data.categories[catIndex].causes[causeIndex].subCauses.push(""); else if (action === 'delete-subcause') this.data.categories[catIndex].causes[causeIndex].subCauses.splice(subCauseIndex, 1); this.markDirty(); this.renderAll(); },
+            handleCategoryAreaInput: function(e) { const input = e.target.closest('input[type="text"]'); if (!input) return; const catDiv = input.closest('.ishikawa-category-content'); const catIndex = parseInt(catDiv?.dataset.catIndex); const causeLi = input.closest('.cause-item'); const causeIndex = parseInt(causeLi?.dataset.causeIndex); const subCauseLi = input.closest('.subcause-item'); const subCauseIndex = parseInt(subCauseLi?.dataset.subcauseIndex); if (input.classList.contains('category-name-input')) { this.data.categories[catIndex].name = input.value; } else if (causeLi && !subCauseLi) { this.data.categories[catIndex].causes[causeIndex].text = input.value; } else if (subCauseLi) { this.data.categories[catIndex].causes[causeIndex].subCauses[subCauseIndex] = input.value; } this.markDirty(); },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Novo Diagrama Ishikawa", "diagrama.ishikawa", "ishikawa-diagram");
+        winData.currentAppInstance = appState;
+        appState.init();
+        return winId;
+    }
+
+    function openBPMNModeler() {
+        const uniqueSuffix = generateId('bpmn');
+        const winId = windowManager.createWindow('Modelador BPMN', '', { width: '950px', height: '700px', appType: 'bpmn-modeler' });
+        const content = `
+            <div class="app-toolbar bpmn-controls">
+                 ${getStandardAppToolbarHTML()}
+                <button id="addBpmnElementBtn_${uniqueSuffix}" class="app-button" style="margin-left:auto;"><i class="fas fa-plus-square"></i> Elemento</button>
+                <button id="addBpmnFlowBtn_${uniqueSuffix}" class="app-button"><i class="fas fa-long-arrow-alt-right"></i> Fluxo</button>
+            </div>
+            <div class="bpmn-main-content">
+                <div class="bpmn-elements-panel" id="bpmnElementsPanel_${uniqueSuffix}">
+                    <div class="app-section bpmn-section"><h4><i class="fas fa-cubes"></i> Elementos</h4><div id="bpmnElementsList_${uniqueSuffix}"></div></div>
+                </div>
+                <div class="bpmn-flows-panel" id="bpmnFlowsPanel_${uniqueSuffix}">
+                    <div class="app-section bpmn-section"><h4><i class="fas fa-route"></i> Fluxos</h4><div id="bpmnFlowsList_${uniqueSuffix}"></div></div>
+                </div>
+            </div>`;
+        const winData = windowManager.windows.get(winId); if(!winData) return winId;
+        winData.element.querySelector('.window-content').innerHTML = content;
+
+        const bpmnIcons = { task: 'fas fa-tasks', startEvent: 'fas fa-play-circle', endEvent: 'fas fa-stop-circle', exclusiveGateway: 'fas fa-diamond', parallelGateway: 'fas fa-plus-circle', intermediateThrowEvent: 'fas fa-arrow-circle-up' };
+        const appState = {
+            winId, data: { elements: [], flows: [] }, appDataType: 'bpmn-modeler',
+            elementsListDiv: winData.element.querySelector(`#bpmnElementsList_${uniqueSuffix}`), 
+            flowsListDiv: winData.element.querySelector(`#bpmnFlowsList_${uniqueSuffix}`),
+            getData: function() { return this.data; },
+            loadData: function(dataString, fileMeta) { 
+                try { 
+                    const data = JSON.parse(dataString);
+                    this.data = data || { elements: [], flows: [] }; 
+                    this.data.elements = this.data.elements || []; 
+                    this.data.flows = this.data.flows || []; 
+                    this.fileId = fileMeta.id; 
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderAll(); 
+                } catch (e) { 
+                    showNotification("Erro ao ler arquivo BPMN.", 3000); 
+                }
+            },
+            init: function() {
+                setupAppToolbarActions(this);
+                winData.element.querySelector(`#addBpmnElementBtn_${uniqueSuffix}`).onclick = () => this.addElement(); 
+                winData.element.querySelector(`#addBpmnFlowBtn_${uniqueSuffix}`).onclick = () => this.addFlow(); 
+                this.elementsListDiv.addEventListener('input', (e) => this.handleElementInput(e)); 
+                this.elementsListDiv.addEventListener('click', (e) => this.handleElementAction(e)); 
+                this.flowsListDiv.addEventListener('input', (e) => this.handleFlowInput(e)); 
+                this.flowsListDiv.addEventListener('click', (e) => this.handleFlowAction(e)); 
+                this.renderAll(); 
+            },
+            renderAll: function() { this.renderElements(); this.renderFlows(); },
+            renderElements: function() { this.elementsListDiv.innerHTML = ''; this.data.elements.forEach((el, index) => { const elDiv = document.createElement('div'); elDiv.className = 'bpmn-element-item'; elDiv.dataset.index = index; const iconClass = bpmnIcons[el.type] || 'fas fa-cube'; elDiv.innerHTML = `<div class="bpmn-element-item-header"><i class="${iconClass}"></i> <strong>${el.name || el.id || 'Novo Elemento'}</strong></div> <div class="form-grid"> <input type="text" class="app-input" value="${el.id}" data-field="id" placeholder="ID (único)"> <select class="app-select" data-field="type"> <option value="task" ${el.type === 'task'?'selected':''}>Tarefa</option> <option value="startEvent" ${el.type === 'startEvent'?'selected':''}>Evento de Início</option> <option value="endEvent" ${el.type === 'endEvent'?'selected':''}>Evento de Fim</option> <option value="exclusiveGateway" ${el.type === 'exclusiveGateway'?'selected':''}>Gateway Exclusivo</option> <option value="parallelGateway" ${el.type === 'parallelGateway'?'selected':''}>Gateway Paralelo</option> <option value="intermediateThrowEvent" ${el.type === 'intermediateThrowEvent'?'selected':''}>Evento Intermediário</option> </select> <input type="text" class="app-input" value="${el.name || ''}" data-field="name" placeholder="Nome/Rótulo (opcional)"> </div> <button class="app-button danger action-button" data-action="delete-element" style="font-size:0.8em; padding:3px 6px; margin-top:8px;"><i class="fas fa-trash"></i> Excluir</button>`; this.elementsListDiv.appendChild(elDiv); }); },
+            renderFlows: function() { this.flowsListDiv.innerHTML = ''; this.data.flows.forEach((flow, index) => { const flowDiv = document.createElement('div'); flowDiv.className = 'bpmn-flow-item'; flowDiv.dataset.index = index; let sourceOptions = '<option value="">-- Origem --</option>'; this.data.elements.forEach(el => sourceOptions += `<option value="${el.id}" ${flow.sourceRef === el.id ? 'selected':''}>${el.name || el.id}</option>`); let targetOptions = '<option value="">-- Destino --</option>'; this.data.elements.forEach(el => targetOptions += `<option value="${el.id}" ${flow.targetRef === el.id ? 'selected':''}>${el.name || el.id}</option>`); flowDiv.innerHTML = `<div class="bpmn-flow-connection"> <select class="app-select" data-field="sourceRef" style="flex:1;">${sourceOptions}</select> <i class="fas fa-long-arrow-alt-right" style="margin:0 10px;"></i> <select class="app-select" data-field="targetRef" style="flex:1;">${targetOptions}</select> </div> <input type="text" class="app-input" value="${flow.condition || ''}" data-field="condition" placeholder="Condição (opcional)" style="margin-top:8px;"> <button class="app-button danger action-button" data-action="delete-flow" style="font-size:0.8em; padding:3px 6px; margin-top:8px;"><i class="fas fa-trash"></i> Excluir</button>`; this.flowsListDiv.appendChild(flowDiv); }); },
+            addElement: function() { this.data.elements.push({ id: generateId('bpmnEl'), type: 'task', name: '' }); this.markDirty(); this.renderAll(); },
+            addFlow: function() { this.data.flows.push({ id: generateId('bpmnFl'), sourceRef: '', targetRef: '', condition: '' }); this.markDirty(); this.renderAll(); },
+            handleElementInput: function(e) { const input = e.target.closest('input, select'); if (!input) return; const index = parseInt(input.closest('.bpmn-element-item').dataset.index); const field = input.dataset.field; this.data.elements[index][field] = input.value; if(field === 'id' || field === 'name' || field === 'type') this.renderAll(); this.markDirty(); },
+            handleElementAction: function(e) { const button = e.target.closest('button[data-action="delete-element"]'); if (button) { const index = parseInt(button.closest('.bpmn-element-item').dataset.index); this.data.elements.splice(index, 1); this.markDirty(); this.renderAll(); } },
+            handleFlowInput: function(e) { const input = e.target.closest('input, select'); if (!input) return; const index = parseInt(input.closest('.bpmn-flow-item').dataset.index); const field = input.dataset.field; this.data.flows[index][field] = input.value; this.markDirty(); },
+            handleFlowAction: function(e) { const button = e.target.closest('button[data-action="delete-flow"]'); if (button) { const index = parseInt(button.closest('.bpmn-flow-item').dataset.index); this.data.flows.splice(index, 1); this.markDirty(); this.renderFlows(); } },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, "Novo Modelo BPMN", "modelo.bpmn_simple", "bpmn-modeler");
+        winData.currentAppInstance = appState;
+        appState.init();
+        return winId;
+    }
+
+    function createQualityToolWindow(toolName, appType, formHTML, listTitle, fileNameSuffix, formGridCols = 1) {
+        const uniqueSuffix = generateId(appType);
+        const winId = windowManager.createWindow(toolName, '', { width: '850px', height: '700px', appType: `quality-tool ${appType}` });
+        const winData = windowManager.windows.get(winId); if (!winData) return winId;
+        const content = `
+            <div class="app-toolbar"> ${getStandardAppToolbarHTML()} </div>
+            <div class="quality-tool-content-area">
+                <div class="quality-tool-form-section">
+                    <h4><i class="fas fa-edit"></i> <span id="formTitle_${uniqueSuffix}">Novo: ${toolName}</span></h4>
+                    <input type="hidden" id="editingItemId_${uniqueSuffix}" value="">
+                    <div class="form-grid" id="formArea_${uniqueSuffix}" style="grid-template-columns: repeat(${formGridCols}, 1fr);"> ${formHTML} </div>
+                    <div style="margin-top:10px;">
+                        <button id="addItem${appType}Btn_${uniqueSuffix}" class="app-button"><i class="fas fa-plus"></i> Adicionar</button>
+                        <button id="updateItem${appType}Btn_${uniqueSuffix}" class="app-button" style="display:none;"><i class="fas fa-save"></i> Atualizar</button>
+                        <button id="cancelEdit${appType}Btn_${uniqueSuffix}" class="app-button secondary" style="display:none; margin-left: 8px;"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
+                </div>
+                <div class="quality-tool-list-section"> <h4><i class="fas fa-list-ul"></i> ${listTitle}</h4> <ul id="list${appType}_${uniqueSuffix}"></ul> </div>
+            </div>`;
+        winData.element.querySelector('.window-content').innerHTML = content;
+        
+        const appState = {
+            winId, items: [], appDataType: appType,
+            formArea: winData.element.querySelector(`#formArea_${uniqueSuffix}`), 
+            listUl: winData.element.querySelector(`#list${appType}_${uniqueSuffix}`), 
+            addBtn: winData.element.querySelector(`#addItem${appType}Btn_${uniqueSuffix}`), 
+            updateBtn: winData.element.querySelector(`#updateItem${appType}Btn_${uniqueSuffix}`), 
+            cancelEditBtn: winData.element.querySelector(`#cancelEdit${appType}Btn_${uniqueSuffix}`), 
+            editingItemIdInput: winData.element.querySelector(`#editingItemId_${uniqueSuffix}`), 
+            formTitleSpan: winData.element.querySelector(`#formTitle_${uniqueSuffix}`), 
+            originalToolName: toolName,
+            getData: function() { return this.items; },
+            loadData: function(dataString, fileMeta) { 
+                try {
+                    const data = JSON.parse(dataString);
+                    this.items = Array.isArray(data) ? data : []; 
+                    this.fileId = fileMeta.id;
+                    this.markClean(); 
+                    windowManager.updateWindowTitle(this.winId, fileMeta.name); 
+                    this.renderList(); 
+                    this.clearForm();
+                } catch(e) {
+                    showNotification(`Erro ao ler arquivo de ${toolName}.`, 3000);
+                }
+            },
+            collectFormData: function() { return {}; }, 
+            populateForm: function(itemData) {},
+            clearForm: function() { this.formArea.querySelectorAll('input:not([type=hidden]), select, textarea').forEach(input => { if (input.type === 'checkbox' || input.type === 'radio') input.checked = false; else if(input.tagName === 'SELECT') input.selectedIndex = 0; else input.value = ''; }); this.editingItemIdInput.value = ''; this.formTitleSpan.textContent = `Novo: ${this.originalToolName}`; this.addBtn.style.display = 'inline-block'; this.updateBtn.style.display = 'none'; this.cancelEditBtn.style.display = 'none'; },
+            renderListItem: function(item, index) { return `<li>${JSON.stringify(item)}</li>`; },
+            renderList: function() { this.listUl.innerHTML = ''; this.items.forEach((item, index) => { this.listUl.innerHTML += this.renderListItem(item, index); }); },
+            addItem: function() { const newItemData = this.collectFormData(); if (newItemData) { this.items.push({...newItemData, id: generateId(appType) }); this.markDirty(); this.renderList(); this.clearForm(); } },
+            updateItem: function() { const editingId = this.editingItemIdInput.value; if (!editingId) { this.clearForm(); return; } const itemIndex = this.items.findIndex(item => item.id === editingId); if (itemIndex === -1) { showNotification("Item não encontrado.", 3000); this.clearForm(); return; } const updatedData = this.collectFormData(); if (updatedData) { this.items[itemIndex] = {...this.items[itemIndex], ...updatedData }; this.markDirty(); this.renderList(); this.clearForm(); showNotification("Item atualizado.", 2000); } },
+            editItem: function(index) { const itemData = this.items[index]; if (!itemData) return; this.populateForm(itemData); this.editingItemIdInput.value = itemData.id; this.formTitleSpan.textContent = `Editando: ${this.originalToolName} (ID: ${itemData.id.slice(-5)})`; this.addBtn.style.display = 'none'; this.updateBtn.style.display = 'inline-block'; this.cancelEditBtn.style.display = 'inline-block'; this.formArea.querySelector('input, textarea, select')?.focus(); },
+            init: function() { 
+                setupAppToolbarActions(this);
+                this.addBtn.onclick = () => this.addItem(); 
+                this.updateBtn.onclick = () => this.updateItem(); 
+                this.cancelEditBtn.onclick = () => this.clearForm(); 
+                this.listUl.addEventListener('click', (e) => { 
+                    const button = e.target.closest('button.action-button'); 
+                    if(!button) return; 
+                    const action = button.dataset.action; 
+                    const index = parseInt(button.dataset.index); 
+                    if(action === "delete") { 
+                        if(confirm("Tem certeza que deseja excluir?")) { 
+                            const itemIdToDelete = this.items[index]?.id; 
+                            this.items.splice(index, 1); 
+                            this.markDirty(); 
+                            this.renderList(); 
+                            if(this.editingItemIdInput.value === itemIdToDelete) this.clearForm(); 
+                        } 
+                    } else if (action === "edit") { 
+                        this.editItem(index); 
+                    } 
+                }); 
+                this.renderList(); 
+            },
+            cleanup: () => {}
+        };
+        initializeFileState(appState, toolName, `novo_${fileNameSuffix}.${fileNameSuffix}`, appType); 
+        winData.currentAppInstance = appState;
+        setTimeout(() => winData.currentAppInstance?.init(), 0);
+        return winId;
+    }
+    
+    function openChecklistTool() {
+        const formHTML = `<input type="text" id="checklistItemInput" class="app-input" placeholder="Item do Checklist (ex: Verificar documentação X)"> <select id="checklistCategoryInput" class="app-select"><option value="">Categoria (Opcional)</option> <option value="documentacao">Documentação</option><option value="processo">Processo</option> <option value="seguranca">Segurança</option><option value="outro">Outro</option></select><select id="checklistStatusInput" class="app-select"><option value="pendente">Pendente</option> <option value="conforme">Conforme</option> <option value="nao_conforme">Não Conforme</option> <option value="na">N/A</option></select><input type="text" id="checklistResponsibleInput" class="app-input" placeholder="Responsável (Opcional)"><textarea id="checklistNotesInput" class="app-textarea" placeholder="Observações..." style="min-height:60px; grid-column: span 2;"></textarea>`;
+        const winId = createQualityToolWindow('Checklist', 'checklist', formHTML, 'Itens do Checklist', 'checklist', 2);
+        const appState = windowManager.windows.get(winId).currentAppInstance;
+        appState.collectFormData = function() { const itemText = this.formArea.querySelector('#checklistItemInput').value.trim(); if (!itemText) { showNotification("Descreva o item.", 2000); return null;} return { text: itemText, category: this.formArea.querySelector('#checklistCategoryInput').value, status: this.formArea.querySelector('#checklistStatusInput').value, responsible: this.formArea.querySelector('#checklistResponsibleInput').value.trim(), notes: this.formArea.querySelector('#checklistNotesInput').value.trim() }; };
+        appState.populateForm = function(itemData) { this.formArea.querySelector('#checklistItemInput').value = itemData.text || ''; this.formArea.querySelector('#checklistCategoryInput').value = itemData.category || ''; this.formArea.querySelector('#checklistStatusInput').value = itemData.status || 'pendente'; this.formArea.querySelector('#checklistResponsibleInput').value = itemData.responsible || ''; this.formArea.querySelector('#checklistNotesInput').value = itemData.notes || ''; };
+        appState.renderListItem = function(item, index) { const icons = {pendente: 'fa-clock', conforme: 'fa-check-circle', nao_conforme: 'fa-times-circle', na: 'fa-minus-circle'}; const iconClass = icons[item.status] || 'fa-question-circle'; return `<li> <div class="item-details"> <strong><i class="fas ${iconClass}" style="margin-right:8px; color: ${item.status === 'conforme' ? 'green' : (item.status === 'nao_conforme' ? 'red' : 'var(--secondary-text-color)')};"></i>${item.text}</strong> <small>Status: ${item.status} ${item.category ? `| Cat: ${item.category}` : ''} ${item.responsible ? `| Resp: ${item.responsible}`: ''}</small> ${item.notes ? `<p><i>Obs: ${item.notes}</i></p>` : ''} </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
+        return winId;
+    }
+    function openNCRTool() {
+        const formHTML = `<input type="text" id="ncrDescriptionInput" class="app-input" placeholder="Descrição da Não Conformidade" style="grid-column: span 2;"> <input type="date class="app-input" title="Data da Ocorrência"> <input type="text" id="ncrSourceInput" class="app-input" placeholder="Origem/Processo Afetado"> <select id="ncrSeverityInput" class="app-select"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="critica">Crítica</option></select> <input type="text" id="ncrReportedByInput" class="app-input" placeholder="Reportado Por"> <textarea id="ncrEvidenceInput" class="app-textarea" placeholder="Evidências..." style="min-height:60px; grid-column: span 2;"></textarea> <textarea id="ncrImmediateActionInput" class="app-textarea" placeholder="Ação Imediata Tomada" style="min-height:60px;"></textarea> <textarea id="ncrCorrectiveActionInput" class="app-textarea" placeholder="Ação Corretiva Proposta" style="min-height:60px;"></textarea> <input type="date" id="ncrCorrectiveActionDeadlineInput" class="app-input" title="Prazo Ação Corretiva"> <select id="ncrStatusInput" class="app-select"><option value="aberta">Aberta</option><option value="em_analise">Em Análise</option><option value="acao_implementada">Ação Implementada</option><option value="verificacao_eficacia">Verificando Eficácia</option><option value="fechada">Fechada</option></select>`;
+        const winId = createQualityToolWindow('Relatório de Não Conformidade', 'ncr', formHTML, 'Não Conformidades Registradas', 'ncr', 2);
+        const appState = windowManager.windows.get(winId).currentAppInstance;
+        appState.collectFormData = function() { const desc = this.formArea.querySelector('#ncrDescriptionInput').value.trim(); if (!desc) { showNotification("Descrição é obrigatória.", 2000); return null;} return { description: desc, date: this.formArea.querySelector('#ncrDateInput').value, source: this.formArea.querySelector('#ncrSourceInput').value.trim(), severity: this.formArea.querySelector('#ncrSeverityInput').value, reportedBy: this.formArea.querySelector('#ncrReportedByInput').value.trim(), evidence: this.formArea.querySelector('#ncrEvidenceInput').value.trim(), immediateAction: this.formArea.querySelector('#ncrImmediateActionInput').value.trim(), correctiveAction: this.formArea.querySelector('#ncrCorrectiveActionInput').value.trim(), correctiveActionDeadline: this.formArea.querySelector('#ncrCorrectiveActionDeadlineInput').value, status: this.formArea.querySelector('#ncrStatusInput').value }; };
+        appState.populateForm = function(itemData) { this.formArea.querySelector('#ncrDescriptionInput').value = itemData.description || ''; this.formArea.querySelector('#ncrDateInput').value = itemData.date || ''; this.formArea.querySelector('#ncrSourceInput').value = itemData.source || ''; this.formArea.querySelector('#ncrSeverityInput').value = itemData.severity || 'media'; this.formArea.querySelector('#ncrReportedByInput').value = itemData.reportedBy || ''; this.formArea.querySelector('#ncrEvidenceInput').value = itemData.evidence || ''; this.formArea.querySelector('#ncrImmediateActionInput').value = itemData.immediateAction || ''; this.formArea.querySelector('#ncrCorrectiveActionInput').value = itemData.correctiveAction || ''; this.formArea.querySelector('#ncrCorrectiveActionDeadlineInput').value = itemData.correctiveActionDeadline || ''; this.formArea.querySelector('#ncrStatusInput').value = itemData.status || 'aberta'; };
+        appState.renderListItem = function(item, index) { const severityColors = {baixa: 'green', media: 'orange', alta: 'red', critica: 'darkred'}; return `<li> <div class="item-details"> <strong><i class="fas fa-exclamation-triangle" style="margin-right:8px; color:${severityColors[item.severity] || 'var(--secondary-text-color)'};"></i>${item.description}</strong> <small>Severidade: ${item.severity}, Data: ${item.date || 'N/D'}, Status: ${item.status}</small> <small>Origem: ${item.source || 'N/I'} | Reportado por: ${item.reportedBy || 'N/I'}</small> ${item.correctiveAction ? `<p><i>Ação: ${item.correctiveAction.substring(0,100)}...</i></p>` : ''} </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
+        return winId;
+    }
+    function openPDCATool() {
+        const formHTML = `<input type="text" id="pdcaTitleInput" class="app-input" placeholder="Título da Iniciativa/Problema" style="grid-column: span 2;"> <textarea id="pdcaPlanInput" class="app-textarea" placeholder="Planejar (Plan)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaDoInput" class="app-textarea" placeholder="Executar (Do)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaCheckInput" class="app-textarea" placeholder="Verificar (Check)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaActInput" class="app-textarea" placeholder="Agir (Act)..." style="min-height:80px; grid-column: span 2;"></textarea> <input type="text" id="pdcaResponsibleInput" class="app-input" placeholder="Responsável"> <input type="date" id="pdcaStartDateInput" class="app-input" title="Data de Início"> <select id="pdcaStatusInput" class="app-select"><option value="planejamento">Planejamento</option><option value="execucao">Execução</option><option value="verificacao">Verificação</option><option value="acao">Ação</option><option value="concluido">Concluído</option><option value="suspenso">Suspenso</option></select>`;
+        const winId = createQualityToolWindow('Ciclo PDCA', 'pdca', formHTML, 'Iniciativas PDCA', 'pdca', 2);
+        const appState = windowManager.windows.get(winId).currentAppInstance;
+        appState.collectFormData = function() { const title = this.formArea.querySelector('#pdcaTitleInput').value.trim(); if (!title) { showNotification("Título é obrigatório.", 2000); return null;} return { title, plan: this.formArea.querySelector('#pdcaPlanInput').value.trim(), do: this.formArea.querySelector('#pdcaDoInput').value.trim(), check: this.formArea.querySelector('#pdcaCheckInput').value.trim(), act: this.formArea.querySelector('#pdcaActInput').value.trim(), responsible: this.formArea.querySelector('#pdcaResponsibleInput').value.trim(), startDate: this.formArea.querySelector('#pdcaStartDateInput').value, status: this.formArea.querySelector('#pdcaStatusInput').value }; };
+        appState.populateForm = function(itemData) { this.formArea.querySelector('#pdcaTitleInput').value = itemData.title || ''; this.formArea.querySelector('#pdcaPlanInput').value = itemData.plan || ''; this.formArea.querySelector('#pdcaDoInput').value = itemData.do || ''; this.formArea.querySelector('#pdcaCheckInput').value = itemData.check || ''; this.formArea.querySelector('#pdcaActInput').value = itemData.act || ''; this.formArea.querySelector('#pdcaResponsibleInput').value = itemData.responsible || ''; this.formArea.querySelector('#pdcaStartDateInput').value = itemData.startDate || ''; this.formArea.querySelector('#pdcaStatusInput').value = itemData.status || 'planejamento'; };
+        appState.renderListItem = function(item, index) { const statusIcons = {planejamento: 'fa-clipboard-list', execucao: 'fa-running', verificacao: 'fa-search', acao: 'fa-cogs', concluido: 'fa-check-double', suspenso: 'fa-pause-circle'}; const icon = statusIcons[item.status] || 'fa-spinner'; return `<li> <div class="item-details"> <strong><i class="fas ${icon}" style="margin-right:8px;"></i>${item.title}</strong> <small>Status: ${item.status}, Início: ${item.startDate || 'N/D'}, Resp: ${item.responsible || 'N/I'}</small> <details style="margin-top:5px;"><summary>Ver Detalhes</summary><p><strong>Plan:</strong> ${item.plan?.substring(0,150)}...</p><p><strong>Do:</strong> ${item.do?.substring(0,150)}...</p><p><strong>Check:</strong> ${item.check?.substring(0,150)}...</p><p><strong>Act:</strong> ${item.act?.substring(0,150)}...</p></details> </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
+        return winId;
+    }
+    
+    function open5W2HTool() {
+        const formHTML = `<input type="text" id="w5h2WhatInput" class="app-input" placeholder="O Quê será feito? (What)" style="grid-column: span 2;"> <textarea id="w5h2WhyInput" class="app-textarea" placeholder="Por Quê será feito? (Why)" style="grid-column: span 2; min-height:60px;"></textarea> <input type="text" id="w5h2WhereInput" class="app-input" placeholder="Onde? (Where)"> <input type="text" id="w5h2WhenInput" class="app-input" placeholder="Quando? (When - ex: data, prazo)"> <input type="text" id="w5h2WhoInput" class="app-input" placeholder="Quem? (Who - responsável)"> <input type="text" id="w5h2HowInput" class="app-input" placeholder="Como? (How - método, etapas)" style="grid-column: span 2;"> <input type="number" id="w5h2HowMuchInput" class="app-input" placeholder="Quanto custará? (How Much)" step="0.01"> <select id="w5h2StatusInput" class="app-select"><option value="planejado">Planejado</option><option value="em_andamento">Em Andamento</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option><option value="aguardando">Aguardando</option></select>`;
+        const winId = createQualityToolWindow('Ferramenta 5W2H', '5w2h', formHTML, 'Planos de Ação 5W2H', '5w2h', 2);
+        const appState = windowManager.windows.get(winId).currentAppInstance;
+        appState.collectFormData = function() { const what = this.formArea.querySelector('#w5h2WhatInput').value.trim(); if (!what) { showNotification("'O Quê?' é obrigatório.", 2000); return null;} return { what: what, why: this.formArea.querySelector('#w5h2WhyInput').value.trim(), where: this.formArea.querySelector('#w5h2WhereInput').value.trim(), when: this.formArea.querySelector('#w5h2WhenInput').value.trim(), who: this.formArea.querySelector('#w5h2WhoInput').value.trim(), how: this.formArea.querySelector('#w5h2HowInput').value.trim(), howMuch: parseFloat(this.formArea.querySelector('#w5h2HowMuchInput').value) || 0, status: this.formArea.querySelector('#w5h2StatusInput').value }; };
+        appState.populateForm = function(itemData) { this.formArea.querySelector('#w5h2WhatInput').value = itemData.what || ''; this.formArea.querySelector('#w5h2WhyInput').value = itemData.why || ''; this.formArea.querySelector('#w5h2WhereInput').value = itemData.where || ''; this.formArea.querySelector('#w5h2WhenInput').value = itemData.when || ''; this.formArea.querySelector('#w5h2WhoInput').value = itemData.who || ''; this.formArea.querySelector('#w5h2HowInput').value = itemData.how || ''; this.formArea.querySelector('#w5h2HowMuchInput').value = itemData.howMuch || 0; this.formArea.querySelector('#w5h2StatusInput').value = itemData.status || 'planejado'; };
+        appState.renderListItem = function(item, index) { const statusIcons = {planejado: 'fa-calendar-alt', em_andamento: 'fa-spinner fa-spin', concluido: 'fa-check-circle', cancelado: 'fa-ban', aguardando: 'fa-pause-circle'}; const icon = statusIcons[item.status] || 'fa-question'; return `<li> <div class="item-details"> <strong><i class="fas ${icon}" style="margin-right:8px;"></i>${item.what}</strong> <small>Quem: ${item.who || 'N/I'} | Quando: ${item.when || 'N/I'} | Custo: R$ ${item.howMuch.toFixed(2)} | Status: ${item.status}</small> <details style="margin-top:5px;"><summary>Ver Detalhes</summary><p><strong>Porquê:</strong> ${item.why || 'N/I'}</p><p><strong>Onde:</strong> ${item.where || 'N/I'}</p><p><strong>Como:</strong> ${item.how || 'N/I'}</p></details> </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
+        return winId;
+    }
+        
+    /**
+     * Inicializa o WebOS.
+     */
+    function initializeWebOS() {
+        if (window.webOSInitialized) return; // Prevent double initialization
+        window.webOSInitialized = true;
+
+        windowManager = new WindowManager();
+        themeManager = new ThemeManager(accentPalettes);
+        window.windowManager = windowManager; // Make global for other scripts
+        
+        updateClockTime();
+        setInterval(updateClockTime, 10000);
+
+        window.addEventListener('beforeunload', (e) => {
+            let hasUnsavedChanges = false;
+            windowManager.windows.forEach(winData => { if (winData.currentAppInstance?.isDirty) hasUnsavedChanges = true; });
+            if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
+        });
+
+        // Set up app launchers from the Dock
+        windowManager.appLaunchActions = { 'open-file-system': openFileSystem, 'open-gantt-chart': openGanttChart, 'open-project-tasks': openProjectTasks, 'open-kanban-board': openKanbanBoard, 'open-swot-analysis': openSWOTAnalysis, 'open-sipoc-matrix': openSIPOCMatrix, 'open-okr-tracker': openOKRTracker, 'open-ishikawa-diagram': openIshikawaDiagram, 'open-bpmn-modeler': openBPMNModeler, 'open-mind-map': openMindMap, 'open-contract-manager': openContractManager, 'open-checklist-tool': openChecklistTool, 'open-ncr-tool': openNCRTool, 'open-pdca-tool': openPDCATool, 'open-5w2h-tool': open5W2HTool };
+        document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => {
+            const action = item.dataset.action;
+            if (windowManager.appLaunchActions[action]) {
+                item.onclick = (e) => { e.stopPropagation(); windowManager.appLaunchActions[action](); };
+            }
+        });
+        
+        const desktopEl = document.getElementById('desktop');
+        if (desktopEl) {
+             desktopEl.oncontextmenu = (e) => { e.preventDefault(); showDesktopContextMenu(e.clientX, e.clientY); };
+        }
+        document.onclick = (e) => { const dm = document.getElementById('desktopContextMenu'); if (dm && dm.style.display === 'block' && !dm.contains(e.target)) { hideDesktopContextMenu(); } };
+        document.addEventListener('keydown', (e) => { if (e.key === "Escape") { hideDesktopContextMenu(); if(windowManager.stageManager.isActive) windowManager.stageManager.toggle(); } });
+        
+        const savedWallpaper = localStorage.getItem(STORAGE_KEYS.WALLPAPER);
+        if (savedWallpaper) document.body.style.backgroundImage = `url(${savedWallpaper})`;
+        
+        themeManager.applyThemeVariables();
+        document.getElementById('darkModeToggle').onclick = () => themeManager.toggleDarkMode();
+        const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><input type="file" id="wallpaperInput" accept="image/*" style="display:none"><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
+        const desktopContextMenuEl = document.getElementById('desktopContextMenu');
+        if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
+        setupDesktopContextMenuListeners();
+        
+        mapNeuralManager.loadState();
+        
+        showNotification(`Bem-vindo(a) de volta!`, 3500);
+    }
+
     function updateClockTime() { const clockEl = document.getElementById('clock'); if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
     function chooseWallpaper() { 
         const wallpaperInput = document.getElementById('wallpaperInput') || document.createElement('input');
@@ -2389,7 +2991,6 @@
     document.getElementById('desktop').addEventListener('touchmove', (e) => { if (longPressTimer && touchStartX && touchStartY && (Math.abs(e.touches[0].clientX-touchStartX) > 10 || Math.abs(e.touches[0].clientY-touchStartY) > 10)) clearLongPressTimer(); });
 </script>
 
-<!-- Scripts de IA e melhorias de UI (inalterados) -->
 <script>
 class SimpleNeuralNet {
   constructor(i,h,o){this.numInputs=i;this.numHidden=h;this.numOutputs=o;this.weightsIH=[];for(let i=0;i<h;i++){this.weightsIH[i]=[];for(let j=0;j<this.numInputs;j++){this.weightsIH[i][j]=Math.random()*2-1;}}this.weightsHO=[];for(let i=0;i<o;i++){this.weightsHO[i]=[];for(let j=0;j<h;j++){this.weightsHO[i][j]=Math.random()*2-1;}}this.biasH=Array(h).fill(0).map(()=>Math.random()*2-1);this.biasO=Array(o).fill(0).map(()=>Math.random()*2-1);}
@@ -2413,6 +3014,7 @@ class MapNeuralManager {
 }
 const mapNeuralManager = new MapNeuralManager();
 </script>
+
 <script>
     (function(){
         const SNAP_THRESHOLD = 40; const SNAP_ANIM = 'all 0.18s cubic-bezier(.34,1.56,.64,1)';
