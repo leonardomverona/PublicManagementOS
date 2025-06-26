@@ -19,7 +19,7 @@
     </script>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Public Management OS (Firebase Auth)</title>
+    <title>Public Management OS</title>
     <style>
         :root {
             /* Tema Sonoma Claro (Padrão) */
@@ -1052,6 +1052,8 @@
         <button id="loginBtn" class="app-button">Entrar</button>
         <button id="registerBtn" class="app-button secondary">Criar Conta</button>
         <span id="loginError" style="color: red; font-size: 0.9em; text-align: center; display: none;"></span>
+        <!-- [NOVO] Link para recuperação de senha -->
+        <a href="#" id="forgotPasswordLink" class="login-form-toggle" style="text-align: center; margin-top: 10px;">Esqueceu a senha?</a>
     </div>
 </div>
 
@@ -1108,19 +1110,19 @@
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.draggable.js"></script>
 
-<!-- [MODIFICADO] Bloco de Script de Módulo -->
+<!-- Bloco de Script de Módulo -->
 <script type="module">
     // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     
-    // [MODIFICADO] Configuração da API - Google foi removido
+    // Configuração da API
     const ApiConfig = {
         firebase: {
             apiKey: "AIzaSyCbpWXt9stM8jnIL3UIggZuvr3V7nwvPcQ",
             authDomain: "publicmanagementos.firebaseapp.com",
-            projectId: "publicmanagemento",
+            projectId: "publicmanagementos",
             storageBucket: "publicmanagementos.firebasestorage.app",
             messagingSenderId: "publicmanagementos.firebasestorage.app",
             appId: "1:829309037744:web:3276773141117bb8255f75",
@@ -1242,6 +1244,11 @@
             document.getElementById('loginBtn').onclick = () => this.signInWithEmail();
             document.getElementById('registerBtn').onclick = () => this.registerWithEmail();
             document.getElementById('logoutBtn').onclick = () => this.signOut();
+            // [NOVO] Listener para o link de recuperação de senha
+            document.getElementById('forgotPasswordLink').onclick = (e) => {
+                e.preventDefault();
+                this.sendPasswordReset();
+            };
         }
 
         async signInWithEmail() {
@@ -1282,6 +1289,30 @@
                 } else {
                     errorEl.textContent = "Erro ao criar conta. Verifique o e-mail.";
                 }
+                errorEl.style.display = 'block';
+            }
+        }
+
+        /**
+         * [NOVO] Envia um e-mail de redefinição de senha.
+         */
+        async sendPasswordReset() {
+            const email = document.getElementById('emailInput').value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.style.display = 'none';
+
+            if (!email) {
+                errorEl.textContent = "Por favor, digite seu e-mail para redefinir a senha.";
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            try {
+                await sendPasswordResetEmail(this.auth, email);
+                showNotification(`E-mail de redefinição enviado para ${email}. Verifique sua caixa de entrada.`, 5000);
+            } catch (error) {
+                console.error("Erro ao enviar e-mail de redefinição:", error.code, error.message);
+                errorEl.textContent = "Não foi possível enviar o e-mail. Verifique se o endereço está correto.";
                 errorEl.style.display = 'block';
             }
         }
@@ -1333,16 +1364,6 @@
     });
 </script>
 
-<script>
-    // Todo o restante do script principal permanece aqui, com as seguintes modificações:
-    // 1. Substituir todas as chamadas a `googleDriveManager` por `firestoreManager`.
-    // 2. Simplificar `openFileWithPicker` pois não usamos mais o Google Picker.
-    // 3. Ajustar `openFileSystem` para ler do Firestore.
-    // 4. `handleSaveAction` e `handleSaveAsAction` usarão `firestoreManager`.
-    // ... O código completo e adaptado continua abaixo ...
-</script>
-
-<!-- Script Principal Adaptado -->
 <script>
         // --- Início do Script Principal ---
         
@@ -2789,7 +2810,7 @@
         appState.init();
         return winId;
     }
-
+    
     function createQualityToolWindow(toolName, appType, formHTML, listTitle, fileNameSuffix, formGridCols = 1) {
         const uniqueSuffix = generateId(appType);
         const winId = windowManager.createWindow(toolName, '', { width: '850px', height: '700px', appType: `quality-tool ${appType}` });
