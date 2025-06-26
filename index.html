@@ -5,21 +5,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/style/jsmind.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script>
-        /* macOS Sonoma dynamic wallpaper (Unsplash random) */
-        document.addEventListener('DOMContentLoaded', () => {
-            const hour = new Date().getHours();
-            const themeKeyword = hour >= 18 || hour < 6 ? 'night-sky' : 'sunrise';
-            const imgUrl = `https://source.unsplash.com/random/2560x1440/?${themeKeyword},nature,abstract`;
-            const img = new Image();
-            img.onload = () => { document.body.style.backgroundImage = `url('${imgUrl}')`; };
-            img.referrerPolicy = 'no-referrer';
-            img.src = imgUrl;
-        });
-    </script>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Public Management OS</title>
+    <title>Public Management OS/title>
     <style>
         :root {
             /* Tema Sonoma Claro (Padrão) */
@@ -92,7 +80,8 @@
         html { font-size: 16px; }
         body {
             background-color: var(--background);
-            background-image: url('https://source.unsplash.com/random/1920x1080/?minimalist-wallpaper,abstract,nature'); /* Added nature for more variety */
+            /* [MODIFICADO] Wallpaper padrão do repositório GitHub */
+            background-image: url('https://raw.githubusercontent.com/leonardomverona/PublicManagementOS/main/Public%20Management%20OS.png');
             background-size: cover; background-position: center; background-attachment: fixed;
             height: 100vh; overflow: hidden; color: var(--text-color);
             transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, background-image 0.5s ease-in-out; user-select: none;
@@ -1110,14 +1099,14 @@
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/js/jsmind.draggable.js"></script>
 
-<!-- Bloco de Script de Módulo -->
+<!-- [MODIFICADO] Bloco de Script de Módulo -->
 <script type="module">
     // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
     import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
     
-    // Configuração da API
+    // [MODIFICADO] Configuração da API - Google foi removido
     const ApiConfig = {
         firebase: {
             apiKey: "AIzaSyCbpWXt9stM8jnIL3UIggZuvr3V7nwvPcQ",
@@ -1364,6 +1353,16 @@
     });
 </script>
 
+<script>
+    // Todo o restante do script principal permanece aqui, com as seguintes modificações:
+    // 1. Substituir todas as chamadas a `googleDriveManager` por `firestoreManager`.
+    // 2. Simplificar `openFileWithPicker` pois não usamos mais o Google Picker.
+    // 3. Ajustar `openFileSystem` para ler do Firestore.
+    // 4. `handleSaveAction` e `handleSaveAsAction` usarão `firestoreManager`.
+    // ... O código completo e adaptado continua abaixo ...
+</script>
+
+<!-- Script Principal Adaptado -->
 <script>
         // --- Início do Script Principal ---
         
@@ -2195,8 +2194,8 @@
              });
         }
     
-    // ... Colar aqui todas as funções `open...` completas do arquivo anterior ...
-    // Exemplo:
+    // --- Funções Completas de Abertura de Aplicativos ---
+    
     function openMindMap() {
         const uniqueSuffix = generateId('mm');
         const winId = windowManager.createWindow('Novo Mapa Mental', '', {
@@ -2292,8 +2291,6 @@
     function removeMindMapNodeInteractive(jm, appState) {const n=jm.get_selected_node(); if(n && !n.isroot && confirm("Remover?")){jm.remove_node(n.id);appState.markDirty();}}
     function setMindMapNodeColor(jm, bg, fg, appState){const n=jm.get_selected_node(); if(n){jm.set_node_color(n.id,bg,fg); appState.markDirty();}}
         
-    // --- Funções Completas de Abertura de Aplicativos (Coladas de `index(49).html`) ---
-    
     function openGanttChart() {
         const uniqueSuffix = generateId('gantt');
         const winId = windowManager.createWindow('Cronograma Gantt', '', { width: '1150px', height: '650px', appType: 'gantt-chart' });
@@ -2810,7 +2807,7 @@
         appState.init();
         return winId;
     }
-    
+
     function createQualityToolWindow(toolName, appType, formHTML, listTitle, fileNameSuffix, formGridCols = 1) {
         const uniqueSuffix = generateId(appType);
         const winId = windowManager.createWindow(toolName, '', { width: '850px', height: '700px', appType: `quality-tool ${appType}` });
@@ -2905,6 +2902,7 @@
         appState.renderListItem = function(item, index) { const icons = {pendente: 'fa-clock', conforme: 'fa-check-circle', nao_conforme: 'fa-times-circle', na: 'fa-minus-circle'}; const iconClass = icons[item.status] || 'fa-question-circle'; return `<li> <div class="item-details"> <strong><i class="fas ${iconClass}" style="margin-right:8px; color: ${item.status === 'conforme' ? 'green' : (item.status === 'nao_conforme' ? 'red' : 'var(--secondary-text-color)')};"></i>${item.text}</strong> <small>Status: ${item.status} ${item.category ? `| Cat: ${item.category}` : ''} ${item.responsible ? `| Resp: ${item.responsible}`: ''}</small> ${item.notes ? `<p><i>Obs: ${item.notes}</i></p>` : ''} </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
         return winId;
     }
+
     function openNCRTool() {
         const formHTML = `<input type="text" id="ncrDescriptionInput" class="app-input" placeholder="Descrição da Não Conformidade" style="grid-column: span 2;"> <input type="date" id="ncrDateInput" class="app-input" title="Data da Ocorrência"> <input type="text" id="ncrSourceInput" class="app-input" placeholder="Origem/Processo Afetado"> <select id="ncrSeverityInput" class="app-select"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="critica">Crítica</option></select> <input type="text" id="ncrReportedByInput" class="app-input" placeholder="Reportado Por"> <textarea id="ncrEvidenceInput" class="app-textarea" placeholder="Evidências..." style="min-height:60px; grid-column: span 2;"></textarea> <textarea id="ncrImmediateActionInput" class="app-textarea" placeholder="Ação Imediata Tomada" style="min-height:60px;"></textarea> <textarea id="ncrCorrectiveActionInput" class="app-textarea" placeholder="Ação Corretiva Proposta" style="min-height:60px;"></textarea> <input type="date" id="ncrCorrectiveActionDeadlineInput" class="app-input" title="Prazo Ação Corretiva"> <select id="ncrStatusInput" class="app-select"><option value="aberta">Aberta</option><option value="em_analise">Em Análise</option><option value="acao_implementada">Ação Implementada</option><option value="verificacao_eficacia">Verificando Eficácia</option><option value="fechada">Fechada</option></select>`;
         const winId = createQualityToolWindow('Relatório de Não Conformidade', 'ncr', formHTML, 'Não Conformidades Registradas', 'ncr', 2);
@@ -2914,6 +2912,7 @@
         appState.renderListItem = function(item, index) { const severityColors = {baixa: 'green', media: 'orange', alta: 'red', critica: 'darkred'}; return `<li> <div class="item-details"> <strong><i class="fas fa-exclamation-triangle" style="margin-right:8px; color:${severityColors[item.severity] || 'var(--secondary-text-color)'};"></i>${item.description}</strong> <small>Severidade: ${item.severity}, Data: ${item.date || 'N/D'}, Status: ${item.status}</small> <small>Origem: ${item.source || 'N/I'} | Reportado por: ${item.reportedBy || 'N/I'}</small> ${item.correctiveAction ? `<p><i>Ação: ${item.correctiveAction.substring(0,100)}...</i></p>` : ''} </div> <div class="item-actions"> <button class="app-button secondary action-button" data-action="edit" data-index="${index}"><i class="fas fa-edit"></i></button> <button class="app-button danger action-button" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button> </div> </li>`; };
         return winId;
     }
+    
     function openPDCATool() {
         const formHTML = `<input type="text" id="pdcaTitleInput" class="app-input" placeholder="Título da Iniciativa/Problema" style="grid-column: span 2;"> <textarea id="pdcaPlanInput" class="app-textarea" placeholder="Planejar (Plan)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaDoInput" class="app-textarea" placeholder="Executar (Do)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaCheckInput" class="app-textarea" placeholder="Verificar (Check)..." style="min-height:80px; grid-column: span 2;"></textarea> <textarea id="pdcaActInput" class="app-textarea" placeholder="Agir (Act)..." style="min-height:80px; grid-column: span 2;"></textarea> <input type="text" id="pdcaResponsibleInput" class="app-input" placeholder="Responsável"> <input type="date" id="pdcaStartDateInput" class="app-input" title="Data de Início"> <select id="pdcaStatusInput" class="app-select"><option value="planejamento">Planejamento</option><option value="execucao">Execução</option><option value="verificacao">Verificação</option><option value="acao">Ação</option><option value="concluido">Concluído</option><option value="suspenso">Suspenso</option></select>`;
         const winId = createQualityToolWindow('Ciclo PDCA', 'pdca', formHTML, 'Iniciativas PDCA', 'pdca', 2);
