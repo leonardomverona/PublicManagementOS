@@ -1,13 +1,24 @@
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/jsmind@0.4.6/style/jsmind.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        /* macOS Sonoma dynamic wallpaper (Unsplash random) */
+        document.addEventListener('DOMContentLoaded', () => {
+            const hour = new Date().getHours();
+            const themeKeyword = hour >= 18 || hour < 6 ? 'night-sky' : 'sunrise';
+            const imgUrl = `https://source.unsplash.com/random/2560x1440/?${themeKeyword},nature,abstract`;
+            const img = new Image();
+            img.onload = () => { document.body.style.backgroundImage = `url('${imgUrl}')`; };
+            img.referrerPolicy = 'no-referrer';
+            img.src = imgUrl;
+        });
+    </script>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Public Management OS/title>
+    <title>Public Management OS</title>
     <style>
         :root {
             /* Tema Sonoma Claro (Padrão) */
