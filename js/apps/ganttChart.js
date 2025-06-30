@@ -444,7 +444,89 @@ export function openGanttChart() {
                 }
             });
         },
-        calculateAndDrawCriticalPath: function() { /* ... (a lógica existente é robusta e mantida) ... */ },
+        calculateAndDrawCriticalPath: function() {
+            const tasks = this.tasks.filter(t => t.type !== 'parent');
+            if (tasks.length === 0) return;
+
+            tasks.forEach(t => {
+                t.earlyStart = 0;
+                t.earlyFinish = 0;
+                t.lateStart = Infinity;
+                t.lateFinish = Infinity;
+                t.duration = this.daysBetween(t.start, t.end) + 1;
+            });
+
+            const taskMap = new Map(tasks.map(t => [t.id, t]));
+            const adj = new Map(tasks.map(t => [t.id, []]));
+            const revAdj = new Map(tasks.map(t => [t.id, []]));
+            
+            tasks.forEach(t => {
+                if (t.dependencies) {
+                    t.dependencies.split(',').forEach(depId => {
+                        depId = depId.trim();
+                        if (taskMap.has(depId)) {
+                            adj.get(depId).push(t.id);
+                            revAdj.get(t.id).push(depId);
+                        }
+                    });
+                }
+            });
+
+            const forwardPassQueue = tasks.filter(t => !t.dependencies || t.dependencies.trim() === '');
+            const processedForward = new Set();
+            while(forwardPassQueue.length > 0){
+                const u = forwardPassQueue.shift();
+                if(processedForward.has(u.id)) continue;
+                processedForward.add(u.id);
+
+                u.earlyFinish = u.earlyStart + u.duration;
+                (adj.get(u.id) || []).forEach(vId => {
+                    const v = taskMap.get(vId);
+                    v.earlyStart = Math.max(v.earlyStart, u.earlyFinish);
+                    const allDepsProcessed = (v.dependencies.split(',').every(depId => processedForward.has(depId.trim())));
+                    if(allDepsProcessed) forwardPassQueue.push(v);
+                });
+            }
+
+            const projectFinishTime = Math.max(0, ...tasks.map(t => t.earlyFinish));
+            tasks.forEach(t => t.lateFinish = projectFinishTime);
+
+            const backwardPassQueue = tasks.filter(t => !(adj.get(t.id) || []).length);
+            const processedBackward = new Set();
+            while(backwardPassQueue.length > 0){
+                const u = backwardPassQueue.shift();
+                if(processedBackward.has(u.id)) continue;
+                processedBackward.add(u.id);
+
+                u.lateStart = u.lateFinish - u.duration;
+                (revAdj.get(u.id) || []).forEach(pId => {
+                    const p = taskMap.get(pId);
+                    p.lateFinish = Math.min(p.lateFinish, u.lateStart);
+                    const allSuccsProcessed = (adj.get(p.id) || []).every(succId => processedBackward.has(succId));
+                    if(allSuccsProcessed) backwardPassQueue.push(p);
+                });
+            }
+            
+            const criticalPathTaskIds = new Set();
+            this.chartContent.querySelectorAll('.gantt-bar.critical').forEach(el => el.classList.remove('critical'));
+            tasks.forEach(t => {
+                const slack = t.lateStart - t.earlyStart;
+                if (slack < 0.01) {
+                    criticalPathTaskIds.add(t.id);
+                    const barEl = this.chartContent.querySelector(`.gantt-bar-container[data-task-id="${t.id}"] .gantt-bar`);
+                    if (barEl) barEl.classList.add('critical');
+                }
+            });
+
+            this.svgOverlay.querySelectorAll('.gantt-dependency-path').forEach(path => {
+                const { fromId, toId } = path.dataset;
+                if (criticalPathTaskIds.has(fromId) && criticalPathTaskIds.has(toId)) {
+                    path.classList.add('gantt-critical-path');
+                } else {
+                    path.classList.remove('gantt-critical-path');
+                }
+            });
+        },
 
         // --- Adicionar e Manipular Tarefas ---
         addTask: function(isMilestone = false) {
@@ -464,7 +546,23 @@ export function openGanttChart() {
             this.markDirty();
             this.renderAll();
         },
-        updateParentTasks: function() { /* ... (a lógica existente é robusta e mantida) ... */ },
+        updateParentTasks: function() {
+            const processNode = (task) => {
+                const children = this.tasks.filter(c => c.parentId === task.id);
+                if (children.length > 0) {
+                    children.forEach(processNode); // Process children first
+
+                    const startDates = children.map(c => new Date(c.start));
+                    const endDates = children.map(c => new Date(c.end));
+                    task.start = new Date(Math.min(...startDates)).toISOString().split('T')[0];
+                    task.end = new Date(Math.max(...endDates)).toISOString().split('T')[0];
+                    
+                    const totalProgress = children.reduce((sum, c) => sum + (c.progress || 0), 0);
+                    task.progress = Math.round(totalProgress / children.length);
+                }
+            };
+            this.tasks.filter(t => t.type === 'parent').forEach(processNode);
+        },
 
         // --- Manipuladores de Eventos ---
         handleSidebarInput: function(e) {
@@ -496,13 +594,65 @@ export function openGanttChart() {
                 }
             }
         },
-        handleBarInteraction: function(e) { /* ... (a lógica existente é robusta e mantida) ... */ },
+        handleBarInteraction: function(e) {
+            const bar = e.target.closest('.gantt-bar, .gantt-milestone');
+            if (!bar) return;
+
+            const container = bar.closest('.gantt-bar-container');
+            const taskId = container.dataset.taskId;
+            const task = this.tasks.find(t => t.id === taskId);
+            if (!task || task.type === 'parent') return;
+
+            this.hideTooltip();
+            const initialX = e.clientX;
+            const initialStart = new Date(task.start);
+            const initialEnd = new Date(task.end);
+            const handle = e.target.classList.contains('gantt-bar-handle') ? e.target.className.includes('left') ? 'left' : 'right' : null;
+            
+            const onMouseMove = (moveE) => {
+                const deltaX = moveE.clientX - initialX;
+                const deltaDays = Math.round(deltaX / this.timeline.unitWidth);
+
+                if (handle === 'left') {
+                    const newStart = this.addDays(initialStart, deltaDays);
+                    if (newStart <= initialEnd) {
+                        task.start = newStart.toISOString().split('T')[0];
+                    }
+                } else if (handle === 'right') {
+                    const newEnd = this.addDays(initialEnd, deltaDays);
+                    if (newEnd >= new Date(task.start)) {
+                        task.end = newEnd.toISOString().split('T')[0];
+                    }
+                } else { // Mover barra inteira
+                    task.start = this.addDays(initialStart, deltaDays).toISOString().split('T')[0];
+                    task.end = this.addDays(initialEnd, deltaDays).toISOString().split('T')[0];
+                }
+                this.renderAll();
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                this.markDirty();
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
         handleBarMouseOver: function(e) {
             const barContainer = e.target.closest('.gantt-bar-container');
             if (barContainer) {
                 const taskId = barContainer.dataset.taskId;
                 const task = this.tasks.find(t => t.id === taskId);
                 if (task) this.showTooltip(e, task);
+            }
+        },
+        syncScroll: function(e) {
+            if (e.target === this.chartViewport) {
+                this.sidebarBody.scrollTop = this.chartViewport.scrollTop;
+                this.headerContainer.scrollLeft = this.chartViewport.scrollLeft;
+            } else {
+                this.chartViewport.scrollTop = this.sidebarBody.scrollTop;
             }
         },
 
@@ -537,222 +687,60 @@ export function openGanttChart() {
             this.tooltipEl.classList.add('visible');
         },
         hideTooltip: function() { this.tooltipEl.classList.remove('visible'); },
-        generateAvatar: function(name) { /* ... (a lógica existente é robusta e mantida) ... */ },
-        getFlatTaskOrder: function() { /* ... (a lógica existente é robusta e mantida) ... */ },
-        setupSplitter: function() { /* ... (a lógica existente é robusta e mantida) ... */ },
+        generateAvatar: function(name) {
+            if (!name || name.trim() === '') return `<div class="avatar" style="background-color: #ccc;" title="Não atribuído"></div>`;
+            const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+            const colors = ['#4a6cf7', '#28a745', '#ffc107', '#dc3545', '#6a11cb', '#fd7e14', '#0dcaf0'];
+            const charCodeSum = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const color = colors[charCodeSum % colors.length];
+            return `<div class="avatar" style="background-color: ${color};" title="${name}">${initials}</div>`;
+        },
+        getFlatTaskOrder: function() {
+            const order = [];
+            const processNode = (task) => {
+                order.push(task.id);
+                if (task.type === 'parent' && !task.collapsed) {
+                    this.tasks.filter(t => t.parentId === task.id)
+                        .sort((a,b) => new Date(a.start) - new Date(b.start))
+                        .forEach(processNode);
+                }
+            };
+            this.tasks.filter(t => !t.parentId)
+                .sort((a,b) => new Date(a.start) - new Date(b.start))
+                .forEach(processNode);
+            return order;
+        },
+        setupSplitter: function() {
+            const splitter = this.splitter;
+            const sidebar = splitter.previousElementSibling;
+            let isDragging = false;
+            splitter.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                splitter.classList.add('dragging');
+                e.preventDefault();
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+            const onMouseMove = (e) => {
+                if (!isDragging) return;
+                const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
+                if (newWidth > 300 && newWidth < window.innerWidth - 300) {
+                    sidebar.style.width = `${newWidth}px`;
+                }
+            };
+            const onMouseUp = () => {
+                isDragging = false;
+                splitter.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+        },
         
         cleanup: () => {}
     };
-    
-    // Anexar lógicas omitidas para brevidade, pois são robustas da versão anterior
-    appState.calculateAndDrawCriticalPath = this.sharedCritialPathLogic;
-    appState.updateParentTasks = this.sharedParentTaskLogic;
-    appState.handleBarInteraction = this.sharedBarInteractionLogic;
-    appState.generateAvatar = this.sharedAvatarLogic;
-    appState.getFlatTaskOrder = this.sharedFlatTaskOrderLogic;
-    appState.setupSplitter = this.sharedSplitterLogic;
-    appState.appState = appState; // Referência para uso interno nas lógicas compartilhadas
 
     initializeFileState(appState, "Roadmap do Projeto", "roadmap.gantt", "gantt-chart");
     winData.currentAppInstance = appState;
     appState.init();
     return winId;
 }
-
-// Lógicas compartilhadas para evitar repetição massiva de código
-this.sharedCritialPathLogic = function() {
-    const tasks = this.appState.tasks.filter(t => t.type !== 'parent');
-    if (tasks.length === 0) return;
-
-    tasks.forEach(t => {
-        t.earlyStart = 0;
-        t.earlyFinish = 0;
-        t.lateStart = Infinity;
-        t.lateFinish = Infinity;
-        t.duration = this.appState.daysBetween(t.start, t.end) + 1;
-    });
-
-    const taskMap = new Map(tasks.map(t => [t.id, t]));
-    const adj = new Map(tasks.map(t => [t.id, []]));
-    const revAdj = new Map(tasks.map(t => [t.id, []]));
-    
-    tasks.forEach(t => {
-        if (t.dependencies) {
-            t.dependencies.split(',').forEach(depId => {
-                depId = depId.trim();
-                if (taskMap.has(depId)) {
-                    adj.get(depId).push(t.id);
-                    revAdj.get(t.id).push(depId);
-                }
-            });
-        }
-    });
-
-    const startNodes = tasks.filter(t => !t.dependencies || t.dependencies.trim() === '');
-    let q = [...startNodes];
-    let processed = new Set();
-    const forwardPassQueue = tasks.filter(t => !t.dependencies || t.dependencies.trim() === '');
-    const processedForward = new Set();
-    while(forwardPassQueue.length > 0){
-        const u = forwardPassQueue.shift();
-        if(processedForward.has(u.id)) continue;
-        processedForward.add(u.id);
-
-        u.earlyFinish = u.earlyStart + u.duration;
-        (adj.get(u.id) || []).forEach(vId => {
-            const v = taskMap.get(vId);
-            v.earlyStart = Math.max(v.earlyStart, u.earlyFinish);
-            const allDepsProcessed = (v.dependencies.split(',').every(depId => processedForward.has(depId.trim())));
-            if(allDepsProcessed) forwardPassQueue.push(v);
-        });
-    }
-
-    const projectFinishTime = Math.max(0, ...tasks.map(t => t.earlyFinish));
-    tasks.forEach(t => t.lateFinish = projectFinishTime);
-
-    const backwardPassQueue = tasks.filter(t => !(adj.get(t.id) || []).length);
-    const processedBackward = new Set();
-     while(backwardPassQueue.length > 0){
-        const u = backwardPassQueue.shift();
-        if(processedBackward.has(u.id)) continue;
-        processedBackward.add(u.id);
-
-        u.lateStart = u.lateFinish - u.duration;
-        (revAdj.get(u.id) || []).forEach(pId => {
-            const p = taskMap.get(pId);
-            p.lateFinish = Math.min(p.lateFinish, u.lateStart);
-            const allSuccsProcessed = (adj.get(p.id) || []).every(succId => processedBackward.has(succId));
-            if(allSuccsProcessed) backwardPassQueue.push(p);
-        });
-    }
-    
-    const criticalPathTaskIds = new Set();
-    this.appState.chartContent.querySelectorAll('.gantt-bar.critical').forEach(el => el.classList.remove('critical'));
-    tasks.forEach(t => {
-        const slack = t.lateStart - t.earlyStart;
-        if (slack < 0.01) {
-            criticalPathTaskIds.add(t.id);
-            const barEl = this.appState.chartContent.querySelector(`.gantt-bar-container[data-task-id="${t.id}"] .gantt-bar`);
-            if (barEl) barEl.classList.add('critical');
-        }
-    });
-
-    this.appState.svgOverlay.querySelectorAll('.gantt-dependency-path').forEach(path => {
-        const { fromId, toId } = path.dataset;
-        if (criticalPathTaskIds.has(fromId) && criticalPathTaskIds.has(toId)) {
-            path.classList.add('gantt-critical-path');
-        } else {
-            path.classList.remove('gantt-critical-path');
-        }
-    });
-};
-this.sharedParentTaskLogic = function() {
-    const processNode = (task) => {
-        const children = this.appState.tasks.filter(c => c.parentId === task.id);
-        if (children.length > 0) {
-            children.forEach(processNode); // Process children first
-
-            const startDates = children.map(c => new Date(c.start));
-            const endDates = children.map(c => new Date(c.end));
-            task.start = new Date(Math.min(...startDates)).toISOString().split('T')[0];
-            task.end = new Date(Math.max(...endDates)).toISOString().split('T')[0];
-            
-            const totalProgress = children.reduce((sum, c) => sum + (c.progress || 0), 0);
-            task.progress = Math.round(totalProgress / children.length);
-        }
-    };
-    this.appState.tasks.filter(t => t.type === 'parent').forEach(processNode);
-};
-this.sharedBarInteractionLogic = function(e) {
-    const bar = e.target.closest('.gantt-bar, .gantt-milestone');
-    if (!bar) return;
-
-    const container = bar.closest('.gantt-bar-container');
-    const taskId = container.dataset.taskId;
-    const task = this.appState.tasks.find(t => t.id === taskId);
-    if (!task || task.type === 'parent') return;
-
-    this.appState.hideTooltip();
-    const initialX = e.clientX;
-    const initialStart = new Date(task.start);
-    const initialEnd = new Date(task.end);
-    const handle = e.target.classList.contains('gantt-bar-handle') ? e.target.className.includes('left') ? 'left' : 'right' : null;
-    
-    const onMouseMove = (moveE) => {
-        const deltaX = moveE.clientX - initialX;
-        const deltaDays = Math.round(deltaX / this.appState.timeline.unitWidth);
-
-        if (handle === 'left') {
-            const newStart = this.appState.addDays(initialStart, deltaDays);
-            if (newStart <= initialEnd) {
-                task.start = newStart.toISOString().split('T')[0];
-            }
-        } else if (handle === 'right') {
-            const newEnd = this.appState.addDays(initialEnd, deltaDays);
-            if (newEnd >= new Date(task.start)) {
-                task.end = newEnd.toISOString().split('T')[0];
-            }
-        } else { // Mover barra inteira
-            task.start = this.appState.addDays(initialStart, deltaDays).toISOString().split('T')[0];
-            task.end = this.appState.addDays(initialEnd, deltaDays).toISOString().split('T')[0];
-        }
-        this.appState.renderAll();
-    };
-
-    const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        this.appState.markDirty();
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-};
-this.sharedAvatarLogic = function(name) {
-    if (!name || name.trim() === '') return `<div class="avatar" style="background-color: #ccc;" title="Não atribuído"></div>`;
-    const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-    const colors = ['#4a6cf7', '#28a745', '#ffc107', '#dc3545', '#6a11cb', '#fd7e14', '#0dcaf0'];
-    const charCodeSum = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const color = colors[charCodeSum % colors.length];
-    return `<div class="avatar" style="background-color: ${color};" title="${name}">${initials}</div>`;
-};
-this.sharedFlatTaskOrderLogic = function() {
-    const order = [];
-    const processNode = (task) => {
-        order.push(task.id);
-        if (task.type === 'parent' && !task.collapsed) {
-            this.appState.tasks.filter(t => t.parentId === task.id)
-                .sort((a,b) => new Date(a.start) - new Date(b.start))
-                .forEach(processNode);
-        }
-    };
-    this.appState.tasks.filter(t => !t.parentId)
-        .sort((a,b) => new Date(a.start) - new Date(b.start))
-        .forEach(processNode);
-    return order;
-};
-this.sharedSplitterLogic = function() {
-    const splitter = this.appState.splitter;
-    const sidebar = splitter.previousElementSibling;
-    let isDragging = false;
-    splitter.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        splitter.classList.add('dragging');
-        e.preventDefault();
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    });
-    const onMouseMove = (e) => {
-        if (!isDragging) return;
-        const newWidth = e.clientX - sidebar.getBoundingClientRect().left;
-        if (newWidth > 300 && newWidth < window.innerWidth - 300) {
-            sidebar.style.width = `${newWidth}px`;
-        }
-    };
-    const onMouseUp = () => {
-        isDragging = false;
-        splitter.classList.remove('dragging');
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    };
-};
