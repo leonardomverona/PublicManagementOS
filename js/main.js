@@ -41,42 +41,28 @@ class WindowManager {
         this.appLaunchActions = {};
     }
 
-    /**
-     * Lógica detalhada para ocultar/mostrar o Dock.
-     * Esta função é o centro do comportamento de auto-ocultação.
-     */
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
 
-        // Passo 1: Detectar o tipo de dispositivo.
-        // Dispositivos de toque (celulares, tablets) têm uma experiência de usuário diferente.
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 768;
 
-        // Passo 2: Lógica para Dispositivos de Toque (Mobile).
-        // Em um celular, o dock NUNCA deve se esconder. Ele é parte da navegação principal.
-        // Portanto, se for um dispositivo de toque, simplesmente removemos a classe 'hidden' e paramos a função.
         if (isTouchDevice) {
             dock.classList.remove('hidden');
             return;
         }
 
-        // Passo 3: Lógica para Desktops.
-        // O Dock só deve se esconder se houver PELO MENOS UMA janela aberta que NÃO esteja minimizada.
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
-                shouldHide = true; // Encontrou uma janela visível, então o Dock deve se esconder.
-                break; // Não precisa verificar o resto, a condição foi atendida.
+                shouldHide = true;
+                break;
             }
         }
 
-        // Passo 4: Aplicar a classe CSS.
-        // A classe 'hidden' tem o CSS que desliza o Dock para fora da tela.
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
-            // Se não houver janelas visíveis (todas fechadas ou minimizadas), o Dock deve aparecer.
             dock.classList.remove('hidden');
         }
     }
@@ -228,7 +214,7 @@ class WindowManager {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
             if (winData.currentAppInstance && winData.currentAppInstance.isDirty) {
-                if (!confirm('Você possui alterações não salvas nesta janela. Deseja fechar mesmo assim e descartar as alterações?')) {
+                if (!confirm('Você possui alterações não salvas. Deseja fechar e descartar as alterações?')) {
                     return;
                 }
             }
@@ -648,15 +634,25 @@ export function initializeWebOS() {
         window.mapNeuralManager.loadState();
     }
 
+    // Lógica do Dock
     const dockEl = document.getElementById('appDock');
     const triggerArea = document.getElementById('dock-trigger-area');
-    if (dockEl && triggerArea) {
-        triggerArea.addEventListener('mouseenter', () => {
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 768;
-            if(!isTouchDevice) dockEl.classList.remove('hidden');
-        });
-        dockEl.addEventListener('mouseleave', () => {
-            window.windowManager.updateDockVisibility();
+    const desktopContainer = document.getElementById('desktop');
+
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (!isTouchDevice && dockEl && triggerArea) {
+        const showDock = () => dockEl.classList.remove('hidden');
+        const hideDock = () => window.windowManager.updateDockVisibility();
+
+        triggerArea.addEventListener('mouseenter', showDock);
+        dockEl.addEventListener('mouseenter', showDock);
+        desktopContainer.addEventListener('mouseleave', hideDock); // Esconde se o mouse sair da área do desktop
+        dockEl.addEventListener('mouseleave', (e) => {
+            // Garante que o mouse não foi para a área de gatilho
+            if (e.relatedTarget !== triggerArea) {
+                hideDock();
+            }
         });
     }
     window.windowManager.updateDockVisibility();
