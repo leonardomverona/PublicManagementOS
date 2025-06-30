@@ -591,7 +591,26 @@ export function initializeWebOS() {
     
     window.themeManager.applyThemeVariables();
     document.getElementById('darkModeToggle').onclick = () => window.themeManager.toggleDarkMode();
-    const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><input type="file" id="wallpaperInput" accept="image/*" style="display:none"><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
+    const wallpaperInput = document.getElementById('wallpaperInput');
+    if (wallpaperInput) {
+        wallpaperInput.addEventListener('change', e => {
+            if (!e.target.files || !e.target.files[0] || !e.target.files[0].type.startsWith('image/')) {
+                if (e.target.files && e.target.files[0]) {
+                    showNotification("Por favor, selecione um arquivo de imagem válido.", 3000);
+                }
+                return;
+            }
+    
+            const reader = new FileReader();
+            reader.onload = ev => {
+                document.body.style.backgroundImage = `url(${ev.target.result})`;
+                localStorage.setItem(STORAGE_KEYS.WALLPAPER, ev.target.result);
+                showNotification("Papel de parede alterado!", 2500);
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+    }
+    const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
     const desktopContextMenuEl = document.getElementById('desktopContextMenu');
     if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
     setupDesktopContextMenuListeners();
@@ -621,23 +640,11 @@ export function initializeWebOS() {
 
 function updateClockTime() { const clockEl = document.getElementById('clock'); if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 function chooseWallpaper() { 
-    const wallpaperInput = document.getElementById('wallpaperInput') || document.createElement('input');
-    if(!document.getElementById('wallpaperInput')) {
-        wallpaperInput.type = 'file';
-        wallpaperInput.id = 'wallpaperInput';
-        wallpaperInput.accept = "image/*";
-        wallpaperInput.style.display = 'none';
-        document.body.appendChild(wallpaperInput);
-        wallpaperInput.addEventListener('change', e => { 
-            if (!e.target.files[0]?.type.startsWith('image/')) { if (e.target.files[0]) showNotification("Selecione um arquivo de imagem.", 3000); return; } 
-            const reader = new FileReader(); 
-            reader.onload = ev => { 
-                document.body.style.backgroundImage = `url(${ev.target.result})`; 
-                localStorage.setItem(STORAGE_KEYS.WALLPAPER, ev.target.result); 
-            }; 
-            reader.readAsDataURL(e.target.files[0]); 
-        });
+    const wallpaperInput = document.getElementById('wallpaperInput');
+    if (wallpaperInput) {
+        wallpaperInput.click();
     }
+}
     wallpaperInput.click();
 }
 function showDesktop() { window.windowManager.windows.forEach((wData, winId) => { if (!wData.minimized) window.windowManager.minimizeWindow(winId); }); }
