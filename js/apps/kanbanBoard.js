@@ -263,9 +263,20 @@ export function openKanbanBoard() {
             const text = this.modal.newTagText.value.trim();
             const color = this.modal.newTagColor.value;
             if (!text) return;
-            this.renderModalTags([{text, color}]); // Temporário, só adiciona visualmente
-            const currentTags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0,-2).trim(), color: el.dataset.color }));
+        
+            // 1. Pega as tags que já existem no modal
+            const currentTags = Array.from(this.modal.tagsContainer.children).map(el => ({
+                text: el.textContent.slice(0, -2).trim(), // Remove o ' ×' do final
+                color: el.dataset.color
+            }));
+        
+            // 2. Adiciona a nova tag à lista
+            currentTags.push({ text, color });
+        
+            // 3. Renderiza a lista completa e atualizada de tags
             this.renderModalTags(currentTags);
+        
+            // 4. Limpa o input para a próxima tag
             this.modal.newTagText.value = '';
             this.modal.newTagText.focus();
         },
