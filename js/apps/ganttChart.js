@@ -134,10 +134,10 @@ export function openGanttChart() {
         </div>
         <div class="gantt-tooltip" id="ganttTooltip_${uniqueSuffix}"></div>
     `;
-    const winEl = window.windowManager.getWindow(winId);
-    if (!winEl) return winId;
-    winEl.querySelector('.window-content').innerHTML = content;
     const winData = window.windowManager.windows.get(winId);
+    if (!winData) return winId;
+    const winEl = winData.element;
+    winEl.querySelector('.window-content').innerHTML = content;
 
     const appState = {
         winId, tasks: [], appDataType: 'gantt-chart',
