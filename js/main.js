@@ -53,6 +53,12 @@ class WindowManager {
             }
         }
 
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            dock.classList.remove('hidden');
+            return;
+        }
+
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
@@ -577,6 +583,7 @@ export function initializeWebOS() {
         'open-pdca-tool': apps.openPDCATool, 
         'open-5w2h-tool': apps.open5W2HTool 
     };
+    
     document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => {
         const action = item.dataset.action;
         if (window.windowManager.appLaunchActions[action]) {
@@ -626,29 +633,16 @@ export function initializeWebOS() {
         window.mapNeuralManager.loadState();
     }
 
-    // --- LÓGICA PARA OCULTAR O DOCK AUTOMATICAMENTE (APENAS EM DESKTOPS) ---
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    
     if (!isTouchDevice) {
         const dockEl = document.getElementById('appDock');
         const triggerArea = document.getElementById('dock-trigger-area');
-    '
         if (dockEl && triggerArea) {
-            triggerArea.addEventListener('mouseenter', () => {
-                dockEl.classList.remove('hidden');
-            });
-    
-            dockEl.addEventListener('mouseleave', () => {
-                window.windowManager.updateDockVisibility();
-            });
+            triggerArea.addEventListener('mouseenter', () => dockEl.classList.remove('hidden'));
+            dockEl.addEventListener('mouseleave', () => window.windowManager.updateDockVisibility());
         }
     }
-    // Define o estado inicial do dock (ou remove a classe 'hidden' em dispositivos de toque)
-    if (isTouchDevice) {
-        document.getElementById('appDock')?.classList.remove('hidden');
-    } else {
-        window.windowManager.updateDockVisibility();
-    }
+    window.windowManager.updateDockVisibility();
     
     showNotification(`Bem-vindo(a) de volta!`, 3500);
 }
