@@ -626,18 +626,29 @@ export function initializeWebOS() {
         window.mapNeuralManager.loadState();
     }
 
-    const dockEl = document.getElementById('appDock');
-    const triggerArea = document.getElementById('dock-trigger-area');
-
-    if (dockEl && triggerArea) {
-        triggerArea.addEventListener('mouseenter', () => {
-            dockEl.classList.remove('hidden');
-        });
-        dockEl.addEventListener('mouseleave', () => {
-            window.windowManager.updateDockVisibility();
-        });
+    // --- LÓGICA PARA OCULTAR O DOCK AUTOMATICAMENTE (APENAS EM DESKTOPS) ---
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    
+    if (!isTouchDevice) {
+        const dockEl = document.getElementById('appDock');
+        const triggerArea = document.getElementById('dock-trigger-area');
+    '
+        if (dockEl && triggerArea) {
+            triggerArea.addEventListener('mouseenter', () => {
+                dockEl.classList.remove('hidden');
+            });
+    
+            dockEl.addEventListener('mouseleave', () => {
+                window.windowManager.updateDockVisibility();
+            });
+        }
     }
-    window.windowManager.updateDockVisibility();
+    // Define o estado inicial do dock (ou remove a classe 'hidden' em dispositivos de toque)
+    if (isTouchDevice) {
+        document.getElementById('appDock')?.classList.remove('hidden');
+    } else {
+        window.windowManager.updateDockVisibility();
+    }
     
     showNotification(`Bem-vindo(a) de volta!`, 3500);
 }
