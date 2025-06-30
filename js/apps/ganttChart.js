@@ -1,6 +1,5 @@
 import { generateId, showNotification } from '../main.js';
 import { getStandardAppToolbarHTML, initializeFileState, setupAppToolbarActions } from './app.js';
-
 export function openGanttChart() {
     const uniqueSuffix = generateId('gantt');
     const winId = window.windowManager.createWindow('Roadmap do Projeto (Gantt 2.0)', '', { 
@@ -10,7 +9,6 @@ export function openGanttChart() {
         minWidth: 800,
         minHeight: 600
     });
-
     const content = `
         <style>
             :root {
@@ -32,7 +30,7 @@ export function openGanttChart() {
             
             .gantt-v2-container { 
                 display: flex; 
-                height: calc(100% - 40px); 
+                height: calc(100% - 80px); 
                 width: 100%;
                 overflow: hidden;
             }
@@ -77,7 +75,92 @@ export function openGanttChart() {
                 display: flex;
                 margin: 0 5px;
             }
-
+            /* --- Barra de Pesquisa e Filtros --- */
+            .gantt-search-bar {
+                padding: 8px 12px;
+                background-color: var(--toolbar-bg);
+                border-bottom: 1px solid var(--separator-color);
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            
+            .gantt-filter-group {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            
+            .gantt-filter-label {
+                font-size: 0.85em;
+                color: var(--secondary-text-color);
+            }
+            
+            .gantt-filter-select {
+                background: var(--input-bg);
+                border: 1px solid var(--button-border);
+                border-radius: 4px;
+                padding: 4px 8px;
+                color: var(--text-color);
+                font-size: 0.85em;
+            }
+            
+            .app-input {
+                padding: 6px 10px;
+                border-radius: 4px;
+                border: 1px solid var(--button-border);
+                background: var(--input-bg);
+                color: var(--text-color);
+                font-size: 0.9em;
+                flex: 1;
+                max-width: 250px;
+            }
+            
+            .assignee-dropdown {
+                position: relative;
+                display: inline-block;
+            }
+            
+            .assignee-options {
+                position: absolute;
+                background: var(--context-menu-bg);
+                border: 1px solid var(--separator-color);
+                border-radius: 4px;
+                max-height: 200px;
+                overflow-y: auto;
+                z-index: 100;
+                width: 100%;
+                display: none;
+            }
+            
+            .assignee-option {
+                padding: 6px 10px;
+                cursor: pointer;
+            }
+            
+            .assignee-option:hover {
+                background-color: var(--hover-highlight-color);
+            }
+            
+            .dependency-creation {
+                stroke: var(--accent-color);
+                stroke-width: 2;
+                stroke-dasharray: 5,5;
+            }
+            
+            .focus-mode-banner {
+                background: var(--accent-color);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 4px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 10;
+            }
             /* --- Painel da Tabela (Sidebar) --- */
             .gantt-sidebar { 
                 width: 45%; 
@@ -132,6 +215,14 @@ export function openGanttChart() {
             
             .gantt-task-row.selected {
                 background-color: var(--selection-color);
+            }
+            
+            .gantt-task-row.drag-over-top {
+                border-top: 2px solid var(--accent-color);
+            }
+            
+            .gantt-task-row.drag-over-bottom {
+                border-bottom: 2px solid var(--accent-color);
             }
             
             .task-cell { 
@@ -242,7 +333,6 @@ export function openGanttChart() {
             .gantt-splitter:hover, .gantt-splitter.dragging { 
                 background: var(--accent-color); 
             }
-
             /* --- Área do Gráfico --- */
             .gantt-chart-area { 
                 flex-grow: 1; 
@@ -345,7 +435,6 @@ export function openGanttChart() {
                 background-color: var(--separator-color); 
                 opacity: 0.1; 
             }
-
             .gantt-bar-container { 
                 position: absolute; 
                 height: var(--gantt-row-height); 
@@ -442,7 +531,6 @@ export function openGanttChart() {
             .status-done { background-color: #28a745; }
             .status-blocked { background-color: #dc3545; }
             .gantt-bar.critical { border: 2px solid var(--critical-color); }
-
             #ganttSvgOverlay { 
                 position: absolute; 
                 top: 0; 
@@ -466,7 +554,6 @@ export function openGanttChart() {
                 stroke-width: 2.5 !important; 
                 opacity: 1 !important; 
             }
-
             /* --- Tooltip --- */
             .gantt-tooltip { 
                 position: fixed; 
@@ -543,7 +630,6 @@ export function openGanttChart() {
                 margin-right: 6px;
             }
         </style>
-
         <div class="app-toolbar">
             ${getStandardAppToolbarHTML()}
             <div class="toolbar-group">
@@ -558,6 +644,7 @@ export function openGanttChart() {
                 <button id="zoomOutBtn_${uniqueSuffix}" class="app-button secondary" title="Reduzir Zoom"><i class="fas fa-search-minus"></i></button>
                 <button id="zoomInBtn_${uniqueSuffix}" class="app-button secondary" title="Aumentar Zoom"><i class="fas fa-search-plus"></i></button>
                 <button id="todayBtn_${uniqueSuffix}" class="app-button secondary" title="Ir para Hoje"><i class="fas fa-calendar-day"></i></button>
+                <button id="fitToScreenBtn_${uniqueSuffix}" class="app-button secondary" title="Ajustar ao Projeto"><i class="fas fa-compress"></i></button>
             </div>
             
             <div class="toolbar-separator"></div>
@@ -565,6 +652,7 @@ export function openGanttChart() {
             <div class="toolbar-group">
                 <button id="linkTasksBtn_${uniqueSuffix}" class="app-button secondary" title="Vincular Tarefas"><i class="fas fa-link"></i></button>
                 <button id="criticalPathBtn_${uniqueSuffix}" class="app-button secondary" title="Mostrar Caminho Crítico"><i class="fas fa-bolt"></i></button>
+                <button id="focusModeBtn_${uniqueSuffix}" class="app-button secondary" title="Modo de Foco"><i class="fas fa-crosshairs"></i></button>
             </div>
             
             <div style="flex-grow: 1;"></div>
@@ -572,6 +660,32 @@ export function openGanttChart() {
             <div class="toolbar-group">
                 <button id="exportBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-file-export"></i> Exportar</button>
             </div>
+        </div>
+        
+        <!-- Nova barra de pesquisa e filtros -->
+        <div class="gantt-search-bar">
+            <input type="text" id="ganttSearch_${uniqueSuffix}" placeholder="Pesquisar tarefas..." class="app-input">
+            
+            <div class="gantt-filter-group">
+                <span class="gantt-filter-label">Status:</span>
+                <select id="statusFilter_${uniqueSuffix}" class="gantt-filter-select">
+                    <option value="all">Todos</option>
+                    <option value="todo">A Fazer</option>
+                    <option value="inprogress">Em Progresso</option>
+                    <option value="done">Concluído</option>
+                    <option value="blocked">Bloqueado</option>
+                </select>
+            </div>
+            
+            <div class="gantt-filter-group">
+                <span class="gantt-filter-label">Responsável:</span>
+                <select id="assigneeFilter_${uniqueSuffix}" class="gantt-filter-select">
+                    <option value="all">Todos</option>
+                    <!-- Opções serão preenchidas dinamicamente -->
+                </select>
+            </div>
+            
+            <button id="clearFiltersBtn_${uniqueSuffix}" class="app-button small">Limpar Filtros</button>
         </div>
         
         <div class="gantt-v2-container">
@@ -604,6 +718,13 @@ export function openGanttChart() {
                 </div>
             </div>
         </div>
+        
+        <!-- Banner de modo foco -->
+        <div class="focus-mode-banner" id="focusModeBanner_${uniqueSuffix}" style="display: none;">
+            <span>Modo de Foco Ativo</span>
+            <button id="exitFocusMode_${uniqueSuffix}" class="app-button small"><i class="fas fa-times"></i> Sair</button>
+        </div>
+        
         <div class="gantt-tooltip" id="ganttTooltip_${uniqueSuffix}"></div>
     `;
     
@@ -611,14 +732,13 @@ export function openGanttChart() {
     if (!winData) return winId;
     const winEl = winData.element;
     winEl.querySelector('.window-content').innerHTML = content;
-
     const appState = {
         winId, 
         tasks: [], 
         appDataType: 'gantt-chart',
         selectedTaskId: null,
         showCriticalPath: true,
-        editingTaskId: null, // [CORREÇÃO] Controla qual tarefa está sendo editada ativamente
+        editingTaskId: null,
         
         // --- Elementos da UI ---
         sidebarBody: winEl.querySelector(`#ganttSidebarBody_${uniqueSuffix}`),
@@ -634,7 +754,12 @@ export function openGanttChart() {
         timeline: { startDate: null, endDate: null, unitWidth: 40, totalWidth: 0 },
         flatTaskOrder: [],
         draggingState: null,
-
+        // Novas propriedades
+        allAssignees: [],
+        filteredTasks: [],
+        focusModeParentId: null,
+        dependencyCreation: { active: false, fromTaskId: null },
+        
         // --- Funções de Dados ---
         getData: function() { return this.tasks; },
         loadData: function(dataString, fileMeta) { 
@@ -659,13 +784,14 @@ export function openGanttChart() {
             winEl.querySelector(`#addTaskBtn_${uniqueSuffix}`).onclick = () => this.addTask();
             winEl.querySelector(`#addMilestoneBtn_${uniqueSuffix}`).onclick = () => this.addTask(true);
             winEl.querySelector(`#addParentBtn_${uniqueSuffix}`).onclick = () => this.addParentTask();
-            winEl.querySelector(`#zoomInBtn_${uniqueSuffix}`).onclick = () => this.zoomIn();
             winEl.querySelector(`#zoomOutBtn_${uniqueSuffix}`).onclick = () => this.zoomOut();
+            winEl.querySelector(`#zoomInBtn_${uniqueSuffix}`).onclick = () => this.zoomIn();
             winEl.querySelector(`#todayBtn_${uniqueSuffix}`).onclick = () => this.goToToday();
+            winEl.querySelector(`#fitToScreenBtn_${uniqueSuffix}`).onclick = () => this.fitToScreen();
             winEl.querySelector(`#linkTasksBtn_${uniqueSuffix}`).onclick = () => this.linkSelectedTasks();
             winEl.querySelector(`#criticalPathBtn_${uniqueSuffix}`).onclick = () => this.toggleCriticalPath();
+            winEl.querySelector(`#focusModeBtn_${uniqueSuffix}`).onclick = () => this.toggleFocusMode();
             winEl.querySelector(`#exportBtn_${uniqueSuffix}`).onclick = () => this.exportToImage();
-
             // Eventos
             this.sidebarBody.addEventListener('input', (e) => this.handleSidebarInput(e));
             this.sidebarBody.addEventListener('click', (e) => this.handleSidebarClick(e));
@@ -677,12 +803,26 @@ export function openGanttChart() {
             this.chartContent.addEventListener('contextmenu', (e) => this.showContextMenu(e));
             
             this.setupSplitter();
+            
+            // Novas inicializações
+            this.initDragAndDrop();
+            this.initScrollZoom();
+            this.initBarEditing();
+            this.initDependencyCreation();
+            this.initFilters();
+            this.initFocusMode();
+            this.initKeyboardShortcuts();
+            
             this.renderAll();
+            
+            // Inicializar dropdown de responsáveis após o primeiro render
+            setTimeout(() => {
+                this.updateAssigneeFilter();
+            }, 100);
         },
-
         // --- Lógica de Renderização Principal ---
         renderAll: function() {
-            // [CORREÇÃO] Salva o estado do campo de edição (foco, cursor) antes de redesenhar
+            // Salva o estado do campo de edição (foco, cursor) antes de redesenhar
             const editingState = this.saveEditingState();
             
             this.updateParentTasks();
@@ -694,8 +834,21 @@ export function openGanttChart() {
             if (this.showCriticalPath) {
                 this.calculateAndDrawCriticalPath();
             }
-
-            // [CORREÇÃO] Restaura o foco e o cursor no campo que estava sendo editado
+            // Atualizar banner de modo foco
+            const focusBanner = winEl.querySelector(`#focusModeBanner_${uniqueSuffix}`);
+            if (this.focusModeParentId) {
+                const parentTask = this.tasks.find(t => t.id === this.focusModeParentId);
+                if (parentTask) {
+                    focusBanner.style.display = 'flex';
+                    focusBanner.querySelector('span').textContent = `Modo de Foco: ${parentTask.name}`;
+                } else {
+                    this.focusModeParentId = null;
+                    focusBanner.style.display = 'none';
+                }
+            } else {
+                focusBanner.style.display = 'none';
+            }
+            // Restaura o foco e o cursor no campo que estava sendo editado
             this.restoreEditingState(editingState);
         },
         
@@ -715,7 +868,6 @@ export function openGanttChart() {
         },
         
         formatDate: (dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
-
         // --- Linha do Tempo e Zoom ---
         calculateTimeline: function() {
             if (this.tasks.length === 0) {
@@ -758,7 +910,17 @@ export function openGanttChart() {
             this.showCriticalPath = !this.showCriticalPath;
             this.renderAll();
         },
-
+        
+        fitToScreen: function() {
+            if (this.tasks.length === 0) return;
+            
+            const viewportWidth = this.chartViewport.clientWidth;
+            const totalDays = this.daysBetween(this.timeline.startDate, this.timeline.endDate);
+            const newUnitWidth = Math.max(20, Math.min(100, viewportWidth / totalDays));
+            
+            this.timeline.unitWidth = newUnitWidth;
+            this.renderAll();
+        },
         // --- Renderização da Barra Lateral ---
         renderSidebar: function() {
             this.sidebarBody.innerHTML = '';
@@ -769,11 +931,11 @@ export function openGanttChart() {
                     row.classList.add('selected');
                 }
                 row.dataset.taskId = task.id;
+                row.draggable = true;
                 
                 const children = this.tasks.filter(t => t.parentId === task.id);
                 const isParent = task.type === 'parent' || children.length > 0;
                 task.type = isParent ? 'parent' : task.type;
-
                 const expanderHTML = isParent ? 
                     `<span class="task-expander ${task.collapsed ? 'collapsed' : ''}">
                         <i class="fas fa-angle-down"></i>
@@ -787,7 +949,6 @@ export function openGanttChart() {
                 const progress = task.progress || 0;
                 const statusIndicator = task.type !== 'parent' ? 
                     `<span class="status-indicator status-${task.status || 'todo'}"></span>` : '';
-
                 row.innerHTML = `
                     <div class="task-cell task-name-cell" style="padding-left: ${level * 25 + 5}px;">
                         ${expanderHTML}
@@ -826,14 +987,16 @@ export function openGanttChart() {
                     </div>
                 `;
                 this.sidebarBody.appendChild(row);
-
                 if (isParent && !task.collapsed) {
                     children.sort((a,b) => new Date(a.start) - new Date(b.start))
                         .forEach(child => renderTaskNode(child, level + 1));
                 }
             };
             
-            this.tasks.filter(t => !t.parentId)
+            // Usar tarefas filtradas se houver filtro ativo
+            const tasksToRender = this.filteredTasks.length > 0 ? this.filteredTasks : this.tasks;
+            
+            tasksToRender.filter(t => !t.parentId)
                 .sort((a,b) => new Date(a.start) - new Date(b.start))
                 .forEach(task => renderTaskNode(task, 0));
         },
@@ -842,14 +1005,11 @@ export function openGanttChart() {
         renderChart: function() {
             const { startDate, endDate, unitWidth } = this.timeline;
             if (!startDate) return;
-
             const totalDays = this.daysBetween(startDate, endDate);
             this.timeline.totalWidth = totalDays * unitWidth;
-
             this.headerContainer.innerHTML = '';
             this.gridEl.innerHTML = '';
             this.chartContent.querySelectorAll('.gantt-bar-container, .gantt-today-marker').forEach(el => el.remove());
-
             // --- Renderizar Cabeçalho e Grade ---
             const headerEl = document.createElement('div');
             headerEl.className = 'gantt-timeline-header';
@@ -872,18 +1032,15 @@ export function openGanttChart() {
                     monthsEl.appendChild(currentMonthEl);
                 }
                 monthDayCount++;
-
                 const dayEl = document.createElement('div');
                 dayEl.className = 'gantt-timeline-day';
                 dayEl.style.width = `${unitWidth}px`;
                 dayEl.textContent = dayDate.getDate();
                 daysEl.appendChild(dayEl);
-
                 const gridLine = document.createElement('div');
                 gridLine.className = 'gantt-grid-line';
                 gridLine.style.left = `${i * unitWidth}px`;
                 this.gridEl.appendChild(gridLine);
-
                 const dayOfWeek = dayDate.getDay();
                 if (dayOfWeek === 0 || dayOfWeek === 6) {
                     const weekendEl = document.createElement('div');
@@ -898,22 +1055,18 @@ export function openGanttChart() {
             headerEl.appendChild(monthsEl);
             headerEl.appendChild(daysEl);
             this.headerContainer.appendChild(headerEl);
-
             // --- Renderizar Linhas de Linha e Barras ---
             this.flatTaskOrder.forEach((taskId, index) => {
                 const task = this.tasks.find(t => t.id === taskId);
                 if (!task) return;
-
                 const rowLine = document.createElement('div');
                 rowLine.className = 'gantt-row-line';
                 rowLine.style.top = `${index * 40 + 39}px`;
                 this.gridEl.appendChild(rowLine);
                 
                 if (task.type === 'parent' && task.collapsed) return;
-
                 const taskStart = new Date(task.start);
                 const left = this.daysBetween(startDate, taskStart) * unitWidth;
-
                 const barContainer = document.createElement('div');
                 barContainer.className = 'gantt-bar-container';
                 barContainer.style.top = `${index * 40}px`;
@@ -922,7 +1075,6 @@ export function openGanttChart() {
                 if (task.id === this.selectedTaskId) {
                     barContainer.classList.add('selected');
                 }
-
                 if (task.type === 'milestone') {
                     barContainer.style.left = `${left}px`;
                     barContainer.innerHTML = `<div class="gantt-milestone"></div>`;
@@ -932,10 +1084,8 @@ export function openGanttChart() {
                     const width = duration * unitWidth;
                     barContainer.style.left = `${left}px`;
                     barContainer.style.width = `${width}px`;
-
                     const barClass = task.type === 'parent' ? 'gantt-bar-parent' : `status-${task.status || 'todo'}`;
                     const progress = task.type === 'parent' ? (task.progress || 0) : (task.status === 'done' ? 100 : (task.progress || 0));
-
                     barContainer.innerHTML = `
                         <div class="gantt-bar ${barClass}">
                             ${task.type !== 'parent' ? '<div class="gantt-bar-handle left"></div>' : ''}
@@ -958,7 +1108,6 @@ export function openGanttChart() {
                 todayMarker.style.height = `${this.flatTaskOrder.length * 40}px`;
                 this.chartContent.appendChild(todayMarker);
             }
-
             // Ajustar tamanho do conteúdo
             const contentHeight = this.flatTaskOrder.length * 40;
             this.chartContent.style.width = `${this.timeline.totalWidth}px`;
@@ -966,7 +1115,6 @@ export function openGanttChart() {
             this.svgOverlay.setAttribute('width', this.timeline.totalWidth);
             this.svgOverlay.setAttribute('height', contentHeight);
         },
-
         // --- Lógica de Dependência e Caminho Crítico ---
         renderDependencies: function() {
             this.svgOverlay.querySelectorAll('path').forEach(p => p.remove());
@@ -976,20 +1124,17 @@ export function openGanttChart() {
             });
             
             const getTaskIndex = (taskId) => this.flatTaskOrder.indexOf(taskId);
-
             this.tasks.forEach(task => {
                 if(task.dependencies) {
                     const deps = task.dependencies.split(',').map(d => d.trim());
                     deps.forEach(depId => {
                         const predecessor = this.tasks.find(t => t.id === depId);
                         if(!predecessor || !barElements[task.id] || !barElements[predecessor.id]) return;
-
                         const fromEl = barElements[predecessor.id];
                         const toEl = barElements[task.id];
                         
                         const fromIndex = getTaskIndex(predecessor.id);
                         const toIndex = getTaskIndex(task.id);
-
                         const fromX = fromEl.offsetLeft + (predecessor.type === 'milestone' ? 12 : fromEl.offsetWidth);
                         const fromY = fromIndex * 40 + 20;
                         const toX = toEl.offsetLeft + (task.type === 'milestone' ? 12 : 0);
@@ -1010,7 +1155,6 @@ export function openGanttChart() {
         calculateAndDrawCriticalPath: function() {
             const tasks = this.tasks.filter(t => t.type !== 'parent');
             if (tasks.length === 0) return;
-
             tasks.forEach(t => {
                 t.earlyStart = 0;
                 t.earlyFinish = 0;
@@ -1018,7 +1162,6 @@ export function openGanttChart() {
                 t.lateFinish = Infinity;
                 t.duration = this.daysBetween(t.start, t.end) + 1;
             });
-
             const taskMap = new Map(tasks.map(t => [t.id, t]));
             const adj = new Map(tasks.map(t => [t.id, []]));
             const revAdj = new Map(tasks.map(t => [t.id, []]));
@@ -1034,14 +1177,12 @@ export function openGanttChart() {
                     });
                 }
             });
-
             const forwardPassQueue = tasks.filter(t => !t.dependencies || t.dependencies.trim() === '');
             const processedForward = new Set();
             while(forwardPassQueue.length > 0){
                 const u = forwardPassQueue.shift();
                 if(processedForward.has(u.id)) continue;
                 processedForward.add(u.id);
-
                 u.earlyFinish = u.earlyStart + u.duration;
                 (adj.get(u.id) || []).forEach(vId => {
                     const v = taskMap.get(vId);
@@ -1054,17 +1195,14 @@ export function openGanttChart() {
                     if(allDepsProcessed) forwardPassQueue.push(v);
                 });
             }
-
             const projectFinishTime = Math.max(0, ...tasks.map(t => t.earlyFinish));
             tasks.forEach(t => t.lateFinish = projectFinishTime);
-
             const backwardPassQueue = tasks.filter(t => !(adj.get(t.id) || []).length);
             const processedBackward = new Set();
             while(backwardPassQueue.length > 0){
                 const u = backwardPassQueue.shift();
                 if(processedBackward.has(u.id)) continue;
                 processedBackward.add(u.id);
-
                 u.lateStart = u.lateFinish - u.duration;
                 (revAdj.get(u.id) || []).forEach(pId => {
                     const p = taskMap.get(pId);
@@ -1084,7 +1222,6 @@ export function openGanttChart() {
                     if (barEl) barEl.classList.add('critical');
                 }
             });
-
             this.svgOverlay.querySelectorAll('.gantt-dependency-path').forEach(path => {
                 const { fromId, toId } = path.dataset;
                 if (criticalPathTaskIds.has(fromId) && criticalPathTaskIds.has(toId)) {
@@ -1094,13 +1231,11 @@ export function openGanttChart() {
                 }
             });
         },
-
         // --- Adicionar e Manipular Tarefas ---
         addTask: function(isMilestone = false) {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
             const endStr = this.addDays(today, isMilestone ? 0 : 5).toISOString().split('T')[0];
-
             const newTask = {
                 id: generateId('task'),
                 name: isMilestone ? 'Novo Marco' : 'Nova Tarefa',
@@ -1116,6 +1251,7 @@ export function openGanttChart() {
             
             this.tasks.push(newTask);
             this.markDirty();
+            this.updateAssigneeFilter();
             this.renderAll();
         },
         
@@ -1123,7 +1259,6 @@ export function openGanttChart() {
             const today = new Date();
             const todayStr = today.toISOString().split('T')[0];
             const endStr = this.addDays(today, 7).toISOString().split('T')[0];
-
             const newTask = {
                 id: generateId('parent'),
                 name: 'Novo Grupo',
@@ -1166,6 +1301,7 @@ export function openGanttChart() {
             }
             
             this.markDirty();
+            this.updateAssigneeFilter();
             this.renderAll();
         },
         
@@ -1174,7 +1310,6 @@ export function openGanttChart() {
                 const children = this.tasks.filter(c => c.parentId === task.id);
                 if (children.length > 0) {
                     children.forEach(processNode); // Process children first
-
                     const startDates = children.map(c => new Date(c.start));
                     const endDates = children.map(c => new Date(c.end));
                     task.start = new Date(Math.min(...startDates)).toISOString().split('T')[0];
@@ -1186,7 +1321,6 @@ export function openGanttChart() {
             };
             this.tasks.filter(t => t.type === 'parent').forEach(processNode);
         },
-
         // --- Manipuladores de Eventos ---
         handleSidebarInput: function(e) {
             const row = e.target.closest('.gantt-task-row');
@@ -1196,12 +1330,11 @@ export function openGanttChart() {
             const task = this.tasks.find(t => t.id === taskId);
             
             if (task) {
-                // [CORREÇÃO] Define o ID da tarefa sendo editada para que o foco possa ser restaurado
+                // Define o ID da tarefa sendo editada para que o foco possa ser restaurado
                 this.editingTaskId = taskId;
                 
                 // Atualiza o modelo de dados com o valor do input
                 task[field] = e.target.value;
-
                 if (field === 'start' && task.type !== 'milestone') {
                     const duration = this.daysBetween(task.start, task.end);
                     if (duration < 0) task.end = task.start;
@@ -1209,7 +1342,7 @@ export function openGanttChart() {
                 
                 this.markDirty();
                 
-                // [CORREÇÃO] Chama o renderizador principal, que agora preservará o foco.
+                // Chama o renderizador principal, que agora preservará o foco.
                 this.renderAll();
             }
         },
@@ -1248,8 +1381,7 @@ export function openGanttChart() {
             const row = e.target.closest('.gantt-task-row');
             if (row) {
                 const taskId = row.dataset.taskId;
-
-                // [CORREÇÃO] Se o clique não foi em um campo de input,
+                // Se o clique não foi em um campo de input,
                 // significa que o usuário está apenas selecionando a linha, não editando.
                 // Limpamos o estado de edição para evitar que o foco volte para um campo.
                 if (e.target.tagName.toLowerCase() !== 'input' && e.target.tagName.toLowerCase() !== 'select') {
@@ -1264,12 +1396,10 @@ export function openGanttChart() {
         handleBarInteraction: function(e) {
             const bar = e.target.closest('.gantt-bar, .gantt-milestone');
             if (!bar) return;
-
             const container = bar.closest('.gantt-bar-container');
             const taskId = container.dataset.taskId;
             const task = this.tasks.find(t => t.id === taskId);
             if (!task || task.type === 'parent') return;
-
             this.hideTooltip();
             const initialX = e.clientX;
             const initialStart = new Date(task.start);
@@ -1284,7 +1414,6 @@ export function openGanttChart() {
             const onMouseMove = (moveE) => {
                 const deltaX = moveE.clientX - initialX;
                 const deltaDays = Math.round(deltaX / this.timeline.unitWidth);
-
                 if (handle === 'left') {
                     const newStart = this.addDays(initialStart, deltaDays);
                     if (newStart <= initialEnd) {
@@ -1301,13 +1430,11 @@ export function openGanttChart() {
                 }
                 this.renderAll();
             };
-
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
                 this.markDirty();
             };
-
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         },
@@ -1462,7 +1589,6 @@ export function openGanttChart() {
                 link.click();
             });
         },
-
         // --- Funções Utilitárias ---
         showTooltip: function(e, task) {
             const duration = this.daysBetween(task.start, task.end) + 1;
@@ -1525,32 +1651,42 @@ export function openGanttChart() {
         
         getFlatTaskOrder: function() {
             const order = [];
+            const visibleTasks = this.filteredTasks.length > 0 ? 
+                this.filteredTasks : 
+                this.tasks;
+            
             const processNode = (task) => {
+                // Verificar se está no modo foco
+                if (this.focusModeParentId && task.parentId !== this.focusModeParentId) {
+                    return;
+                }
+                
                 order.push(task.id);
                 if (task.type === 'parent' && !task.collapsed) {
-                    this.tasks.filter(t => t.parentId === task.id)
+                    visibleTasks.filter(t => t.parentId === task.id)
                         .sort((a,b) => new Date(a.start) - new Date(b.start))
                         .forEach(processNode);
                 }
             };
-            this.tasks.filter(t => !t.parentId)
-                .sort((a,b) => new Date(a.start) - new Date(b.start))
-                .forEach(processNode);
+            
+            visibleTasks.filter(t => 
+                !t.parentId && 
+                (!this.focusModeParentId || t.id === this.focusModeParentId)
+            )
+            .sort((a,b) => new Date(a.start) - new Date(b.start))
+            .forEach(processNode);
+            
             return order;
         },
         
-        // [CORREÇÃO] Funções para salvar e restaurar o estado de edição
         saveEditingState: function() {
             if (!this.editingTaskId) return null;
-
             const activeEl = document.activeElement;
             const row = activeEl ? activeEl.closest('.gantt-task-row') : null;
-
             if (!row || row.dataset.taskId !== this.editingTaskId || !activeEl.dataset.field) {
                 this.editingTaskId = null;
                 return null;
             }
-
             return {
                 taskId: this.editingTaskId,
                 field: activeEl.dataset.field,
@@ -1558,19 +1694,16 @@ export function openGanttChart() {
                 selectionEnd: activeEl.selectionEnd,
             };
         },
-
         restoreEditingState: function(state) {
             if (!state || !state.taskId || !state.field) {
                 this.editingTaskId = null;
                 return;
             }
-
             const row = this.sidebarBody.querySelector(`.gantt-task-row[data-task-id="${state.taskId}"]`);
             if (!row) {
                 this.editingTaskId = null;
                 return;
             }
-
             const inputToFocus = row.querySelector(`[data-field="${state.field}"]`);
             if (inputToFocus) {
                 inputToFocus.focus();
@@ -1616,9 +1749,375 @@ export function openGanttChart() {
             };
         },
         
+        // NOVOS MÉTODOS ADICIONADOS PARA MELHORIAS
+        
+        // 1. Drag and drop para hierarquia
+        initDragAndDrop: function() {
+            this.sidebarBody.addEventListener('dragstart', e => {
+                const row = e.target.closest('.gantt-task-row');
+                if (row) {
+                    e.dataTransfer.setData('text/plain', row.dataset.taskId);
+                    e.dataTransfer.effectAllowed = 'move';
+                }
+            });
+            
+            this.sidebarBody.addEventListener('dragover', e => {
+                e.preventDefault();
+                const row = e.target.closest('.gantt-task-row');
+                if (row) {
+                    const rect = row.getBoundingClientRect();
+                    const middleY = rect.top + rect.height / 2;
+                    
+                    if (e.clientY < middleY) {
+                        row.classList.add('drag-over-top');
+                        row.classList.remove('drag-over-bottom');
+                    } else {
+                        row.classList.add('drag-over-bottom');
+                        row.classList.remove('drag-over-top');
+                    }
+                }
+            });
+            
+            this.sidebarBody.addEventListener('dragleave', e => {
+                const row = e.target.closest('.gantt-task-row');
+                if (row) {
+                    row.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+            });
+            
+            this.sidebarBody.addEventListener('drop', e => {
+                e.preventDefault();
+                const draggedTaskId = e.dataTransfer.getData('text/plain');
+                const targetRow = e.target.closest('.gantt-task-row');
+                
+                if (targetRow && draggedTaskId) {
+                    const targetTaskId = targetRow.dataset.taskId;
+                    const draggedTask = this.tasks.find(t => t.id === draggedTaskId);
+                    const targetTask = this.tasks.find(t => t.id === targetTaskId);
+                    
+                    if (draggedTask && targetTask) {
+                        // Determinar posicionamento
+                        const rect = targetRow.getBoundingClientRect();
+                        const middleY = rect.top + rect.height / 2;
+                        
+                        if (e.clientY < middleY) {
+                            // Inserir acima
+                            this.reparentTask(draggedTaskId, targetTask.parentId, targetTaskId, 'before');
+                        } else {
+                            // Inserir abaixo ou como filho
+                            if (targetTask.type === 'parent') {
+                                // Tornar filho
+                                this.reparentTask(draggedTaskId, targetTaskId);
+                            } else {
+                                // Inserir abaixo
+                                this.reparentTask(draggedTaskId, targetTask.parentId, targetTaskId, 'after');
+                            }
+                        }
+                    }
+                    
+                    targetRow.classList.remove('drag-over-top', 'drag-over-bottom');
+                }
+            });
+        },
+        
+        reparentTask: function(taskId, newParentId, referenceTaskId = null, position = 'child') {
+            const task = this.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // Remover de antigo pai
+            const oldParentId = task.parentId;
+            
+            // Atualizar parentId
+            task.parentId = newParentId;
+            
+            // Reordenar na nova posição
+            if (referenceTaskId && position) {
+                const parentTasks = this.tasks.filter(t => t.parentId === newParentId);
+                const referenceIndex = parentTasks.findIndex(t => t.id === referenceTaskId);
+                
+                if (referenceIndex !== -1) {
+                    // Reordenar array
+                    const newIndex = position === 'before' ? referenceIndex : referenceIndex + 1;
+                    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                    
+                    // Remover da posição atual
+                    this.tasks.splice(taskIndex, 1);
+                    
+                    // Encontrar nova posição
+                    const newPos = this.tasks.findIndex(t => t.id === referenceTaskId);
+                    this.tasks.splice(position === 'before' ? newPos : newPos + 1, 0, task);
+                }
+            }
+            
+            // Atualizar pais
+            this.updateParentTasks();
+            this.markDirty();
+            this.renderAll();
+        },
+        
+        // 2. Zoom com scroll
+        initScrollZoom: function() {
+            this.chartViewport.addEventListener('wheel', e => {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        this.zoomIn();
+                    } else {
+                        this.zoomOut();
+                    }
+                }
+            }, { passive: false });
+        },
+        
+        // 3. Edição direta no gráfico
+        initBarEditing: function() {
+            this.chartContent.addEventListener('dblclick', e => {
+                const barContainer = e.target.closest('.gantt-bar-container');
+                if (barContainer) {
+                    const taskId = barContainer.dataset.taskId;
+                    const task = this.tasks.find(t => t.id === taskId);
+                    
+                    if (task && task.type !== 'parent') {
+                        // Encontrar barra e adicionar campo de edição
+                        const bar = barContainer.querySelector('.gantt-bar');
+                        const barRect = bar.getBoundingClientRect();
+                        
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = task.name;
+                        input.style.position = 'absolute';
+                        input.style.left = '5px';
+                        input.style.width = `${barRect.width - 10}px`;
+                        input.style.height = `${barRect.height - 4}px`;
+                        input.style.zIndex = '10';
+                        input.style.background = 'var(--window-bg)';
+                        input.style.border = '1px solid var(--accent-color)';
+                        input.style.borderRadius = '4px';
+                        input.style.padding = '0 5px';
+                        input.style.fontSize = '0.85em';
+                        
+                        barContainer.appendChild(input);
+                        input.focus();
+                        
+                        const finishEdit = () => {
+                            task.name = input.value;
+                            barContainer.removeChild(input);
+                            this.markDirty();
+                            this.renderAll();
+                        };
+                        
+                        input.addEventListener('blur', finishEdit);
+                        input.addEventListener('keydown', e => {
+                            if (e.key === 'Enter') finishEdit();
+                        });
+                    }
+                }
+            });
+        },
+        
+        // 4. Criação visual de dependências
+        initDependencyCreation: function() {
+            // Botão na barra de ferramentas
+            winEl.querySelector(`#linkTasksBtn_${uniqueSuffix}`).addEventListener('click', () => {
+                if (this.selectedTaskId) {
+                    this.dependencyCreation = {
+                        active: true,
+                        fromTaskId: this.selectedTaskId
+                    };
+                    showNotification("Clique na tarefa de destino para criar dependência", 3000);
+                } else {
+                    showNotification("Selecione uma tarefa primeiro", 3000, 'warning');
+                }
+            });
+            
+            // Clique no gráfico para completar dependência
+            this.chartContent.addEventListener('click', e => {
+                if (!this.dependencyCreation.active) return;
+                
+                const barContainer = e.target.closest('.gantt-bar-container');
+                if (barContainer) {
+                    const toTaskId = barContainer.dataset.taskId;
+                    
+                    if (this.dependencyCreation.fromTaskId === toTaskId) {
+                        showNotification("Não é possível criar dependência para a mesma tarefa", 3000, 'error');
+                        return;
+                    }
+                    
+                    const task = this.tasks.find(t => t.id === this.dependencyCreation.fromTaskId);
+                    if (task) {
+                        const deps = task.dependencies ? task.dependencies.split(',') : [];
+                        if (!deps.includes(toTaskId)) {
+                            deps.push(toTaskId);
+                            task.dependencies = deps.join(',');
+                            this.markDirty();
+                            this.renderAll();
+                            showNotification("Dependência criada com sucesso!", 2000);
+                        }
+                    }
+                }
+                
+                this.dependencyCreation.active = false;
+                this.svgOverlay.querySelector('.dependency-creation')?.remove();
+            });
+            
+            // Desenhar linha temporária durante criação
+            this.chartContent.addEventListener('mousemove', e => {
+                if (!this.dependencyCreation.active) return;
+                
+                // Remover linha anterior
+                this.svgOverlay.querySelector('.dependency-creation')?.remove();
+                
+                const fromContainer = this.chartContent.querySelector(
+                    `.gantt-bar-container[data-task-id="${this.dependencyCreation.fromTaskId}"]`
+                );
+                
+                if (!fromContainer) return;
+                
+                const fromRect = fromContainer.getBoundingClientRect();
+                const toX = e.clientX;
+                const toY = e.clientY;
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const d = `M ${fromRect.right} ${fromRect.top + fromRect.height/2} L ${toX} ${toY}`;
+                path.setAttribute('d', d);
+                path.setAttribute('class', 'dependency-creation');
+                this.svgOverlay.appendChild(path);
+            });
+        },
+        
+        // 5. Filtragem de tarefas
+        initFilters: function() {
+            const searchInput = winEl.querySelector(`#ganttSearch_${uniqueSuffix}`);
+            const statusFilter = winEl.querySelector(`#statusFilter_${uniqueSuffix}`);
+            const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
+            const clearBtn = winEl.querySelector(`#clearFiltersBtn_${uniqueSuffix}`);
+            
+            // Atualizar lista de responsáveis
+            this.updateAssigneeFilter();
+            
+            // Aplicar filtros
+            const applyFilters = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const status = statusFilter.value;
+                const assignee = assigneeFilter.value;
+                
+                this.filteredTasks = this.tasks.filter(task => {
+                    // Filtro por texto
+                    if (searchTerm && !task.name.toLowerCase().includes(searchTerm)) {
+                        return false;
+                    }
+                    
+                    // Filtro por status
+                    if (status !== 'all' && task.status !== status) {
+                        return false;
+                    }
+                    
+                    // Filtro por responsável
+                    if (assignee !== 'all' && task.assignee !== assignee) {
+                        return false;
+                    }
+                    
+                    return true;
+                });
+                
+                this.renderAll();
+            };
+            
+            searchInput.addEventListener('input', applyFilters);
+            statusFilter.addEventListener('change', applyFilters);
+            assigneeFilter.addEventListener('change', applyFilters);
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                statusFilter.value = 'all';
+                assigneeFilter.value = 'all';
+                applyFilters();
+            });
+        },
+        
+        updateAssigneeFilter: function() {
+            const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
+            
+            // Coletar todos os responsáveis únicos
+            this.allAssignees = [...new Set(this.tasks
+                .map(t => t.assignee)
+                .filter(a => a && a.trim() !== '')
+            )];
+            
+            // Atualizar dropdown
+            assigneeFilter.innerHTML = '<option value="all">Todos</option>';
+            this.allAssignees.forEach(assignee => {
+                const option = document.createElement('option');
+                option.value = assignee;
+                option.textContent = assignee;
+                assigneeFilter.appendChild(option);
+            });
+        },
+        
+        // 6. Modo de foco
+        toggleFocusMode: function() {
+            if (this.selectedTaskId) {
+                const task = this.tasks.find(t => t.id === this.selectedTaskId);
+                if (task && task.type === 'parent') {
+                    this.focusModeParentId = this.selectedTaskId;
+                    this.renderAll();
+                }
+            }
+        },
+        
+        initFocusMode: function() {
+            winEl.querySelector(`#focusModeBtn_${uniqueSuffix}`).addEventListener('click', this.toggleFocusMode.bind(this));
+            
+            winEl.querySelector(`#exitFocusMode_${uniqueSuffix}`).addEventListener('click', () => {
+                this.focusModeParentId = null;
+                this.renderAll();
+            });
+        },
+        
+        // 7. Atalhos de teclado
+        initKeyboardShortcuts: function() {
+            winEl.addEventListener('keydown', e => {
+                // Ignorar se estiver editando texto
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                // Delete: Remover tarefa selecionada
+                if (e.key === 'Delete' && this.selectedTaskId) {
+                    this.removeTask(this.selectedTaskId);
+                }
+                
+                // Ctrl + N: Nova tarefa
+                if (e.ctrlKey && e.key === 'n') {
+                    e.preventDefault();
+                    this.addTask();
+                }
+                
+                // Ctrl + F: Foco na pesquisa
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    winEl.querySelector(`#ganttSearch_${uniqueSuffix}`).focus();
+                }
+                
+                // Ctrl + S: Salvar
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    this.saveFile();
+                }
+                
+                // Esc: Sair do modo foco ou criação de dependência
+                if (e.key === 'Escape') {
+                    if (this.focusModeParentId) {
+                        this.focusModeParentId = null;
+                        this.renderAll();
+                    }
+                    if (this.dependencyCreation.active) {
+                        this.dependencyCreation.active = false;
+                        this.svgOverlay.querySelector('.dependency-creation')?.remove();
+                    }
+                }
+            });
+        },
+        
         cleanup: () => {}
     };
-
     initializeFileState(appState, "Roadmap do Projeto", "roadmap.gantt", "gantt-chart");
     winData.currentAppInstance = appState;
     appState.init();
