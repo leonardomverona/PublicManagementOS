@@ -7,112 +7,43 @@ export function openKanbanBoard() {
     const content = `
         <style>
             /* Kanban App Specific Styles */
-            .kanban-board-app-container {
-                padding: 0 !important; /* Override global padding */
-                background-color: #f5f7fa; /* Fundo mais claro para o app */
-            }
-            .dark-mode .kanban-board-app-container {
-                background-color: #252936;
-            }
-
-            .kanban-board-app {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-            }
-
-            .kanban-board {
-                display: flex;
-                padding: 20px;
-                gap: 20px;
-                overflow-x: auto;
-                flex-grow: 1;
-            }
-
-            .kanban-column {
-                background: var(--input-bg);
-                border-radius: 12px;
-                min-width: 320px;
-                max-width: 320px;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-                border: 1px solid var(--separator-color);
-            }
-            .dark-mode .kanban-column {
-                background: #2c3140;
-            }
-
-            .column-header {
-                padding: 15px 20px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid var(--separator-color);
-            }
-
-            .column-title {
-                font-weight: 600;
-                font-size: 1.1rem;
-                color: var(--text-color);
-            }
-
-            .column-actions .action-btn {
-                width: 30px; height: 30px;
-                border-radius: 50%; border: none; background: transparent;
-                cursor: pointer; display: flex; align-items: center; justify-content: center;
-                color: var(--secondary-text-color); transition: all 0.2s;
-            }
+            .kanban-board-app-container { padding: 0 !important; background-color: #f5f7fa; }
+            .dark-mode .kanban-board-app-container { background-color: #252936; }
+            .kanban-board-app { display: flex; flex-direction: column; height: 100%; }
+            .kanban-board { display: flex; padding: 20px; gap: 20px; overflow-x: auto; flex-grow: 1; }
+            .kanban-column { background: var(--input-bg); border-radius: 12px; min-width: 320px; max-width: 320px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid var(--separator-color); }
+            .dark-mode .kanban-column { background: #2c3140; }
+            .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--separator-color); }
+            .column-title { font-weight: 600; font-size: 1.1rem; color: var(--text-color); }
+            .column-actions .action-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color); transition: all 0.2s; }
             .column-actions .action-btn:hover { background: var(--hover-highlight-color); color: var(--danger-color); }
-
-            .cards-container {
-                padding: 15px;
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-                overflow-y: auto;
-                min-height: 100px;
-            }
-            .cards-container.drag-over {
-                background: var(--accent-light-translucent);
-                outline: 2px dashed var(--accent-color);
-            }
-
-            .kanban-card {
-                background: var(--window-bg);
-                border-radius: 8px;
-                padding: 15px;
-                box-shadow: 0 2px 5px rgba(0,0,0,0.07);
-                cursor: grab;
-                transition: all 0.2s;
-                border-left: 5px solid var(--secondary-text-color);
-            }
+            .cards-container { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; min-height: 100px; }
+            .cards-container.drag-over { background: var(--accent-light-translucent); outline: 2px dashed var(--accent-color); }
+            .kanban-card { background: var(--window-bg); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.07); cursor: grab; transition: all 0.2s; border-left: 5px solid var(--secondary-text-color); }
             .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-            
             .kanban-card.high-priority { border-left-color: #dc3545; }
             .kanban-card.medium-priority { border-left-color: #ffc107; }
             .kanban-card.low-priority { border-left-color: #28a745; }
-
             .card-header { margin-bottom: 10px; }
             .card-title { font-weight: 600; font-size: 1.05rem; }
             .card-description { color: var(--secondary-text-color); font-size: 0.9rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; }
-            
             .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--secondary-text-color); margin-bottom: 12px; }
             .card-due-date, .card-assignee { display: flex; align-items: center; gap: 6px; }
-            
             .card-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-            .card-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; background: var(--button-bg); color: var(--button-text-color); }
+            .card-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
+            /* Tag Color Classes */
+            .tag-gray { background-color: rgba(108, 117, 125, 0.1); color: #6c757d; } .dark-mode .tag-gray { background-color: rgba(108, 117, 125, 0.2); color: #adb5bd; }
+            .tag-blue { background-color: rgba(74, 108, 247, 0.1); color: #4a6cf7; } .dark-mode .tag-blue { background-color: rgba(74, 108, 247, 0.2); color: #8c9eff; }
+            .tag-green { background-color: rgba(40, 167, 69, 0.1); color: #28a745; } .dark-mode .tag-green { background-color: rgba(40, 167, 69, 0.2); color: #52c41a; }
+            .tag-red { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; } .dark-mode .tag-red { background-color: rgba(220, 53, 69, 0.2); color: #ff4d4f; }
+            .tag-yellow { background-color: rgba(255, 193, 7, 0.1); color: #b38700; } .dark-mode .tag-yellow { background-color: rgba(255, 193, 7, 0.2); color: #ffc107; }
+            .tag-purple { background-color: rgba(106, 17, 203, 0.1); color: #6a11cb; } .dark-mode .tag-purple { background-color: rgba(106, 17, 203, 0.2); color: #9d4edd; }
+            
+            .modal-tag .remove-tag { cursor: pointer; margin-left: 6px; font-weight: bold; opacity: 0.7; }
+            .modal-tag .remove-tag:hover { opacity: 1; }
 
-            .add-card-btn {
-                margin: 0 10px 10px 10px;
-                padding: 10px; border-radius: 6px; border: 1px dashed var(--input-border-color);
-                background: transparent; color: var(--secondary-text-color); display: flex;
-                align-items: center; justify-content: center; gap: 8px;
-                cursor: pointer; transition: all 0.2s;
-            }
+            .add-card-btn { margin: 0 10px 10px 10px; padding: 10px; border-radius: 6px; border: 1px dashed var(--input-border-color); background: transparent; color: var(--secondary-text-color); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
             .add-card-btn:hover { border-color: var(--accent-color); color: var(--accent-color); background: var(--hover-highlight-color); }
-
             .kanban-card.dragging { opacity: 0.5; transform: rotate(3deg); }
         </style>
 
@@ -126,16 +57,13 @@ export function openKanbanBoard() {
                 <input type="text" id="searchInput_${uniqueSuffix}" class="app-input" placeholder="Buscar tarefas..." style="margin-bottom:0; width: 250px; padding-left: 35px;">
             </div>
         </div>
-        <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}">
-            <!-- Colunas e o botão de adicionar coluna serão renderizados aqui -->
-        </div>
+        <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
-        <!-- Modal para Edição/Criação de Card -->
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
                     <h3 class="modal-title" style="font-size: 1.3rem; font-weight: 600;">Editar Tarefa</h3>
-                    <button class="modal-close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--secondary-text-color);">&times;</button>
+                    <button class="modal-close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--secondary-text-color);">×</button>
                 </div>
                 <div class="modal-body" style="padding: 25px; overflow-y: auto;">
                     <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -143,29 +71,21 @@ export function openKanbanBoard() {
                             <label style="display: block; margin-bottom: 8px; font-weight: 500;">Título</label>
                             <input type="text" class="app-input" id="cardTitleInput">
                         </div>
-                        <div class="form-group">
-                            <label>Prioridade</label>
-                            <select class="app-select" id="cardPriorityInput">
-                                <option value="low">Baixa</option>
-                                <option value="medium" selected>Média</option>
-                                <option value="high">Alta</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Data de Vencimento</label>
-                            <input type="date" class="app-input" id="cardDueDateInput">
-                        </div>
+                        <div class="form-group"><label>Prioridade</label><select class="app-select" id="cardPriorityInput"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option></select></div>
+                        <div class="form-group"><label>Data de Vencimento</label><input type="date" class="app-input" id="cardDueDateInput"></div>
+                        <div class="form-group" style="grid-column: span 2;"><label>Responsável</label><input type="text" class="app-input" id="cardAssigneeInput"></div>
+                        <div class="form-group" style="grid-column: span 2;"><label>Descrição</label><textarea class="app-textarea" id="cardDescriptionInput" rows="4"></textarea></div>
+                        <!-- UI de Tags Aprimorada -->
                         <div class="form-group" style="grid-column: span 2;">
-                            <label>Responsável</label>
-                            <input type="text" class="app-input" id="cardAssigneeInput">
-                        </div>
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label>Descrição</label>
-                            <textarea class="app-textarea" id="cardDescriptionInput" rows="4"></textarea>
-                        </div>
-                        <div class="form-group" style="grid-column: span 2;">
-                            <label>Tags (separadas por vírgula)</label>
-                            <input type="text" class="app-input" id="cardTagsInput">
+                            <label>Tags</label>
+                            <div id="cardTagsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding: 5px 0;"></div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" class="app-input" id="newTagTextInput" placeholder="Nova tag..." style="flex-grow: 1; margin: 0;">
+                                <select class="app-select" id="newTagColorInput" style="flex-shrink: 0; width: 100px; margin: 0;">
+                                    <option value="gray">Cinza</option><option value="blue">Azul</option><option value="green">Verde</option><option value="red">Vermelho</option><option value="yellow">Amarelo</option><option value="purple">Roxo</option>
+                                </select>
+                                <button class="app-button secondary" id="addTagBtn" type="button" style="padding: 8px 12px;">Add</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -181,13 +101,8 @@ export function openKanbanBoard() {
     winData.element.querySelector('.window-content').innerHTML = content;
     
     const appState = {
-        winId,
-        appDataType: 'kanban-board',
-        boardData: { columns: [] },
-        editingCardId: null,
-        editingColumnId: null,
+        winId, appDataType: 'kanban-board', boardData: { columns: [] }, editingCardId: null, editingColumnId: null,
         
-        // UI Elements
         boardEl: winData.element.querySelector(`#kanbanBoard_${uniqueSuffix}`),
         searchInput: winData.element.querySelector(`#searchInput_${uniqueSuffix}`),
         addColumnBtn: winData.element.querySelector(`#addColumnBtn_${uniqueSuffix}`),
@@ -198,7 +113,10 @@ export function openKanbanBoard() {
             dueDate: winData.element.querySelector(`#cardDueDateInput`),
             assignee: winData.element.querySelector(`#cardAssigneeInput`),
             description: winData.element.querySelector(`#cardDescriptionInput`),
-            tags: winData.element.querySelector(`#cardTagsInput`),
+            tagsContainer: winData.element.querySelector('#cardTagsContainer'),
+            newTagText: winData.element.querySelector('#newTagTextInput'),
+            newTagColor: winData.element.querySelector('#newTagColorInput'),
+            addTagBtn: winData.element.querySelector('#addTagBtn'),
             saveBtn: winData.element.querySelector(`.modal-save-btn`),
             cancelBtn: winData.element.querySelector(`.modal-cancel-btn`),
             closeBtn: winData.element.querySelector('.modal-close'),
@@ -209,7 +127,14 @@ export function openKanbanBoard() {
             let data;
             try { data = JSON.parse(dataString); } catch (e) { showNotification("Erro ao ler arquivo Kanban.", 3000); this.loadDefaultBoard(); this.renderBoard(); return; } 
             this.boardData = (data && Array.isArray(data.columns)) ? data : { columns: [] }; 
-            (this.boardData.columns || []).forEach(col => { col.id = col.id || generateId('col'); (col.cards || []).forEach(card => { card.id = card.id || generateId('card'); }); }); 
+            (this.boardData.columns || []).forEach(col => { 
+                col.id = col.id || generateId('col'); 
+                (col.cards || []).forEach(card => { 
+                    card.id = card.id || generateId('card');
+                    // Backward compatibility: convert string tags to objects
+                    card.tags = (card.tags || []).map(tag => typeof tag === 'string' ? {text: tag, color: 'gray'} : tag);
+                }); 
+            }); 
             this.fileId = fileMeta.id; 
             this.markClean(); 
             window.windowManager.updateWindowTitle(this.winId, fileMeta.name); 
@@ -224,6 +149,12 @@ export function openKanbanBoard() {
             this.modal.saveBtn.onclick = () => this.saveCard();
             this.modal.cancelBtn.onclick = () => this.closeModal();
             this.modal.closeBtn.onclick = () => this.closeModal();
+            this.modal.addTagBtn.onclick = () => this.addTagToModal();
+            this.modal.tagsContainer.addEventListener('click', (e) => {
+                if(e.target.classList.contains('remove-tag')) {
+                    e.target.parentElement.remove();
+                }
+            });
 
             this.boardEl.addEventListener('click', (e) => this.handleBoardClick(e));
             this.boardEl.addEventListener('dragstart', (e) => this.handleDragStart(e));
@@ -249,12 +180,7 @@ export function openKanbanBoard() {
                 const cardsHTML = column.cards.map(card => this.renderCard(card)).join('');
 
                 columnEl.innerHTML = `
-                    <div class="column-header">
-                        <span class="column-title">${column.title}</span>
-                        <div class="column-actions">
-                            <button class="action-btn" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
+                    <div class="column-header"><span class="column-title">${column.title}</span><div class="column-actions"><button class="action-btn" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button></div></div>
                     <div class="cards-container">${cardsHTML}</div>
                     <button class="add-card-btn" data-action="add-card"><i class="fas fa-plus"></i> Adicionar Tarefa</button>
                 `;
@@ -263,22 +189,12 @@ export function openKanbanBoard() {
         },
 
         renderCard: function(card) {
-            const priorityMap = {
-                high: { class: 'high-priority' },
-                medium: { class: 'medium-priority' },
-                low: { class: 'low-priority' }
-            };
-            const priorityInfo = priorityMap[card.priority] || priorityMap.medium;
-            
-            const formatDate = (dateString) => {
-                if (!dateString) return 'Sem data';
-                return new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-            };
-
-            const tagsHTML = (card.tags || []).map(tag => `<span class="card-tag">${tag}</span>`).join('');
+            const priorityInfo = { high: 'high-priority', medium: 'medium-priority', low: 'low-priority' }[card.priority] || 'medium-priority';
+            const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem data';
+            const tagsHTML = (card.tags || []).map(tag => `<span class="card-tag tag-${tag.color || 'gray'}">${tag.text}</span>`).join('');
 
             return `
-                <div class="kanban-card ${priorityInfo.class}" data-card-id="${card.id}" draggable="true">
+                <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}" draggable="true">
                     <div class="card-header"><span class="card-title">${card.title}</span></div>
                     ${card.description ? `<p class="card-description">${card.description}</p>` : ''}
                     <div class="card-meta">
@@ -286,8 +202,7 @@ export function openKanbanBoard() {
                         ${card.assignee ? `<div class="card-assignee"><i class="fas fa-user-circle"></i> ${card.assignee}</div>` : ''}
                     </div>
                     ${tagsHTML ? `<div class="card-tags">${tagsHTML}</div>` : ''}
-                </div>
-            `;
+                </div>`;
         },
 
         handleBoardClick: function(e) {
@@ -329,19 +244,44 @@ export function openKanbanBoard() {
             this.modal.dueDate.value = card ? card.dueDate : '';
             this.modal.assignee.value = card ? card.assignee : '';
             this.modal.description.value = card ? card.description : '';
-            this.modal.tags.value = card ? (card.tags || []).join(', ') : '';
+            this.renderModalTags(card ? card.tags : []);
+        },
+
+        renderModalTags: function(tags) {
+            this.modal.tagsContainer.innerHTML = '';
+            (tags || []).forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.className = `card-tag modal-tag tag-${tag.color || 'gray'}`;
+                tagEl.dataset.color = tag.color || 'gray';
+                tagEl.textContent = tag.text;
+                tagEl.innerHTML += ' <span class="remove-tag">×</span>';
+                this.modal.tagsContainer.appendChild(tagEl);
+            });
+        },
+
+        addTagToModal: function() {
+            const text = this.modal.newTagText.value.trim();
+            const color = this.modal.newTagColor.value;
+            if (!text) return;
+            this.renderModalTags([{text, color}]); // Temporário, só adiciona visualmente
+            const currentTags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0,-2).trim(), color: el.dataset.color }));
+            this.renderModalTags(currentTags);
+            this.modal.newTagText.value = '';
+            this.modal.newTagText.focus();
         },
 
         closeModal: function() { this.modal.overlay.style.display = 'none'; },
 
         saveCard: function() {
+            const tags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0, -2).trim(), color: el.dataset.color }));
+
             const cardData = {
                 title: this.modal.title.value || 'Nova Tarefa',
                 priority: this.modal.priority.value,
                 dueDate: this.modal.dueDate.value,
                 assignee: this.modal.assignee.value,
                 description: this.modal.description.value,
-                tags: this.modal.tags.value.split(',').map(t => t.trim()).filter(Boolean)
+                tags: tags
             };
 
             if (this.editingCardId) {
@@ -355,10 +295,7 @@ export function openKanbanBoard() {
             this.markDirty(); this.closeModal(); this.renderBoard();
         },
         
-        addColumn: function() {
-            const title = prompt("Nome da nova coluna:", "Nova Coluna");
-            if (title) { this.boardData.columns.push({ id: generateId('col'), title, cards: [] }); this.markDirty(); this.renderBoard(); }
-        },
+        addColumn: function() { const title = prompt("Nome da nova coluna:", "Nova Coluna"); if (title) { this.boardData.columns.push({ id: generateId('col'), title, cards: [] }); this.markDirty(); this.renderBoard(); } },
 
         filterBoard: function() {
             const query = this.searchInput.value.trim().toLowerCase();
@@ -369,13 +306,12 @@ export function openKanbanBoard() {
                     (card.title?.toLowerCase().includes(query)) ||
                     (card.description?.toLowerCase().includes(query)) ||
                     (card.assignee?.toLowerCase().includes(query)) ||
-                    (card.tags?.some(tag => tag.toLowerCase().includes(query)))
+                    (card.tags?.some(tag => tag.text.toLowerCase().includes(query)))
                 );
             });
             this.renderBoard(filteredData);
         },
-
-        // Drag & Drop
+        
         draggedCardEl: null, sourceColumnId: null,
         handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
         handleDragEnd: function() { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl = null; this.sourceColumnId = null; } },
@@ -388,14 +324,11 @@ export function openKanbanBoard() {
                 targetColumnEl.querySelector('.cards-container').classList.remove('drag-over');
                 const cardId = this.draggedCardEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
-
                 const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
                 const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
                 const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
-                
                 const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
                 targetColumn.cards.push(cardToMove);
-                
                 this.markDirty(); this.renderBoard();
             }
         },
