@@ -13,34 +13,35 @@ window.addEventListener('load', () => {
 });
 
 function handleTitleBarPointerDown(e, titleBar) {
+    // *** CORREÇÃO ADICIONADA AQUI ***
+    // Se o clique foi em um botão de controle, não faça nada e deixe o evento original do botão funcionar.
+    if (e.target.closest('.window-control')) {
+        return;
+    }
+
     const win = titleBar.closest('.window');
     if (!win || e.button !== 0) return;
     
     titleBar.style.touchAction = 'none';
     let dragging = false, startX, startY, origX, origY;
-    let lastMoves = [], lastTime = 0;
     
     // Double-tap detection
     const now = Date.now();
     const lastTap = parseFloat(titleBar.dataset.lastTap || 0);
     if (now - lastTap < 300) {
-        if (win.classList.contains('maximized')) {
-            window.windowManager.maximizeWindow(win.id); // Use manager to restore
-        } else {
-            window.windowManager.maximizeWindow(win.id); // Use manager to maximize
-        }
+        // Use o WindowManager para garantir que a lógica de maximizar/restaurar seja a correta
+        window.windowManager.maximizeWindow(win.id);
     }
     titleBar.dataset.lastTap = now;
 
-    // Start dragging
+    // Start dragging logic
     dragging = true;
     startX = e.clientX;
     startY = e.clientY;
     const rect = win.getBoundingClientRect();
     origX = rect.left;
     origY = rect.top;
-    lastMoves = [];
-    lastTime = now;
+    
     win.classList.add('dragging');
     titleBar.setPointerCapture(e.pointerId);
 
@@ -50,27 +51,23 @@ function handleTitleBarPointerDown(e, titleBar) {
         const dy = moveEvent.clientY - startY;
         win.style.left = `${origX + dx}px`;
         win.style.top = `${origY + dy}px`;
-        
-        const now = Date.now();
-        lastMoves.push({ dx: moveEvent.clientX, dy: moveEvent.clientY, t: now });
-        if (lastMoves.length > 5) lastMoves.shift();
     };
 
-    const onPointerUp = (upEvent) => {
+    const onPointerUp = () => {
         if (!dragging) return;
         dragging = false;
         win.classList.remove('dragging');
         titleBar.releasePointerCapture(e.pointerId);
         
         // Cleanup listeners
-        titleBar.removeEventListener('pointermove', onPointerMove);
-        titleBar.removeEventListener('pointerup', onPointerUp);
-        titleBar.removeEventListener('pointercancel', onPointerUp);
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
     };
 
-    titleBar.addEventListener('pointermove', onPointerMove);
-    titleBar.addEventListener('pointerup', onPointerUp);
-    titleBar.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
 }
 
 
