@@ -41,22 +41,25 @@ class WindowManager {
         this.appLaunchActions = {};
     }
 
+    // *** LÓGICA DO DOCK CORRIGIDA ***
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
 
+        // Em dispositivos de toque, o dock NUNCA deve ser escondido.
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            dock.classList.remove('hidden');
+            return;
+        }
+
+        // Em desktops, esconde se houver alguma janela não minimizada.
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
                 shouldHide = true;
                 break;
             }
-        }
-
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if (isTouchDevice) {
-            dock.classList.remove('hidden');
-            return;
         }
 
         if (shouldHide) {
@@ -633,14 +636,14 @@ export function initializeWebOS() {
         window.mapNeuralManager.loadState();
     }
 
+    // Lógica do Dock
+    const dockEl = document.getElementById('appDock');
+    const triggerArea = document.getElementById('dock-trigger-area');
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (!isTouchDevice) {
-        const dockEl = document.getElementById('appDock');
-        const triggerArea = document.getElementById('dock-trigger-area');
-        if (dockEl && triggerArea) {
-            triggerArea.addEventListener('mouseenter', () => dockEl.classList.remove('hidden'));
-            dockEl.addEventListener('mouseleave', () => window.windowManager.updateDockVisibility());
-        }
+    
+    if (!isTouchDevice && dockEl && triggerArea) {
+        triggerArea.addEventListener('mouseenter', () => dockEl.classList.remove('hidden'));
+        dockEl.addEventListener('mouseleave', () => window.windowManager.updateDockVisibility());
     }
     window.windowManager.updateDockVisibility();
     
