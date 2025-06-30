@@ -1,8 +1,7 @@
 import * as apps from './apps/index.js';
 import * as appUtils from './apps/app.js';
 
-// --- CONSTANTES GLOBAIS E UTILITÁRIOS ---
-
+// --- Constantes Globais ---
 export const STORAGE_KEYS = {
     WALLPAPER: 'webosWallpaper_gestaop_v1.6',
     THEME_DARK_MODE: 'darkMode_gestaop_v1.6',
@@ -11,6 +10,7 @@ export const STORAGE_KEYS = {
     MAP_NEURAL_TRAINING_DATA: 'webos_map_neural_training_v1.0'
 };
 
+// --- Funções Utilitárias Globais ---
 export function generateId(prefix = 'id') {
     return prefix + '_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
 }
@@ -28,8 +28,7 @@ export function showNotification(message, duration = 3000) {
     }, duration);
 }
 
-
-// --- CLASSES PRINCIPAIS DO SISTEMA ---
+// --- Definições de Classes ---
 
 class WindowManager {
     constructor() {
@@ -41,27 +40,19 @@ class WindowManager {
         this.appLaunchActions = {};
     }
 
-    // *** LÓGICA DO DOCK CORRIGIDA ***
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
-
-        // Em dispositivos de toque, o dock NUNCA deve ser escondido.
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if (isTouchDevice) {
-            dock.classList.remove('hidden');
-            return;
-        }
-
-        // Em desktops, esconde se houver alguma janela não minimizada.
+    
+        // Verifica se existe pelo menos uma janela que não está minimizada
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
                 shouldHide = true;
-                break;
+                break; // Encontrou uma, já pode parar
             }
         }
-
+    
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
@@ -272,11 +263,10 @@ class WindowManager {
                 winEl.classList.add('maximized');
                 winData.maximized = true;
             }
-            if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
-            this.updateDockVisibility();
+             if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+             this.updateDockVisibility();
         }
     }
-    
     restoreWindow(winId) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -285,11 +275,10 @@ class WindowManager {
             winData.minimized = false;
             this.makeActive(winId);
             this._updateTaskbarItemVisual(winId, false);
-            if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
-            this.updateDockVisibility();
+           if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+           this.updateDockVisibility();
         }
     }
-
     updateWindowTitle(winId, newTitle) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -299,9 +288,8 @@ class WindowManager {
              if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
         }
     }
-
     _addDragAndResize(win, titleBar, resizeHandle, winId) {
-        let offsetX, offsetY;
+        let offsetX, offsetY, initialWidth, initialHeight, initialMouseX, initialMouseY;
         titleBar.onmousedown = (e) => {
             if (e.target.classList.contains('window-control') || e.target.closest('.window-control')) return;
             const winData = this.windows.get(winId);
@@ -327,10 +315,10 @@ class WindowManager {
             const winData = this.windows.get(winId);
             if (winData.maximized || (this.stageManager.isActive && this.stageManager.focusedAppId === winId)) return;
             this.makeActive(winId);
-            const initialWidth = win.offsetWidth;
-            const initialHeight = win.offsetHeight;
-            const initialMouseX = e.clientX;
-            const initialMouseY = e.clientY;
+            initialWidth = win.offsetWidth;
+            initialHeight = win.offsetHeight;
+            initialMouseX = e.clientX;
+            initialMouseY = e.clientY;
             document.body.classList.add('resizing');
             win.classList.add('resizing');
 
@@ -348,7 +336,6 @@ class WindowManager {
             };
         };
     }
-
     _createTaskbarItem(winId, title, appType) {
         const item = document.createElement('div');
         item.className = 'taskbar-item';
@@ -385,7 +372,6 @@ class WindowManager {
         this.taskbarItemsContainer.appendChild(item);
         this._updateTaskbarActiveState(winId);
     }
-    
     _showTaskbarItemContextMenu(event, winId, taskbarItemElement) {
         const existingMenu = document.getElementById('taskbarContext');
         if (existingMenu) existingMenu.remove();
@@ -421,7 +407,6 @@ class WindowManager {
         };
         setTimeout(() => document.addEventListener('click', closeMenuHandler, true), 0);
     }
-
     _removeTaskbarItem(winId) { const item = document.getElementById(`taskbar-item-${winId}`); if (item) item.remove(); }
     _updateTaskbarItemTitle(winId, newTitle) { const item = document.getElementById(`taskbar-item-${winId}`); if (item) { const titleEl = item.querySelector('.taskbar-item-title'); if(titleEl) titleEl.textContent = newTitle; item.title = newTitle; } }
     _updateTaskbarActiveState(winIdToActivate) { this.taskbarItemsContainer.querySelectorAll('.taskbar-item').forEach(item => item.classList.remove('active')); const activeItem = document.getElementById(`taskbar-item-${winIdToActivate}`); if (activeItem) activeItem.classList.add('active'); }
@@ -546,10 +531,10 @@ class StageManager {
     toggle() { this.isActive = !this.isActive; this.overlay.classList.toggle('active', this.isActive); if(this.toggleButton) this.toggleButton.classList.toggle('active', this.isActive); if (this.isActive) { this.windowManager.windows.forEach((winData, winId) => { if (!winData.minimized && winData.element.style.display !== 'none') { this.originalWindowStates.set(winId, { left: winData.element.style.left, top: winData.element.style.top, width: winData.element.style.width, height: winData.element.style.height, zIndex: winData.element.style.zIndex, transform: winData.element.style.transform || '' }); } }); const activeOrFirstVisible = this.windowManager.activeWindowId || Array.from(this.windowManager.windows.keys()).find(id => !this.windowManager.windows.get(id).minimized && this.windowManager.windows.get(id).element.style.display !== 'none' ); if (activeOrFirstVisible) { this.focusApp(activeOrFirstVisible); } else { this.updateStageThumbnails(); } } else { this.restoreWindows(); this.originalWindowStates.clear(); } }
     async updateStageThumbnails() { if (!this.sidebar) return; this.sidebar.innerHTML = ''; const openWindows = []; this.windowManager.windows.forEach(winData => { if (!winData.minimized && winData.element.style.display !== 'none') { openWindows.push(winData); } }); for (const winData of openWindows) { if (winData.element.id === this.focusedAppId && this.isActive) continue; const thumb = document.createElement('div'); thumb.className = 'stage-app-thumbnail'; thumb.dataset.winId = winData.element.id; const titleSpan = document.createElement('span'); titleSpan.className = 'thumbnail-title'; titleSpan.textContent = winData.title.substring(0, 15) + (winData.title.length > 15 ? '...' : ''); try { const screenshotSrc = await winData.getScreenshot(); if (screenshotSrc.startsWith('data:image/svg+xml')) { const tempDiv = document.createElement('div'); tempDiv.innerHTML = screenshotSrc; const svgEl = tempDiv.firstChild; if(svgEl.querySelector('text:last-child')) svgEl.querySelector('text:last-child').textContent = titleSpan.textContent; thumb.appendChild(svgEl); } else { const img = document.createElement('img'); img.src = screenshotSrc; img.alt = winData.title; thumb.appendChild(img); thumb.appendChild(titleSpan); } } catch (e) { const appIconActionKey = `open-${winData.appType.replace(/([A-Z])/g, '-$1').toLowerCase().split(' ')[0]}`; const appIconEl = document.querySelector(`.dock-item[data-action="${appIconActionKey}"]`); const appIconText = appIconEl ? appIconEl.textContent : '⚙️'; thumb.innerHTML = `<div class="placeholder-icon">${appIconText}</div>`; thumb.appendChild(titleSpan); } thumb.onclick = () => { if (this.isActive) this.focusApp(winData.element.id); else this.windowManager.makeActive(winData.element.id); }; this.sidebar.appendChild(thumb); } }
     focusApp(winId) { this.focusedAppId = winId; this.windowManager.windows.forEach((winData, id) => { const winEl = winData.element; if (id === winId) { winEl.style.display = 'flex'; const mainAreaRect = this.mainArea.getBoundingClientRect(); const sidebarWidth = this.sidebar.offsetWidth + 20; const availableWidth = mainAreaRect.width - (this.isActive ? sidebarWidth : 0); let targetWidth = Math.min(parseFloat(this.originalWindowStates.get(id)?.width || winEl.offsetWidth), availableWidth * 0.75); let targetHeight = (targetWidth / parseFloat(this.originalWindowStates.get(id)?.width || winEl.offsetWidth)) * parseFloat(this.originalWindowStates.get(id)?.height || winEl.offsetHeight); if (targetHeight > mainAreaRect.height * 0.85) { targetHeight = mainAreaRect.height * 0.85; targetWidth = (targetHeight / parseFloat(this.originalWindowStates.get(id)?.height || winEl.offsetHeight)) * parseFloat(this.originalWindowStates.get(id)?.width || winEl.offsetWidth); } winEl.style.width = `${targetWidth}px`; winEl.style.height = `${targetHeight}px`; winEl.style.left = `${(this.isActive ? sidebarWidth : 0) + (availableWidth - targetWidth) / 2}px`; winEl.style.top = `${(mainAreaRect.height - targetHeight) / 2}px`; winEl.style.transform = 'scale(1)'; } else { winEl.style.display = 'none'; } }); this.updateStageThumbnails(); }
-    restoreWindows() { this.windowManager.windows.forEach((winData, winId) => { const originalState = this.originalWindowStates.get(winId); if (originalState) { winData.element.style.left = originalState.left; winData.element.style.top = originalState.top; winData.element.style.width = originalState.width; winData.element.style.height = originalState.height; winData.element.style.zIndex = originalState.zIndex; winData.element.style.transform = originalState.transform; } if (!winData.minimized) winData.element.style.display = 'flex'; }); this.focusedAppId = null; if(window.windowManager.activeWindowId) window.windowManager.makeActive(window.windowManager.activeWindowId); this.updateStageThumbnails(); }
+    restoreWindows() { this.windowManager.windows.forEach((winData, winId) => { const originalState = this.originalWindowStates.get(winId); if (originalState) { winData.element.style.left = originalState.left; winData.element.style.top = originalState.top; winData.element.style.width = originalState.width; winData.element.style.height = originalState.height; winData.element.style.zIndex = originalState.zIndex; winData.element.style.transform = originalState.transform; } if (!winData.minimized) winData.element.style.display = 'flex'; }); this.focusedAppId = null; if(this.windowManager.activeWindowId) this.windowManager.makeActive(this.windowManager.activeWindowId); this.updateStageThumbnails(); }
 }
     
-// --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
+// --- Inicialização e Eventos Globais ---
 
 const accentPalettes = { light: [{ name: "Azul Padrão", color: "var(--accent-light)" }, { name: "Rosa", color: "#FF2D55" }, { name: "Verde", color: "#34C759" }, { name: "Laranja", color: "#FF9500" }, { name: "Roxo", color: "#AF52DE" }, { name: "Amarelo", color: "#FFCC00" }, { name: "Grafite", color: "#8E8E93"}, { name: "Ciano", color: "#5AC8FA"}], dark: [{ name: "Azul Padrão", color: "var(--accent-dark)" }, { name: "Rosa", color: "#FF375F" }, { name: "Verde", color: "#30D158" }, { name: "Laranja", color: "#FF9F0A" }, { name: "Roxo", color: "#BF5AF2" }, { name: "Amarelo", color: "#FFD60A" }, { name: "Grafite", color: "#98989D"}, { name: "Ciano", color: "#64D2FF"} ] };
 
@@ -569,6 +554,7 @@ export function initializeWebOS() {
         if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
     });
 
+    // Mapeia data-action para as funções importadas de cada app
     window.windowManager.appLaunchActions = { 
         'open-file-system': apps.openFileSystem, 
         'open-gantt-chart': apps.openGanttChart, 
@@ -586,7 +572,6 @@ export function initializeWebOS() {
         'open-pdca-tool': apps.openPDCATool, 
         'open-5w2h-tool': apps.open5W2HTool 
     };
-    
     document.querySelectorAll('#appDock .dock-item[data-action]').forEach(item => {
         const action = item.dataset.action;
         if (window.windowManager.appLaunchActions[action]) {
@@ -606,7 +591,6 @@ export function initializeWebOS() {
     
     window.themeManager.applyThemeVariables();
     document.getElementById('darkModeToggle').onclick = () => window.themeManager.toggleDarkMode();
-
     const wallpaperInput = document.getElementById('wallpaperInput');
     if (wallpaperInput) {
         wallpaperInput.addEventListener('change', e => {
@@ -616,7 +600,7 @@ export function initializeWebOS() {
                 }
                 return;
             }
-
+    
             const reader = new FileReader();
             reader.onload = ev => {
                 document.body.style.backgroundImage = `url(${ev.target.result})`;
@@ -626,8 +610,7 @@ export function initializeWebOS() {
             reader.readAsDataURL(e.target.files[0]);
         });
     }
-
-    const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
+    const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
     const desktopContextMenuEl = document.getElementById('desktopContextMenu');
     if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
     setupDesktopContextMenuListeners();
@@ -635,28 +618,34 @@ export function initializeWebOS() {
     if (window.mapNeuralManager) {
         window.mapNeuralManager.loadState();
     }
-
-    // Lógica do Dock
+    
     const dockEl = document.getElementById('appDock');
     const triggerArea = document.getElementById('dock-trigger-area');
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    if (!isTouchDevice && dockEl && triggerArea) {
-        triggerArea.addEventListener('mouseenter', () => dockEl.classList.remove('hidden'));
-        dockEl.addEventListener('mouseleave', () => window.windowManager.updateDockVisibility());
+    if (dockEl && triggerArea) {
+        // Mostra o dock quando o mouse entra na área de gatilho na parte inferior
+        triggerArea.addEventListener('mouseenter', () => {
+            dockEl.classList.remove('hidden');
+        });
+    
+        // Esconde o dock (se necessário) quando o mouse sai da área do dock
+        dockEl.addEventListener('mouseleave', () => {
+            window.windowManager.updateDockVisibility();
+        });
     }
+    // Define o estado inicial do dock
     window.windowManager.updateDockVisibility();
-    
     showNotification(`Bem-vindo(a) de volta!`, 3500);
 }
 
 function updateClockTime() { const clockEl = document.getElementById('clock'); if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
-
 function chooseWallpaper() { 
     const wallpaperInput = document.getElementById('wallpaperInput');
     if (wallpaperInput) {
         wallpaperInput.click();
     }
+}
+    wallpaperInput.click();
 }
 function showDesktop() { window.windowManager.windows.forEach((wData, winId) => { if (!wData.minimized) window.windowManager.minimizeWindow(winId); }); }
 function shutdown() {
@@ -672,7 +661,7 @@ function shutdown() {
 }
 
 let desktopMenuInitialized = false;
-function setupDesktopContextMenuListeners() {
+ function setupDesktopContextMenuListeners() {
     const deskMenu = document.getElementById('desktopContextMenu'); 
     const colorPaletteContainer = document.getElementById('contextMenuColorPaletteContainer'); 
     if (!deskMenu || !colorPaletteContainer) return; 
