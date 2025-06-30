@@ -196,6 +196,13 @@ export function openGanttChart() {
 
         // --- Lógica de Renderização Principal ---
         renderAll: function() {
+            // Salva o estado do foco para restaurá-lo após a renderização
+            const activeElement = document.activeElement;
+            const activeTaskId = activeElement?.closest('.gantt-task-row')?.dataset.taskId;
+            const activeField = activeElement?.dataset.field;
+            const selectionStart = activeElement?.selectionStart;
+            const selectionEnd = activeElement?.selectionEnd;
+
             this.updateParentTasks();
             this.calculateTimeline();
             this.flatTaskOrder = this.getFlatTaskOrder();
@@ -203,6 +210,20 @@ export function openGanttChart() {
             this.renderChart();
             this.renderDependencies();
             this.calculateAndDrawCriticalPath();
+
+            // Restaura o foco
+            if (activeTaskId && activeField) {
+                const newActiveElement = this.sidebarBody.querySelector(`[data-task-id="${activeTaskId}"] [data-field="${activeField}"]`);
+                if (newActiveElement) {
+                    newActiveElement.focus();
+                    // A restauração da seleção pode falhar em inputs que não a suportam (ex: date)
+                    try {
+                        newActiveElement.setSelectionRange(selectionStart, selectionEnd);
+                    } catch (err) {
+                        // Ignora o erro silenciosamente
+                    }
+                }
+            }
         },
         
         // --- Funções Auxiliares de Data e Cálculo ---
