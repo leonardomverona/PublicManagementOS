@@ -137,7 +137,7 @@ body.logged-in #userProfile { display: flex; }
     position: fixed; bottom: 0; width: 100%; height: var(--taskbar-height);
     background: var(--toolbar-bg); backdrop-filter: var(--sonoma-blur); -webkit-backdrop-filter: var(--sonoma-blur);
     display: flex; align-items: center; padding: 0 15px;
-    border-top: 1px solid var(--separator-color); z-index: 2000;
+    border-top: 1px solid var(--separator-color); z-index: 2010;
     justify-content: space-between;
 }
 .taskbar-left-cluster {
