@@ -62,3 +62,29 @@
 .window-control, .dock-item, .taskbar-item, .app-button {
     touch-action: manipulation; /* otimiza eventos de toque */
 }
+
+/* Ajustes para mobile (max-width: 768px) */
+@media (max-width: 768px) {
+    /* Força o dock a ficar sempre visível e na posição correta em telas menores */
+    .dock, .dock.hidden {
+        transform: translateX(-50%) translateY(0) !important;
+        bottom: var(--taskbar-height) !important; /* Posiciona acima da barra de tarefas se ela estiver empilhada */
+        width: 95%;
+        padding: 8px;
+        gap: 10px;
+    }
+
+    /* Ajuste na barra de tarefas no mobile para acomodar o dock acima dela */
+    .taskbar {
+        padding-bottom: calc(var(--dock-item-size) + 25px); /* Adiciona espaço extra na parte inferior da taskbar */
+    }
+
+    /* Se a taskbar for vertical no mobile, o dock fica na parte inferior */
+    body:not(.taskbar-horizontal-on-mobile) .dock,
+    body:not(.taskbar-horizontal-on-mobile) .dock.hidden {
+        bottom: 5px !important;
+    }
+    body:not(.taskbar-horizontal-on-mobile) .taskbar {
+        padding-bottom: 5px; /* Reseta o padding se a taskbar não for horizontal */
+    }
+}
