@@ -40,6 +40,26 @@ class WindowManager {
         this.appLaunchActions = {};
     }
 
+    updateDockVisibility() {
+        const dock = document.getElementById('appDock');
+        if (!dock) return;
+    
+        // Verifica se existe pelo menos uma janela que não está minimizada
+        let shouldHide = false;
+        for (const winData of this.windows.values()) {
+            if (!winData.minimized) {
+                shouldHide = true;
+                break; // Encontrou uma, já pode parar
+            }
+        }
+    
+        if (shouldHide) {
+            dock.classList.add('hidden');
+        } else {
+            dock.classList.remove('hidden');
+        }
+    }
+
     createWindow(title, content, options = {}) {
         const winId = generateId('win');
         this.zIndex++;
@@ -162,6 +182,7 @@ class WindowManager {
 
         win.addEventListener('mousedown', () => this.makeActive(winId));
         if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+        this.updateDockVisibility();
         return winId;
     }
 
@@ -201,6 +222,7 @@ class WindowManager {
             this._removeTaskbarItem(winId);
             if (this.activeWindowId === winId) this.activeWindowId = null;
             if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+            this.updateDockVisibility();
         }
     }
 
@@ -216,6 +238,7 @@ class WindowManager {
             winData.minimized = true;
             this._updateTaskbarItemVisual(winId, true);
             if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+            this.updateDockVisibility();
         }
     }
 
@@ -241,6 +264,7 @@ class WindowManager {
                 winData.maximized = true;
             }
              if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+             this.updateDockVisibility();
         }
     }
     restoreWindow(winId) {
@@ -252,6 +276,7 @@ class WindowManager {
             this.makeActive(winId);
             this._updateTaskbarItemVisual(winId, false);
            if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
+           this.updateDockVisibility();
         }
     }
     updateWindowTitle(winId, newTitle) {
@@ -575,6 +600,22 @@ export function initializeWebOS() {
         window.mapNeuralManager.loadState();
     }
     
+    const dockEl = document.getElementById('appDock');
+    const triggerArea = document.getElementById('dock-trigger-area');
+    
+    if (dockEl && triggerArea) {
+        // Mostra o dock quando o mouse entra na área de gatilho na parte inferior
+        triggerArea.addEventListener('mouseenter', () => {
+            dockEl.classList.remove('hidden');
+        });
+    
+        // Esconde o dock (se necessário) quando o mouse sai da área do dock
+        dockEl.addEventListener('mouseleave', () => {
+            window.windowManager.updateDockVisibility();
+        });
+    }
+    // Define o estado inicial do dock
+    window.windowManager.updateDockVisibility();
     showNotification(`Bem-vindo(a) de volta!`, 3500);
 }
 
