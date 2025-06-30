@@ -882,6 +882,29 @@ Sonoma Design System – v1.0
     margin-left: 10px;
     opacity: 0.4;
 }
+/* --- ESTILOS PARA OCULTAR O DOCK AUTOMATICAMENTE --- */
+
+/* Adiciona uma transição suave ao dock para a animação de mostrar/esconder */
+.dock {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* A classe .hidden desliza o dock para baixo, para fora da tela */
+.dock.hidden {
+    /* O translate-X continua sendo -50% para centralizar, e o Y esconde ele para baixo */
+    transform: translateX(-50%) translateY(calc(100% + 20px));
+}
+
+/* A área invisível na parte inferior que ativa o dock */
+#dock-trigger-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px; /* Uma faixa fina na borda inferior */
+    z-index: 2005; /* Fica acima do dock escondido */
+    /* background: rgba(255,0,0,0.2);  <-- Descomente para depurar e ver a área */
+}
 
 /* [NOVO] Estilos de Impressão para PDF */
 @media print {
