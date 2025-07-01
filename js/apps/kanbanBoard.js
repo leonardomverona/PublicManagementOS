@@ -45,15 +45,13 @@ export function openKanbanBoard() {
             .add-card-btn { margin: 0 10px 10px 10px; padding: 10px; border-radius: 6px; border: 1px dashed var(--input-border-color); background: transparent; color: var(--secondary-text-color); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
             .add-card-btn:hover { border-color: var(--accent-color); color: var(--accent-color); background: var(--hover-highlight-color); }
             .kanban-card.dragging { opacity: 0.5; transform: rotate(3deg); }
-            /* @NOVO: Estilo para o fantasma do card no modo touch */
             .kanban-card.touch-ghost { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.8; transform: rotate(5deg); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-            /* @NOVO: Esconde o card original enquanto está sendo arrastado com o dedo */
             .kanban-card.touch-dragging { opacity: 0.4; }
 
         </style>
-
+        
         <div class="app-toolbar kanban-toolbar">
-            ${getStandardAppToolbarHTML()}
+             ${getStandardAppToolbarHTML()}
             <div class="toolbar-group" style="margin-left: auto;">
                 <button id="addColumnBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Nova Coluna</button>
             </div>
@@ -64,6 +62,7 @@ export function openKanbanBoard() {
         </div>
         <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
+        <!-- O resto do seu HTML do modal aqui... (sem alterações) -->
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
@@ -80,7 +79,6 @@ export function openKanbanBoard() {
                         <div class="form-group"><label>Data de Vencimento</label><input type="date" class="app-input" id="cardDueDateInput"></div>
                         <div class="form-group" style="grid-column: span 2;"><label>Responsável</label><input type="text" class="app-input" id="cardAssigneeInput"></div>
                         <div class="form-group" style="grid-column: span 2;"><label>Descrição</label><textarea class="app-textarea" id="cardDescriptionInput" rows="4"></textarea></div>
-                        <!-- UI de Tags Aprimorada -->
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Tags</label>
                             <div id="cardTagsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding: 5px 0;"></div>
@@ -168,11 +166,24 @@ export function openKanbanBoard() {
             this.boardEl.addEventListener('drop', (e) => this.handleDrop(e));
             this.boardEl.addEventListener('dragleave', (e) => this.handleDragLeave(e));
 
-            // @MODIFICADO: Adiciona eventos de Toque
+            // @CORREÇÃO: Adiciona listeners mousedown/mouseup para gerenciar o 'draggable'
+            this.boardEl.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.kanban-card')) {
+                    e.target.closest('.kanban-card').setAttribute('draggable', true);
+                }
+            });
+
+            this.boardEl.addEventListener('mouseup', (e) => {
+                const card = e.target.closest('.kanban-card');
+                if (card && card.hasAttribute('draggable')) {
+                     card.setAttribute('draggable', false);
+                }
+            });
+
+            // Eventos de Toque
             this.boardEl.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
             this.boardEl.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
             this.boardEl.addEventListener('touchend', (e) => this.handleTouchEnd(e));
-
 
             if(!this.boardData.columns.length) this.loadDefaultBoard(); 
             this.renderBoard(); 
@@ -204,9 +215,9 @@ export function openKanbanBoard() {
             const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem data';
             const tagsHTML = (card.tags || []).map(tag => `<span class="card-tag tag-${tag.color || 'gray'}">${tag.text}</span>`).join('');
 
-            // @MODIFICADO: Remove o atributo draggable para evitar conflito com touch
+            // @CORREÇÃO: O atributo draggable é FALSO por padrão. Será ativado pelo mousedown.
             return `
-                <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}">
+                <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}" draggable="false">
                     <div class="card-header"><span class="card-title">${card.title}</span></div>
                     ${card.description ? `<p class="card-description">${card.description}</p>` : ''}
                     <div class="card-meta">
@@ -218,8 +229,7 @@ export function openKanbanBoard() {
         },
 
         handleBoardClick: function(e) {
-            // @MODIFICADO: Evita abrir modal se estivermos arrastando com o toque
-            if (this.isTouchDragging) return;
+            if (this.isTouchDragging || this.draggedCardEl) return;
 
             const addCardBtn = e.target.closest('[data-action="add-card"]');
             const deleteColBtn = e.target.closest('[data-action="delete-column"]');
@@ -325,7 +335,7 @@ export function openKanbanBoard() {
         
         // --- Lógica de Drag and Drop para Mouse ---
         draggedCardEl: null, sourceColumnId: null,
-        handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; e.target.setAttribute('draggable', true); this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
+        handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
         handleDragEnd: function(e) { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl.setAttribute('draggable', false); this.draggedCardEl = null; this.sourceColumnId = null; } },
         handleDragOver: function(e) { e.preventDefault(); const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.add('drag-over'); } },
         handleDragLeave: function(e) { const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.remove('drag-over'); } },
@@ -345,7 +355,7 @@ export function openKanbanBoard() {
             }
         },
 
-        // --- @NOVO: Lógica de Drag and Drop para Toque ---
+        // --- Lógica de Drag and Drop para Toque ---
         touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0,
         isTouchDragging: false, longPressTimer: null,
 
@@ -353,42 +363,31 @@ export function openKanbanBoard() {
             const cardEl = e.target.closest('.kanban-card');
             if (!cardEl) return;
             
-            // Inicia um timer para o "long press"
             this.longPressTimer = setTimeout(() => {
-                this.isTouchDragging = true; // Inicia o arrastar
-                
-                // Prepara o card original e o fantasma
+                this.isTouchDragging = true;
                 this.touchStartEl = cardEl;
                 this.sourceColumnId = cardEl.closest('.kanban-column').dataset.columnId;
                 cardEl.classList.add('touch-dragging');
-
                 this.touchGhostEl = cardEl.cloneNode(true);
                 this.touchGhostEl.classList.add('touch-ghost');
                 document.body.appendChild(this.touchGhostEl);
-
-                // Posiciona o fantasma
                 const touch = e.touches[0];
                 this.touchStartX = touch.clientX;
                 this.touchStartY = touch.clientY;
                 this.touchGhostEl.style.width = `${cardEl.offsetWidth}px`;
                 this.moveGhost(touch.clientX, touch.clientY);
-                
-                e.preventDefault(); // Impede o scroll da página enquanto arrasta
-            }, 200); // Atraso de 200ms para diferenciar clique de arrastar
+                e.preventDefault();
+            }, 200);
         },
 
         handleTouchMove: function(e) {
             if (!this.isTouchDragging || !this.touchGhostEl) return;
-            e.preventDefault(); // Impede o scroll
-            
+            e.preventDefault();
             const touch = e.touches[0];
             this.moveGhost(touch.clientX, touch.clientY);
-
-            // Adiciona feedback visual à coluna sob o dedo
-            this.touchGhostEl.style.display = 'none'; // Esconde fantasma para detectar elemento abaixo
+            this.touchGhostEl.style.display = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
             this.touchGhostEl.style.display = '';
-            
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
             const columnContainer = elementBelow ? elementBelow.closest('.cards-container') : null;
             if (columnContainer) {
@@ -397,26 +396,17 @@ export function openKanbanBoard() {
         },
 
         handleTouchEnd: function(e) {
-            clearTimeout(this.longPressTimer); // Cancela o timer se o dedo for solto antes
-
-            if (!this.isTouchDragging || !this.touchGhostEl) {
-                this.isTouchDragging = false;
-                return;
-            }
-
-            // Pega a posição final do toque
+            clearTimeout(this.longPressTimer);
+            if (!this.isTouchDragging || !this.touchGhostEl) { this.isTouchDragging = false; return; }
             const touch = e.changedTouches[0];
             this.touchGhostEl.style.display = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
             this.touchGhostEl.style.display = '';
-            
             const targetColumnEl = elementBelow ? elementBelow.closest('.kanban-column') : null;
 
             if (targetColumnEl) {
                 const cardId = this.touchStartEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
-
-                // Move os dados
                 if (this.sourceColumnId !== targetColumnId) {
                     const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
                     const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
@@ -429,17 +419,12 @@ export function openKanbanBoard() {
                     }
                 }
             }
-
-            // Limpeza
             this.touchStartEl.classList.remove('touch-dragging');
             document.body.removeChild(this.touchGhostEl);
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
-            
             this.touchGhostEl = null;
             this.touchStartEl = null;
             this.sourceColumnId = null;
-            
-            // Pequeno delay para evitar que o clique seja disparado logo após soltar
             setTimeout(() => { this.isTouchDragging = false; }, 100);
         },
 
@@ -450,7 +435,6 @@ export function openKanbanBoard() {
         },
 
         cleanup: () => {
-             // @NOVO: Garante que o fantasma seja removido se a janela for fechada
              if(appState.touchGhostEl && appState.touchGhostEl.parentElement) {
                 appState.touchGhostEl.parentElement.removeChild(appState.touchGhostEl);
              }
