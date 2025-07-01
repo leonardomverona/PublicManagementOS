@@ -7,8 +7,8 @@ export function openGanttChart() {
         width: '90vw', 
         height: '85vh', 
         appType: 'gantt-chart',
-        minWidth: 800,
-        minHeight: 600
+        minWidth: 360, // Smaller min-width for mobile
+        minHeight: 500
     });
 
     const content = `
@@ -28,11 +28,12 @@ export function openGanttChart() {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
+                overflow: hidden; /* Prevent body scroll */
             }
             
             .gantt-v2-container { 
                 display: flex; 
-                height: calc(100% - 80px); 
+                flex-grow: 1; /* Make it fill remaining space */
                 width: 100%;
                 overflow: hidden;
             }
@@ -40,6 +41,8 @@ export function openGanttChart() {
             /* --- Barra de Ferramentas --- */
             .app-toolbar { 
                 display: flex;
+                flex-wrap: wrap; /* Allow wrapping on small screens */
+                gap: 6px;
                 padding: 8px 12px;
                 background-color: var(--toolbar-bg);
                 border-bottom: 1px solid var(--separator-color);
@@ -54,12 +57,18 @@ export function openGanttChart() {
                 color: var(--text-color);
                 border: 1px solid var(--button-border);
                 cursor: pointer;
-                transition: background-color 0.2s;
+                transition: background-color 0.2s, color 0.2s, border-color 0.2s;
                 font-size: 0.9em;
-                margin: 0 3px;
+                margin: 0;
+            }
+
+            .app-button.active {
+                background-color: var(--accent-color);
+                color: white;
+                border-color: var(--accent-color);
             }
             
-            .app-button:hover {
+            .app-button:hover:not(.active) {
                 background-color: var(--button-hover-bg);
             }
             
@@ -71,11 +80,14 @@ export function openGanttChart() {
                 border-left: 1px solid var(--separator-color); 
                 margin: 0 8px; 
                 height: 20px; 
+                align-self: center;
             }
             
             .toolbar-group {
                 display: flex;
-                margin: 0 5px;
+                flex-wrap: nowrap; /* Prevent groups from breaking */
+                gap: 6px;
+                margin: 0;
             }
 
             /* --- Barra de Pesquisa e Filtros --- */
@@ -84,6 +96,7 @@ export function openGanttChart() {
                 background-color: var(--toolbar-bg);
                 border-bottom: 1px solid var(--separator-color);
                 display: flex;
+                flex-wrap: wrap; /* Allow filters to wrap */
                 gap: 10px;
                 align-items: center;
             }
@@ -97,52 +110,21 @@ export function openGanttChart() {
             .gantt-filter-label {
                 font-size: 0.85em;
                 color: var(--secondary-text-color);
+                white-space: nowrap;
             }
             
-            .gantt-filter-select {
+            .gantt-filter-select, .app-input {
                 background: var(--input-bg);
                 border: 1px solid var(--button-border);
                 border-radius: 4px;
-                padding: 4px 8px;
+                padding: 6px 8px;
                 color: var(--text-color);
-                font-size: 0.85em;
+                font-size: 0.9em;
             }
             
             .app-input {
-                padding: 6px 10px;
-                border-radius: 4px;
-                border: 1px solid var(--button-border);
-                background: var(--input-bg);
-                color: var(--text-color);
-                font-size: 0.9em;
-                flex: 1;
-                max-width: 250px;
-            }
-            
-            .assignee-dropdown {
-                position: relative;
-                display: inline-block;
-            }
-            
-            .assignee-options {
-                position: absolute;
-                background: var(--context-menu-bg);
-                border: 1px solid var(--separator-color);
-                border-radius: 4px;
-                max-height: 200px;
-                overflow-y: auto;
-                z-index: 100;
-                width: 100%;
-                display: none;
-            }
-            
-            .assignee-option {
-                padding: 6px 10px;
-                cursor: pointer;
-            }
-            
-            .assignee-option:hover {
-                background-color: var(--hover-highlight-color);
+                flex: 1 1 150px; /* Allow input to grow and shrink */
+                min-width: 150px;
             }
             
             .dependency-creation {
@@ -168,7 +150,7 @@ export function openGanttChart() {
             /* --- Painel da Tabela (Sidebar) --- */
             .gantt-sidebar { 
                 width: 45%; 
-                min-width: 450px; 
+                min-width: 350px; 
                 max-width: 70%; 
                 background-color: var(--window-bg); 
                 display: flex; 
@@ -193,8 +175,6 @@ export function openGanttChart() {
                 color: var(--secondary-text-color); 
                 border-bottom: 1px solid var(--separator-color); 
                 text-transform: uppercase;
-                position: sticky;
-                top: 0;
                 background-color: var(--window-bg);
                 z-index: 2;
             }
@@ -203,10 +183,11 @@ export function openGanttChart() {
                 flex-grow: 1; 
                 overflow-y: auto; 
                 position: relative;
+                -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
             }
             
             .gantt-task-row { 
-                min-height: var(--gantt-row-height); 
+                height: var(--gantt-row-height); /* Use height instead of min-height */
                 border-bottom: 1px solid var(--separator-color); 
                 cursor: pointer; 
                 user-select: none;
@@ -230,7 +211,6 @@ export function openGanttChart() {
             }
             
             .task-cell { 
-                padding: 5px 0; 
                 white-space: nowrap; 
                 overflow: hidden; 
                 text-overflow: ellipsis; 
@@ -256,75 +236,16 @@ export function openGanttChart() {
                 outline: 1px solid var(--accent-color); 
             }
             
-            .task-cell input[type="date"] { 
-                padding-right: 0; 
-            }
+            .task-name-cell { gap: 5px; }
+            .task-expander { width: 20px; text-align: center; cursor: pointer; color: var(--secondary-text-color); transition: transform 0.2s; flex-shrink: 0; }
+            .task-expander.collapsed { transform: rotate(-90deg); }
+            .task-icon { margin: 0 4px; flex-shrink: 0; }
             
-            .task-cell input[type="number"] { 
-                -moz-appearance: textfield; 
-            }
+            .avatar { width: 24px; height: 24px; border-radius: 50%; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75em; font-weight: 600; margin-right: 8px; flex-shrink: 0; }
             
-            .task-cell input::-webkit-outer-spin-button, 
-            .task-cell input::-webkit-inner-spin-button { 
-                -webkit-appearance: none; 
-                margin: 0; 
-            }
-            
-            .task-name-cell { 
-                gap: 5px; 
-            }
-            
-            .task-expander { 
-                width: 20px; 
-                text-align: center; 
-                cursor: pointer; 
-                color: var(--secondary-text-color); 
-                transition: transform 0.2s; 
-                flex-shrink: 0; 
-            }
-            
-            .task-expander.collapsed { 
-                transform: rotate(-90deg); 
-            }
-            
-            .task-icon { 
-                margin: 0 4px; 
-                flex-shrink: 0; 
-            }
-            
-            .avatar { 
-                width: 24px; 
-                height: 24px; 
-                border-radius: 50%; 
-                color: white; 
-                display: inline-flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-size: 0.75em; 
-                font-weight: 600; 
-                margin-right: 8px; 
-                flex-shrink: 0; 
-            }
-            
-            .task-actions {
-                display: flex;
-                justify-content: center;
-                gap: 5px;
-            }
-            
-            .action-btn {
-                padding: 4px;
-                border-radius: 4px;
-                cursor: pointer;
-                color: var(--secondary-text-color);
-                background: transparent;
-                border: none;
-            }
-            
-            .action-btn:hover {
-                background-color: var(--hover-highlight-color);
-                color: var(--text-color);
-            }
+            .task-actions { display: flex; justify-content: center; gap: 5px; }
+            .action-btn { padding: 4px; border-radius: 4px; cursor: pointer; color: var(--secondary-text-color); background: transparent; border: none; }
+            .action-btn:hover { background-color: var(--hover-highlight-color); color: var(--text-color); }
             
             /* --- Divisor Redimensionável --- */
             .gantt-splitter { 
@@ -332,6 +253,7 @@ export function openGanttChart() {
                 background: var(--separator-color); 
                 cursor: col-resize; 
                 transition: background-color 0.2s;
+                flex-shrink: 0; /* Prevent splitter from shrinking */
             }
             
             .gantt-splitter:hover, .gantt-splitter.dragging { 
@@ -339,198 +261,41 @@ export function openGanttChart() {
             }
 
             /* --- Área do Gráfico --- */
-            .gantt-chart-area { 
-                flex-grow: 1; 
-                display: flex; 
-                flex-direction: column; 
-                overflow: hidden; 
-            }
-            
-            .gantt-chart-header-container { 
-                flex-shrink: 0; 
-                position: sticky; 
-                top: 0; 
-                z-index: 4; 
-                background-color: var(--toolbar-bg);
-                overflow: hidden;
-            }
-            
-            .gantt-timeline-header { 
-                white-space: nowrap; 
-                border-bottom: 1px solid var(--separator-color); 
-                display: flex; 
-                flex-direction: column;
-                min-width: fit-content;
-            }
-            
-            .gantt-timeline-months, .gantt-timeline-days { 
-                display: flex; 
-            }
-            
-            .gantt-timeline-month, .gantt-timeline-day { 
-                text-align: center; 
-                color: var(--secondary-text-color); 
-                font-size: 0.8em; 
-                border-right: 1px solid var(--separator-color); 
-                box-sizing: border-box; 
-                flex-shrink: 0; 
-            }
-            
-            .gantt-timeline-month { 
-                font-weight: 600; 
-                padding: 5px 0; 
-                border-top: 1px solid var(--separator-color); 
-            }
-            
-            .gantt-timeline-day { 
-                padding: 8px 0; 
-            }
+            .gantt-chart-area { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+            .gantt-chart-header-container { flex-shrink: 0; z-index: 4; background-color: var(--toolbar-bg); overflow: hidden; }
+            .gantt-timeline-header { white-space: nowrap; border-bottom: 1px solid var(--separator-color); display: flex; flex-direction: column; min-width: fit-content; }
+            .gantt-timeline-upper, .gantt-timeline-lower { display: flex; }
+            .gantt-timeline-unit { text-align: center; color: var(--secondary-text-color); font-size: 0.8em; border-right: 1px solid var(--separator-color); box-sizing: border-box; flex-shrink: 0; }
+            .gantt-timeline-unit.upper { font-weight: 600; padding: 5px 0; border-top: 1px solid var(--separator-color); }
+            .gantt-timeline-unit.lower { padding: 8px 0; }
             
             .gantt-chart-viewport { 
                 flex-grow: 1; 
                 overflow: auto; 
                 position: relative; 
+                -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
             }
-            
-            .gantt-chart-content { 
-                position: relative; 
-            }
-            
-            .gantt-grid { 
-                position: absolute; 
-                top: 0; 
-                left: 0; 
-                width: 100%; 
-                height: 100%; 
-                z-index: 0; 
-            }
-            
-            .gantt-grid-line, .gantt-row-line, .gantt-grid-weekend { 
-                position: absolute; 
-            }
-            
-            .gantt-today-marker { 
-                position: absolute; 
-                top: 0; 
-                width: 2px; 
-                height: 100%; 
-                background-color: var(--danger-color); 
-                z-index: 2; 
-                opacity: 0.9; 
-            }
-            
-            .gantt-grid-line { 
-                top: 0; 
-                width: 1px; 
-                height: 100%; 
-                background-color: var(--separator-color); 
-                opacity: 0.5; 
-            }
-            
-            .gantt-row-line { 
-                left: 0; 
-                height: 1px; 
-                width: 100%; 
-                background-color: var(--separator-color); 
-            }
-            
-            .gantt-grid-weekend { 
-                top: 0; 
-                height: 100%; 
-                background-color: var(--separator-color); 
-                opacity: 0.1; 
-            }
+            .gantt-chart-content { position: relative; }
+            .gantt-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+            .gantt-grid-line, .gantt-row-line, .gantt-grid-weekend { position: absolute; }
+            .gantt-today-marker { position: absolute; top: 0; width: 2px; height: 100%; background-color: var(--danger-color); z-index: 2; opacity: 0.9; }
+            .gantt-grid-line { top: 0; width: 1px; height: 100%; background-color: var(--separator-color); opacity: 0.5; }
+            .gantt-row-line { left: 0; height: 1px; width: 100%; background-color: var(--separator-color); }
+            .gantt-grid-weekend { top: 0; height: 100%; background-color: var(--separator-color); opacity: 0.1; }
 
-            .gantt-bar-container { 
-                position: absolute; 
-                height: var(--gantt-row-height); 
-                display: flex; 
-                align-items: center; 
-                z-index: 1;
-            }
-            
-            .gantt-bar { 
-                position: relative; 
-                height: 28px; 
-                background-color: var(--accent-color); 
-                border-radius: 6px; 
-                display: flex; 
-                align-items: center; 
-                color: white; 
-                font-size: 0.85em; 
-                white-space: nowrap; 
-                overflow: hidden; 
-                box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
-                cursor: move; 
-                transition: filter 0.2s; 
-            }
-            
-            .gantt-bar:hover { 
-                filter: brightness(1.1); 
-            }
-            
-            .gantt-bar-progress { 
-                position: absolute; 
-                top: 0; 
-                left: 0; 
-                height: 100%; 
-                background: rgba(0,0,0,0.25); 
-                border-radius: 6px; 
-                pointer-events: none; 
-            }
-            
-            .gantt-bar-handle { 
-                position: absolute; 
-                top: 0; 
-                width: 8px; 
-                height: 100%; 
-                z-index: 2; 
-            }
-            
-            .gantt-bar-handle.left { 
-                left: 0; 
-                cursor: ew-resize; 
-            }
-            
-            .gantt-bar-handle.right { 
-                right: 0; 
-                cursor: ew-resize; 
-            }
-            
-            .gantt-bar-parent { 
-                background-color: var(--gantt-parent-bar-color); 
-                border-radius: 2px; 
-                height: 12px; 
-            }
-            
-            .gantt-bar-parent .gantt-bar-progress { 
-                background-color: rgba(255,255,255,0.4); 
-            }
-            
-            .gantt-milestone { 
-                position: absolute; 
-                width: 24px; 
-                height: 24px; 
-                background: var(--gantt-milestone-color); 
-                transform: rotate(45deg); 
-                top: 8px; 
-                border-radius: 3px; 
-                cursor: move; 
-                transition: transform 0.2s; 
-            }
-            
-            .gantt-milestone:hover { 
-                transform: rotate(45deg) scale(1.1); 
-            }
-            
-            .gantt-bar-label {
-                z-index: 1;
-                padding: 0 8px;
-                pointer-events: none;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
+            .gantt-bar-container { position: absolute; height: var(--gantt-row-height); display: flex; align-items: center; z-index: 1; }
+            .gantt-bar { position: relative; height: 28px; background-color: var(--accent-color); border-radius: 6px; display: flex; align-items: center; color: white; font-size: 0.85em; white-space: nowrap; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.2); cursor: move; cursor: grab; transition: filter 0.2s; }
+            .gantt-bar:active { cursor: grabbing; }
+            .gantt-bar:hover { filter: brightness(1.1); }
+            .gantt-bar-progress { position: absolute; top: 0; left: 0; height: 100%; background: rgba(0,0,0,0.25); border-radius: 6px; pointer-events: none; }
+            .gantt-bar-handle { position: absolute; top: 0; width: 8px; height: 100%; z-index: 2; }
+            .gantt-bar-handle.left { left: 0; cursor: ew-resize; }
+            .gantt-bar-handle.right { right: 0; cursor: ew-resize; }
+            .gantt-bar-parent { background-color: var(--gantt-parent-bar-color); border-radius: 2px; height: 12px; }
+            .gantt-bar-parent .gantt-bar-progress { background-color: rgba(255,255,255,0.4); }
+            .gantt-milestone { position: absolute; width: 24px; height: 24px; background: var(--gantt-milestone-color); transform: rotate(45deg); top: 8px; border-radius: 3px; cursor: move; transition: transform 0.2s; }
+            .gantt-milestone:hover { transform: rotate(45deg) scale(1.1); }
+            .gantt-bar-label { z-index: 1; padding: 0 8px; pointer-events: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             
             .status-todo { background-color: #a9a9a9; }
             .status-inprogress { background-color: #4a6cf7; }
@@ -538,219 +303,171 @@ export function openGanttChart() {
             .status-blocked { background-color: #dc3545; }
             .gantt-bar.critical { border: 2px solid var(--critical-color); }
 
-            #ganttSvgOverlay { 
-                position: absolute; 
-                top: 0; 
-                left: 0; 
-                width: 100%; 
-                height: 100%; 
-                pointer-events: none; 
-                z-index: 1; 
-            }
-            
-            .gantt-dependency-path { 
-                stroke: var(--secondary-text-color); 
-                stroke-width: 1.5; 
-                fill: none; 
-                opacity: 0.8; 
-                marker-end: url(#arrowhead); 
-            }
-            
-            .gantt-critical-path { 
-                stroke: var(--critical-color) !important; 
-                stroke-width: 2.5 !important; 
-                opacity: 1 !important; 
-            }
+            #ganttSvgOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+            .gantt-dependency-path { stroke: var(--secondary-text-color); stroke-width: 1.5; fill: none; opacity: 0.8; marker-end: url(#arrowhead_${uniqueSuffix}); }
+            .gantt-critical-path { stroke: var(--critical-color) !important; stroke-width: 2.5 !important; opacity: 1 !important; }
 
-            /* --- Tooltip --- */
-            .gantt-tooltip { 
-                position: fixed; 
-                background: var(--context-menu-bg); 
-                color: var(--text-color); 
-                border: 1px solid var(--separator-color); 
-                border-radius: 8px; 
-                padding: 10px; 
-                z-index: 10000; 
-                font-size: 0.9em; 
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
-                pointer-events: none; 
-                opacity: 0; 
-                transition: opacity 0.2s; 
-                max-width: 300px; 
-            }
-            
-            .gantt-tooltip.visible { 
-                opacity: 1; 
-            }
-            
-            .gantt-tooltip-title { 
-                font-weight: 600; 
-                margin-bottom: 8px; 
-                color: var(--accent-color);
-            }
-            
-            .gantt-tooltip-row { 
-                display: flex; 
-                justify-content: space-between; 
-                margin-bottom: 4px; 
-            }
-            
-            .gantt-tooltip-label { 
-                color: var(--secondary-text-color); 
-                margin-right: 15px; 
-            }
-            
-            /* --- Context Menu --- */
-            .gantt-context-menu {
-                position: absolute;
-                background: var(--context-menu-bg);
-                border: 1px solid var(--separator-color);
-                border-radius: 6px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                z-index: 1000;
-                min-width: 180px;
-            }
-            
-            .gantt-context-menu-item {
-                padding: 8px 16px;
-                cursor: pointer;
-                font-size: 0.9em;
-                display: flex;
-                align-items: center;
-            }
-            
-            .gantt-context-menu-item:hover {
-                background-color: var(--hover-highlight-color);
-            }
-            
-            .gantt-context-menu-item i {
-                margin-right: 8px;
-                width: 16px;
-                text-align: center;
-            }
-            
-            /* --- Status Indicators --- */
-            .status-indicator {
-                display: inline-block;
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                margin-right: 6px;
+            /* --- Tooltip, Context Menu, Status --- */
+            .gantt-tooltip { position: fixed; background: var(--context-menu-bg); color: var(--text-color); border: 1px solid var(--separator-color); border-radius: 8px; padding: 10px; z-index: 10000; font-size: 0.9em; box-shadow: 0 5px 15px rgba(0,0,0,0.2); pointer-events: none; opacity: 0; transition: opacity 0.2s; max-width: 300px; }
+            .gantt-tooltip.visible { opacity: 1; }
+            .gantt-tooltip-title { font-weight: 600; margin-bottom: 8px; color: var(--accent-color); }
+            .gantt-tooltip-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+            .gantt-tooltip-label { color: var(--secondary-text-color); margin-right: 15px; }
+            .gantt-context-menu { position: absolute; background: var(--context-menu-bg); border: 1px solid var(--separator-color); border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1000; min-width: 180px; }
+            .gantt-context-menu-item { padding: 8px 16px; cursor: pointer; font-size: 0.9em; display: flex; align-items: center; }
+            .gantt-context-menu-item:hover { background-color: var(--hover-highlight-color); }
+            .gantt-context-menu-item i { margin-right: 8px; width: 16px; text-align: center; }
+            .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+            /* --- Responsive Design for Mobile --- */
+            @media (max-width: 800px) {
+                .toolbar-separator { display: none; }
+                .gantt-v2-container {
+                    flex-direction: column;
+                    height: auto; /* Let content determine height */
+                }
+                .gantt-sidebar {
+                    width: 100%;
+                    max-width: 100%;
+                    height: 50vh; /* Assign fixed portion of viewport */
+                    border-right: none;
+                    border-bottom: 2px solid var(--separator-color);
+                }
+                .gantt-chart-area {
+                    height: 50vh; /* The other half */
+                }
+                .gantt-splitter {
+                    display: none;
+                }
+                .gantt-sidebar-header {
+                    display: none; /* Hide rigid header on mobile */
+                }
+                .gantt-task-row {
+                    height: auto; /* Allow rows to grow */
+                    min-height: var(--gantt-row-height);
+                    grid-template-columns: 1fr 1fr; /* Two column layout */
+                    grid-template-rows: auto auto auto auto;
+                    gap: 5px 10px;
+                    padding: 10px;
+                }
+                .task-cell {
+                    height: auto;
+                    grid-column: span 1; /* Default to half-width */
+                    white-space: normal; /* Allow wrapping */
+                }
+                .task-name-cell {
+                    grid-column: 1 / -1; /* Name cell spans full width */
+                    font-weight: bold;
+                }
+                .task-cell.task-actions {
+                    grid-column: 1 / -1;
+                    justify-content: flex-end;
+                }
+                .app-button span { display: none; } /* Hide text on buttons */
+                .app-button i { margin-right: 0; } /* Remove margin when text is hidden */
             }
         </style>
 
-        <div class="app-toolbar">
-            ${getStandardAppToolbarHTML()}
-            <div class="toolbar-group">
-                <button id="addTaskBtn_${uniqueSuffix}" class="app-button"><i class="fas fa-plus-circle"></i> Tarefa</button>
-                <button id="addMilestoneBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-gem"></i> Marco</button>
-                <button id="addParentBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-folder"></i> Grupo</button>
-            </div>
-            
-            <div class="toolbar-separator"></div>
-            
-            <div class="toolbar-group">
-                <button id="zoomOutBtn_${uniqueSuffix}" class="app-button secondary" title="Reduzir Zoom"><i class="fas fa-search-minus"></i></button>
-                <button id="zoomInBtn_${uniqueSuffix}" class="app-button secondary" title="Aumentar Zoom"><i class="fas fa-search-plus"></i></button>
-                <button id="todayBtn_${uniqueSuffix}" class="app-button secondary" title="Ir para Hoje"><i class="fas fa-calendar-day"></i></button>
-                <button id="fitToScreenBtn_${uniqueSuffix}" class="app-button secondary" title="Ajustar ao Projeto"><i class="fas fa-compress"></i></button>
-            </div>
-            
-            <div class="toolbar-separator"></div>
-            
-            <div class="toolbar-group">
-                <button id="linkTasksBtn_${uniqueSuffix}" class="app-button secondary" title="Vincular Tarefas"><i class="fas fa-link"></i></button>
-                <button id="criticalPathBtn_${uniqueSuffix}" class="app-button secondary" title="Mostrar Caminho Crítico"><i class="fas fa-bolt"></i></button>
-                <button id="focusModeBtn_${uniqueSuffix}" class="app-button secondary" title="Modo de Foco"><i class="fas fa-crosshairs"></i></button>
-            </div>
-            
-            <div style="flex-grow: 1;"></div>
-            
-            <div class="toolbar-group">
-                <button id="exportBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-file-export"></i> Exportar</button>
-            </div>
-        </div>
-        
-        <!-- Nova barra de pesquisa e filtros -->
-        <div class="gantt-search-bar">
-            <input type="text" id="ganttSearch_${uniqueSuffix}" placeholder="Pesquisar tarefas..." class="app-input">
-            
-            <div class="gantt-filter-group">
-                <span class="gantt-filter-label">Status:</span>
-                <select id="statusFilter_${uniqueSuffix}" class="gantt-filter-select">
-                    <option value="all">Todos</option>
-                    <option value="todo">A Fazer</option>
-                    <option value="inprogress">Em Progresso</option>
-                    <option value="done">Concluído</option>
-                    <option value="blocked">Bloqueado</option>
-                </select>
-            </div>
-            
-            <div class="gantt-filter-group">
-                <span class="gantt-filter-label">Responsável:</span>
-                <select id="assigneeFilter_${uniqueSuffix}" class="gantt-filter-select">
-                    <option value="all">Todos</option>
-                    <!-- Opções serão preenchidas dinamicamente -->
-                </select>
-            </div>
-            
-            <button id="clearFiltersBtn_${uniqueSuffix}" class="app-button small">Limpar Filtros</button>
-        </div>
-        
-        <div class="gantt-v2-container">
-            <div class="gantt-sidebar" id="ganttSidebar_${uniqueSuffix}">
-                <div class="gantt-sidebar-header">
-                    <span>Tarefa</span>
-                    <span>Duração</span>
-                    <span>Prog. %</span>
-                    <span>Responsável</span>
-                    <span>Início</span>
-                    <span>Fim</span>
-                    <span>Ações</span>
+        <div class="gantt-chart-app-container">
+            <div class="app-toolbar">
+                ${getStandardAppToolbarHTML()}
+                <div class="toolbar-group">
+                    <button id="addTaskBtn_${uniqueSuffix}" class="app-button" title="Adicionar Tarefa"><i class="fas fa-plus-circle"></i> <span>Tarefa</span></button>
+                    <button id="addMilestoneBtn_${uniqueSuffix}" class="app-button" title="Adicionar Marco"><i class="fas fa-gem"></i> <span>Marco</span></button>
+                    <button id="addParentBtn_${uniqueSuffix}" class="app-button" title="Adicionar Grupo"><i class="fas fa-folder"></i> <span>Grupo</span></button>
                 </div>
-                <div class="gantt-sidebar-body" id="ganttSidebarBody_${uniqueSuffix}"></div>
+                
+                <div class="toolbar-separator"></div>
+
+                <div class="toolbar-group" id="viewModeGroup_${uniqueSuffix}">
+                    <button data-view="day" class="app-button active" title="Visão Diária"><i class="fas fa-calendar-day"></i> <span>Dia</span></button>
+                    <button data-view="week" class="app-button" title="Visão Semanal"><i class="fas fa-calendar-week"></i> <span>Semana</span></button>
+                    <button data-view="month" class="app-button" title="Visão Mensal"><i class="fas fa-calendar-alt"></i> <span>Mês</span></button>
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                    <button id="zoomOutBtn_${uniqueSuffix}" class="app-button" title="Reduzir Zoom"><i class="fas fa-search-minus"></i></button>
+                    <button id="zoomInBtn_${uniqueSuffix}" class="app-button" title="Aumentar Zoom"><i class="fas fa-search-plus"></i></button>
+                    <button id="todayBtn_${uniqueSuffix}" class="app-button" title="Ir para Hoje"><i class="fas fa-calendar-day"></i></button>
+                </div>
+                
+                <div class="toolbar-separator"></div>
+                
+                <div class="toolbar-group">
+                    <button id="linkTasksBtn_${uniqueSuffix}" class="app-button" title="Vincular Tarefas"><i class="fas fa-link"></i></button>
+                    <button id="criticalPathBtn_${uniqueSuffix}" class="app-button" title="Mostrar Caminho Crítico"><i class="fas fa-bolt"></i></button>
+                </div>
             </div>
-            <div class="gantt-splitter" id="ganttSplitter_${uniqueSuffix}"></div>
-            <div class="gantt-chart-area">
-                <div class="gantt-chart-header-container" id="ganttHeaderContainer_${uniqueSuffix}"></div>
-                <div class="gantt-chart-viewport" id="ganttChartViewport_${uniqueSuffix}">
-                    <div class="gantt-chart-content" id="ganttChartContent_${uniqueSuffix}">
-                         <svg id="ganttSvgOverlay" width="100%" height="100%">
-                           <defs>
-                             <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                               <path d="M 0 0 L 10 5 L 0 10 z" opacity="0.8" fill="var(--secondary-text-color)"/>
-                             </marker>
-                           </defs>
-                        </svg>
-                        <div class="gantt-grid" id="ganttGrid_${uniqueSuffix}"></div>
+            
+            <div class="gantt-search-bar">
+                <input type="text" id="ganttSearch_${uniqueSuffix}" placeholder="Pesquisar tarefas..." class="app-input">
+                <div class="gantt-filter-group">
+                    <span class="gantt-filter-label">Status:</span>
+                    <select id="statusFilter_${uniqueSuffix}" class="gantt-filter-select">
+                        <option value="all">Todos</option>
+                        <option value="todo">A Fazer</option>
+                        <option value="inprogress">Em Progresso</option>
+                        <option value="done">Concluído</option>
+                        <option value="blocked">Bloqueado</option>
+                    </select>
+                </div>
+                <div class="gantt-filter-group">
+                    <span class="gantt-filter-label">Responsável:</span>
+                    <select id="assigneeFilter_${uniqueSuffix}" class="gantt-filter-select">
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="gantt-v2-container">
+                <div class="gantt-sidebar" id="ganttSidebar_${uniqueSuffix}">
+                    <div class="gantt-sidebar-header">
+                        <span>Tarefa</span>
+                        <span>Duração</span>
+                        <span>Prog. %</span>
+                        <span>Responsável</span>
+                        <span>Início</span>
+                        <span>Fim</span>
+                        <span>Ações</span>
+                    </div>
+                    <div class="gantt-sidebar-body" id="ganttSidebarBody_${uniqueSuffix}"></div>
+                </div>
+                <div class="gantt-splitter" id="ganttSplitter_${uniqueSuffix}"></div>
+                <div class="gantt-chart-area">
+                    <div class="gantt-chart-header-container" id="ganttHeaderContainer_${uniqueSuffix}"></div>
+                    <div class="gantt-chart-viewport" id="ganttChartViewport_${uniqueSuffix}">
+                        <div class="gantt-chart-content" id="ganttChartContent_${uniqueSuffix}">
+                             <svg id="ganttSvgOverlay" width="100%" height="100%">
+                               <defs>
+                                 <marker id="arrowhead_${uniqueSuffix}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                   <path d="M 0 0 L 10 5 L 0 10 z" opacity="0.8" fill="var(--secondary-text-color)"/>
+                                 </marker>
+                               </defs>
+                            </svg>
+                            <div class="gantt-grid" id="ganttGrid_${uniqueSuffix}"></div>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <div class="gantt-tooltip" id="ganttTooltip_${uniqueSuffix}"></div>
         </div>
-        
-        <!-- Banner de modo foco -->
-        <div class="focus-mode-banner" id="focusModeBanner_${uniqueSuffix}" style="display: none;">
-            <span>Modo de Foco Ativo</span>
-            <button id="exitFocusMode_${uniqueSuffix}" class="app-button small"><i class="fas fa-times"></i> Sair</button>
-        </div>
-        
-        <div class="gantt-tooltip" id="ganttTooltip_${uniqueSuffix}"></div>
     `;
     
     const winData = window.windowManager.windows.get(winId);
     if (!winData) return winId;
     const winEl = winData.element;
     winEl.querySelector('.window-content').innerHTML = content;
-
+    
     const appState = {
         winId, 
         tasks: [], 
         appDataType: 'gantt-chart',
         selectedTaskId: null,
         showCriticalPath: true,
-        editingTaskId: null,
         
-        // --- Elementos da UI ---
         sidebarBody: winEl.querySelector(`#ganttSidebarBody_${uniqueSuffix}`),
         headerContainer: winEl.querySelector(`#ganttHeaderContainer_${uniqueSuffix}`),
         chartViewport: winEl.querySelector(`#ganttChartViewport_${uniqueSuffix}`),
@@ -760,23 +477,22 @@ export function openGanttChart() {
         tooltipEl: winEl.querySelector(`#ganttTooltip_${uniqueSuffix}`),
         splitter: winEl.querySelector(`#ganttSplitter_${uniqueSuffix}`),
         
-        // --- Estado do Aplicativo ---
-        timeline: { startDate: null, endDate: null, unitWidth: 40, totalWidth: 0 },
+        timeline: { 
+            startDate: null, 
+            endDate: null, 
+            viewMode: 'day', // 'day', 'week', 'month'
+            unitWidths: { day: 40, week: 100, month: 200 },
+            get unitWidth() { return this.unitWidths[this.viewMode]; },
+            totalWidth: 0 
+        },
         flatTaskOrder: [],
-        draggingState: null,
-
-        // Novas propriedades
-        allAssignees: [],
         filteredTasks: [],
-        focusModeParentId: null,
-        dependencyCreation: { active: false, fromTaskId: null },
-        
-        // --- Funções de Dados ---
-        getData: function() { return this.tasks; },
+
+        getData: function() { return JSON.stringify(this.tasks, null, 2); },
         loadData: function(dataString, fileMeta) { 
             try { 
                 const data = JSON.parse(dataString); 
-                this.tasks = Array.isArray(data) ? data : []; 
+                this.tasks = Array.isArray(data) ? data : (data.tasks || []); 
                 this.fileId = fileMeta.id; 
                 this.markClean(); 
                 window.windowManager.updateWindowTitle(this.winId, fileMeta.name); 
@@ -787,334 +503,265 @@ export function openGanttChart() {
             } 
         },
         
-        // --- Inicialização ---
         init: function() {
             setupAppToolbarActions(this);
             
-            // Barra de Ferramentas
+            // Toolbar Buttons
             winEl.querySelector(`#addTaskBtn_${uniqueSuffix}`).onclick = () => this.addTask();
             winEl.querySelector(`#addMilestoneBtn_${uniqueSuffix}`).onclick = () => this.addTask(true);
             winEl.querySelector(`#addParentBtn_${uniqueSuffix}`).onclick = () => this.addParentTask();
             winEl.querySelector(`#zoomOutBtn_${uniqueSuffix}`).onclick = () => this.zoomOut();
             winEl.querySelector(`#zoomInBtn_${uniqueSuffix}`).onclick = () => this.zoomIn();
             winEl.querySelector(`#todayBtn_${uniqueSuffix}`).onclick = () => this.goToToday();
-            winEl.querySelector(`#fitToScreenBtn_${uniqueSuffix}`).onclick = () => this.fitToScreen();
-            winEl.querySelector(`#linkTasksBtn_${uniqueSuffix}`).onclick = () => this.linkSelectedTasks();
+            winEl.querySelector(`#linkTasksBtn_${uniqueSuffix}`).onclick = () => this.promptForDependency(this.selectedTaskId);
             winEl.querySelector(`#criticalPathBtn_${uniqueSuffix}`).onclick = () => this.toggleCriticalPath();
-            winEl.querySelector(`#focusModeBtn_${uniqueSuffix}`).onclick = () => this.toggleFocusMode();
-            winEl.querySelector(`#exportBtn_${uniqueSuffix}`).onclick = () => this.exportToImage();
 
-            // Eventos
-            this.sidebarBody.addEventListener('input', (e) => this.handleSidebarInput(e));
+            // View Mode Buttons
+            winEl.querySelector(`#viewModeGroup_${uniqueSuffix}`).addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (button && button.dataset.view) {
+                    this.timeline.viewMode = button.dataset.view;
+                    this.renderAll();
+                }
+            });
+
+            // Event Listeners
+            // ** FIX for input bug: Use separate events for live typing and final changes **
+            this.sidebarBody.addEventListener('input', (e) => this.handleSidebarLiveInput(e));
+            this.sidebarBody.addEventListener('change', (e) => this.handleSidebarFinalInput(e));
+
             this.sidebarBody.addEventListener('click', (e) => this.handleSidebarClick(e));
             this.chartViewport.addEventListener('scroll', this.syncScroll.bind(this));
             this.sidebarBody.addEventListener('scroll', this.syncScroll.bind(this));
-            this.chartContent.addEventListener('mousedown', (e) => this.handleBarInteraction(e));
-            this.chartContent.addEventListener('mouseover', (e) => this.handleBarMouseOver(e));
-            this.chartContent.addEventListener('mouseout', () => this.hideTooltip());
-            this.chartContent.addEventListener('contextmenu', (e) => this.showContextMenu(e));
+
+            // Touch & Mouse event handling for chart interactions
+            const chartInteractionTarget = this.chartContent;
+            chartInteractionTarget.addEventListener('mousedown', (e) => this.handleBarInteractionStart(e));
+            chartInteractionTarget.addEventListener('touchstart', (e) => this.handleBarInteractionStart(e), { passive: false });
+            chartInteractionTarget.addEventListener('mouseover', (e) => this.handleBarMouseOver(e));
+            chartInteractionTarget.addEventListener('mouseout', () => this.hideTooltip());
+            chartInteractionTarget.addEventListener('contextmenu', (e) => this.showContextMenu(e));
             
             this.setupSplitter();
-            
-            // Novas inicializações
-            this.initDragAndDrop();
-            this.initScrollZoom();
-            this.initBarEditing();
-            this.initDependencyCreation();
             this.initFilters();
-            this.initFocusMode();
             this.initKeyboardShortcuts();
-            
+            this.initLongPressContextMenu();
+
+            // Load some sample data if it's a new file
+            if (!this.fileId) {
+                this.tasks = this.getSampleData();
+            }
+
             this.renderAll();
-            
-            // Inicializar dropdown de responsáveis após o primeiro render
-            setTimeout(() => {
-                this.updateAssigneeFilter();
-            }, 100);
+            this.updateAssigneeFilter();
         },
 
-        // --- Lógica de Renderização Principal ---
         renderAll: function() {
-            // Salva o estado do campo de edição (foco, cursor) antes de redesenhar
-            const editingState = this.saveEditingState();
-            
+            // Update view mode button states
+            winEl.querySelectorAll(`#viewModeGroup_${uniqueSuffix} button`).forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === this.timeline.viewMode);
+            });
+            winEl.querySelector(`#criticalPathBtn_${uniqueSuffix}`).classList.toggle('active', this.showCriticalPath);
+
+            this.applyFilters();
             this.updateParentTasks();
             this.calculateTimeline();
             this.flatTaskOrder = this.getFlatTaskOrder();
+            
             this.renderSidebar();
             this.renderChart();
             this.renderDependencies();
             if (this.showCriticalPath) {
                 this.calculateAndDrawCriticalPath();
             }
-
-            // Atualizar banner de modo foco
-            const focusBanner = winEl.querySelector(`#focusModeBanner_${uniqueSuffix}`);
-            if (this.focusModeParentId) {
-                const parentTask = this.tasks.find(t => t.id === this.focusModeParentId);
-                if (parentTask) {
-                    focusBanner.style.display = 'flex';
-                    focusBanner.querySelector('span').textContent = `Modo de Foco: ${parentTask.name}`;
-                } else {
-                    this.focusModeParentId = null;
-                    focusBanner.style.display = 'none';
-                }
-            } else {
-                focusBanner.style.display = 'none';
-            }
-
-            // Restaura o foco e o cursor no campo que estava sendo editado
-            this.restoreEditingState(editingState);
         },
         
-        // --- Funções Auxiliares de Data e Cálculo ---
-        daysBetween: (d1, d2) => {
-            const date1 = new Date(d1);
-            const date2 = new Date(d2);
-            date1.setUTCHours(0, 0, 0, 0);
-            date2.setUTCHours(0, 0, 0, 0);
-            return Math.round((date2 - date1) / (1000 * 60 * 60 * 24));
-        },
-        
+        // --- Date Helper Functions (UTC-safe) ---
+        parseDate: (dateStr) => new Date(dateStr + 'T00:00:00Z'),
         addDays: (date, days) => {
             const result = new Date(date);
-            result.setDate(result.getDate() + days);
+            result.setUTCDate(result.getUTCDate() + days);
             return result;
         },
-        
-        formatDate: (dateStr) => new Date(dateStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+        daysBetween: (d1, d2) => {
+            const msPerDay = 1000 * 60 * 60 * 24;
+            return Math.round((d2.getTime() - d1.getTime()) / msPerDay);
+        },
+        formatDate: (date) => date.toISOString().split('T')[0],
+        formatDateLocale: (date) => date.toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
 
-        // --- Linha do Tempo e Zoom ---
+        // --- Timeline & View Modes ---
         calculateTimeline: function() {
             if (this.tasks.length === 0) {
                 const today = new Date();
-                this.timeline.startDate = this.addDays(today, -7);
-                this.timeline.endDate = this.addDays(today, 30);
+                this.timeline.startDate = this.addDays(today, -30);
+                this.timeline.endDate = this.addDays(today, 60);
                 return;
             }
             
             let minDate = null, maxDate = null;
             this.tasks.forEach(t => {
-                if (t.type === 'parent') return;
-                const start = new Date(t.start);
-                const end = t.end ? new Date(t.end) : new Date(t.start);
+                if (t.type === 'parent' && t.collapsed) return;
+                const start = this.parseDate(t.start);
+                const end = t.end ? this.parseDate(t.end) : start;
                 if (!minDate || start < minDate) minDate = start;
                 if (!maxDate || end > maxDate) maxDate = end;
             });
             
             this.timeline.startDate = this.addDays(minDate, -7);
-            this.timeline.endDate = this.addDays(maxDate, 14);
+            this.timeline.endDate = this.addDays(maxDate, 30);
         },
         
         zoomIn: function() { 
-            this.timeline.unitWidth = Math.min(100, this.timeline.unitWidth + 10); 
-            this.renderAll(); 
+            this.timeline.unitWidths[this.timeline.viewMode] = Math.min(500, this.timeline.unitWidths[this.timeline.viewMode] + 10); 
+            this.renderChart(); 
         },
         
         zoomOut: function() { 
-            this.timeline.unitWidth = Math.max(20, this.timeline.unitWidth - 10); 
-            this.renderAll(); 
+            const minWidth = { day: 20, week: 50, month: 80 };
+            this.timeline.unitWidths[this.timeline.viewMode] = Math.max(minWidth[this.timeline.viewMode], this.timeline.unitWidths[this.timeline.viewMode] - 10);
+            this.renderChart(); 
         },
-        
+
+        getUnitOffset: function(date) {
+            const startDate = this.timeline.startDate;
+            switch(this.timeline.viewMode) {
+                case 'week':
+                    return this.daysBetween(startDate, date) / 7;
+                case 'month':
+                    return (date.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + (date.getUTCMonth() - startDate.getUTCMonth());
+                default: // day
+                    return this.daysBetween(startDate, date);
+            }
+        },
+
         goToToday: function() {
-            const { startDate, unitWidth } = this.timeline;
-            const todayOffset = this.daysBetween(startDate, new Date()) * unitWidth;
+            const today = new Date();
+            const todayOffset = this.getUnitOffset(today) * this.timeline.unitWidth;
             this.chartViewport.scrollLeft = todayOffset - this.chartViewport.offsetWidth / 2;
         },
         
         toggleCriticalPath: function() {
             this.showCriticalPath = !this.showCriticalPath;
+            winEl.querySelector(`#criticalPathBtn_${uniqueSuffix}`).classList.toggle('active', this.showCriticalPath);
             this.renderAll();
         },
         
-        fitToScreen: function() {
-            if (this.tasks.length === 0) return;
-            
-            const viewportWidth = this.chartViewport.clientWidth;
-            const totalDays = this.daysBetween(this.timeline.startDate, this.timeline.endDate);
-            const newUnitWidth = Math.max(20, Math.min(100, viewportWidth / totalDays));
-            
-            this.timeline.unitWidth = newUnitWidth;
-            this.renderAll();
-        },
-
-        // --- Renderização da Barra Lateral ---
         renderSidebar: function() {
+            let editingState = null;
+            if (document.activeElement && document.activeElement.closest('.gantt-sidebar-body')) {
+                const input = document.activeElement;
+                const row = input.closest('.gantt-task-row');
+                if (row) {
+                    editingState = {
+                        taskId: row.dataset.taskId,
+                        field: input.dataset.field,
+                        selectionStart: input.selectionStart,
+                        selectionEnd: input.selectionEnd,
+                    };
+                }
+            }
+
             this.sidebarBody.innerHTML = '';
             const renderTaskNode = (task, level) => {
                 const row = document.createElement('div');
                 row.className = 'gantt-task-row';
-                if (this.selectedTaskId === task.id) {
-                    row.classList.add('selected');
-                }
+                if (this.selectedTaskId === task.id) row.classList.add('selected');
                 row.dataset.taskId = task.id;
-                row.draggable = true;
                 
                 const children = this.tasks.filter(t => t.parentId === task.id);
                 const isParent = task.type === 'parent' || children.length > 0;
                 task.type = isParent ? 'parent' : task.type;
 
-                const expanderHTML = isParent ? 
-                    `<span class="task-expander ${task.collapsed ? 'collapsed' : ''}">
-                        <i class="fas fa-angle-down"></i>
-                    </span>` : 
-                    '<span class="task-expander"></span>';
+                const expanderHTML = isParent ? `<span class="task-expander ${task.collapsed ? 'collapsed' : ''}"><i class="fas fa-angle-down"></i></span>` : '<span class="task-expander"></span>';
+                const icon = task.type === 'milestone' ? 'fa-gem' : isParent ? 'fa-folder' : 'fa-tasks';
+                const duration = isParent ? '-' : (this.daysBetween(this.parseDate(task.start), this.parseDate(task.end)) + 1) + 'd';
                 
-                const icon = task.type === 'milestone' ? 'fa-gem' : 
-                             isParent ? 'fa-folder' : 'fa-tasks';
-                
-                const duration = isParent ? '-' : (this.daysBetween(task.start, task.end) + 1) + 'd';
-                const progress = task.progress || 0;
-                const statusIndicator = task.type !== 'parent' ? 
-                    `<span class="status-indicator status-${task.status || 'todo'}"></span>` : '';
-
                 row.innerHTML = `
                     <div class="task-cell task-name-cell" style="padding-left: ${level * 25 + 5}px;">
                         ${expanderHTML}
-                        <i class="fas ${icon} task-icon" 
-                           style="color: ${isParent ? 'var(--gantt-parent-bar-color)' : 
-                                  task.type === 'milestone' ? 'var(--gantt-milestone-color)' : 
-                                  'var(--accent-color)'};"></i>
-                        <input type="text" value="${task.name}" data-field="name" 
-                               ${isParent ? 'readonly' : ''} title="${task.name}">
+                        <i class="fas ${icon} task-icon"></i>
+                        <input type="text" value="${task.name}" data-field="name" title="${task.name}">
                     </div>
                     <div class="task-cell"><span>${duration}</span></div>
                     <div class="task-cell">
-                        <input type="number" min="0" max="100" value="${progress}" 
-                               data-field="progress" ${isParent ? 'readonly' : ''}>
+                        <input type="number" min="0" max="100" value="${task.progress || 0}" data-field="progress">
                     </div>
                     <div class="task-cell" title="${task.assignee || ''}">
                         ${this.generateAvatar(task.assignee)}
-                        <input type="text" value="${task.assignee || ''}" 
-                               data-field="assignee" placeholder="-" ${isParent ? 'readonly' : ''}>
+                        <input type="text" value="${task.assignee || ''}" data-field="assignee" placeholder="-">
                     </div>
                     <div class="task-cell">
-                        <input type="date" value="${task.start}" 
-                               data-field="start" ${isParent ? 'readonly' : ''}>
+                        <input type="date" value="${task.start}" data-field="start">
                     </div>
                     <div class="task-cell">
-                        <input type="date" value="${task.end}" 
-                               data-field="end" ${isParent || task.type === 'milestone' ? 'readonly' : ''}>
+                        <input type="date" value="${task.end}" data-field="end" ${task.type === 'milestone' ? 'readonly' : ''}>
                     </div>
                     <div class="task-cell task-actions">
-                        <button class="action-btn" data-action="remove" title="Remover">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button class="action-btn" data-action="add-child" title="Adicionar Subtarefa">
-                            <i class="fas fa-plus"></i>
-                        </button>
+                        <button class="action-btn" data-action="remove" title="Remover"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn" data-action="add-child" title="Adicionar Subtarefa"><i class="fas fa-plus"></i></button>
                     </div>
                 `;
                 this.sidebarBody.appendChild(row);
 
                 if (isParent && !task.collapsed) {
-                    children.sort((a,b) => new Date(a.start) - new Date(b.start))
+                    children.sort((a,b) => this.parseDate(a.start) - this.parseDate(b.start))
                         .forEach(child => renderTaskNode(child, level + 1));
                 }
             };
             
-            // Usar tarefas filtradas se houver filtro ativo
-            const tasksToRender = this.filteredTasks.length > 0 ? this.filteredTasks : this.tasks;
+            const rootTasks = this.tasks.filter(t => !t.parentId && this.flatTaskOrder.includes(t.id));
+            rootTasks.sort((a,b) => this.parseDate(a.start) - this.parseDate(b.start))
+                     .forEach(task => renderTaskNode(task, 0));
             
-            tasksToRender.filter(t => !t.parentId)
-                .sort((a,b) => new Date(a.start) - new Date(b.start))
-                .forEach(task => renderTaskNode(task, 0));
+            if (editingState) this.restoreEditingState(editingState);
         },
         
-        // --- Renderização do Gráfico ---
         renderChart: function() {
-            const { startDate, endDate, unitWidth } = this.timeline;
-            if (!startDate) return;
+            if (!this.timeline.startDate) return;
 
-            const totalDays = this.daysBetween(startDate, endDate);
-            this.timeline.totalWidth = totalDays * unitWidth;
-
+            // Clear previous content
             this.headerContainer.innerHTML = '';
             this.gridEl.innerHTML = '';
             this.chartContent.querySelectorAll('.gantt-bar-container, .gantt-today-marker').forEach(el => el.remove());
 
-            // --- Renderizar Cabeçalho e Grade ---
-            const headerEl = document.createElement('div');
-            headerEl.className = 'gantt-timeline-header';
-            const monthsEl = document.createElement('div'); 
-            monthsEl.className = 'gantt-timeline-months';
-            const daysEl = document.createElement('div'); 
-            daysEl.className = 'gantt-timeline-days';
-            
-            let currentMonth = -1, monthDayCount = 0, currentMonthEl = null;
-            for (let i = 0; i < totalDays; i++) {
-                const dayDate = this.addDays(startDate, i);
-                if (dayDate.getMonth() !== currentMonth) {
-                    if(currentMonthEl) currentMonthEl.style.width = `${monthDayCount * unitWidth}px`;
-                    currentMonth = dayDate.getMonth();
-                    monthDayCount = 0;
-                    const monthName = dayDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-                    currentMonthEl = document.createElement('div');
-                    currentMonthEl.className = 'gantt-timeline-month';
-                    currentMonthEl.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-                    monthsEl.appendChild(currentMonthEl);
-                }
-                monthDayCount++;
+            // 1. Render Header and Grid based on ViewMode
+            this.renderTimelineHeader();
 
-                const dayEl = document.createElement('div');
-                dayEl.className = 'gantt-timeline-day';
-                dayEl.style.width = `${unitWidth}px`;
-                dayEl.textContent = dayDate.getDate();
-                daysEl.appendChild(dayEl);
-
-                const gridLine = document.createElement('div');
-                gridLine.className = 'gantt-grid-line';
-                gridLine.style.left = `${i * unitWidth}px`;
-                this.gridEl.appendChild(gridLine);
-
-                const dayOfWeek = dayDate.getDay();
-                if (dayOfWeek === 0 || dayOfWeek === 6) {
-                    const weekendEl = document.createElement('div');
-                    weekendEl.className = 'gantt-grid-weekend';
-                    weekendEl.style.left = `${i * unitWidth}px`;
-                    weekendEl.style.width = `${unitWidth}px`;
-                    this.gridEl.appendChild(weekendEl);
-                }
-            }
-            
-            if(currentMonthEl) currentMonthEl.style.width = `${monthDayCount * unitWidth}px`;
-            headerEl.appendChild(monthsEl);
-            headerEl.appendChild(daysEl);
-            this.headerContainer.appendChild(headerEl);
-
-            // --- Renderizar Linhas de Linha e Barras ---
+            // 2. Render Bars
             this.flatTaskOrder.forEach((taskId, index) => {
                 const task = this.tasks.find(t => t.id === taskId);
-                if (!task) return;
+                if (!task || (task.parentId && this.tasks.find(p => p.id === task.parentId)?.collapsed)) return;
 
                 const rowLine = document.createElement('div');
                 rowLine.className = 'gantt-row-line';
                 rowLine.style.top = `${index * 40 + 39}px`;
                 this.gridEl.appendChild(rowLine);
-                
-                if (task.type === 'parent' && task.collapsed) return;
 
-                const taskStart = new Date(task.start);
-                const left = this.daysBetween(startDate, taskStart) * unitWidth;
+                const taskStart = this.parseDate(task.start);
+                const left = this.getUnitOffset(taskStart) * this.timeline.unitWidth;
 
                 const barContainer = document.createElement('div');
                 barContainer.className = 'gantt-bar-container';
                 barContainer.style.top = `${index * 40}px`;
                 barContainer.dataset.taskId = task.id;
-                
-                if (task.id === this.selectedTaskId) {
-                    barContainer.classList.add('selected');
-                }
+                if (task.id === this.selectedTaskId) barContainer.classList.add('selected');
 
                 if (task.type === 'milestone') {
                     barContainer.style.left = `${left}px`;
                     barContainer.innerHTML = `<div class="gantt-milestone"></div>`;
                 } else {
-                    const taskEnd = new Date(task.end);
-                    const duration = this.daysBetween(taskStart, taskEnd) + 1;
-                    const width = duration * unitWidth;
+                    const taskEnd = this.parseDate(task.end);
+                    const durationInDays = this.daysBetween(taskStart, taskEnd) + 1;
+                    let width;
+                    switch(this.timeline.viewMode) {
+                        case 'week': width = (durationInDays / 7) * this.timeline.unitWidth; break;
+                        case 'month': width = (durationInDays / 30.4) * this.timeline.unitWidth; break; // Approx.
+                        default: width = durationInDays * this.timeline.unitWidth;
+                    }
+
                     barContainer.style.left = `${left}px`;
-                    barContainer.style.width = `${width}px`;
+                    barContainer.style.width = `${Math.max(width, 2)}px`; // Min width for visibility
 
                     const barClass = task.type === 'parent' ? 'gantt-bar-parent' : `status-${task.status || 'todo'}`;
                     const progress = task.type === 'parent' ? (task.progress || 0) : (task.status === 'done' ? 100 : (task.progress || 0));
@@ -1131,10 +778,10 @@ export function openGanttChart() {
                 this.chartContent.appendChild(barContainer);
             });
             
-            // --- Renderizar Marcador de Hoje ---
+            // 3. Render Today Marker
             const today = new Date();
-            if (today >= startDate && today <= endDate) {
-                const todayOffset = this.daysBetween(startDate, today) * unitWidth;
+            if (today >= this.timeline.startDate && today <= this.timeline.endDate) {
+                const todayOffset = this.getUnitOffset(today) * this.timeline.unitWidth;
                 const todayMarker = document.createElement('div');
                 todayMarker.className = 'gantt-today-marker';
                 todayMarker.style.left = `${todayOffset}px`;
@@ -1142,7 +789,7 @@ export function openGanttChart() {
                 this.chartContent.appendChild(todayMarker);
             }
 
-            // Ajustar tamanho do conteúdo
+            // 4. Adjust content size
             const contentHeight = this.flatTaskOrder.length * 40;
             this.chartContent.style.width = `${this.timeline.totalWidth}px`;
             this.chartContent.style.height = `${contentHeight}px`;
@@ -1150,8 +797,94 @@ export function openGanttChart() {
             this.svgOverlay.setAttribute('height', contentHeight);
         },
 
-        // --- Lógica de Dependência e Caminho Crítico ---
+        renderTimelineHeader: function() {
+            const { startDate, endDate, viewMode, unitWidth } = this.timeline;
+            const headerEl = document.createElement('div');
+            headerEl.className = 'gantt-timeline-header';
+            const upperRow = document.createElement('div'); upperRow.className = 'gantt-timeline-upper';
+            const lowerRow = document.createElement('div'); lowerRow.className = 'gantt-timeline-lower';
+
+            let totalUnits = 0;
+            let currentDate = new Date(startDate);
+
+            const addUnit = (parent, text, width, className) => {
+                const el = document.createElement('div');
+                el.className = `gantt-timeline-unit ${className}`;
+                el.textContent = text;
+                el.style.width = `${width}px`;
+                parent.appendChild(el);
+            };
+
+            if (viewMode === 'day') {
+                let currentMonth = -1;
+                let monthUnit = null;
+                let dayCountInMonth = 0;
+                while (currentDate <= endDate) {
+                    if (currentDate.getUTCMonth() !== currentMonth) {
+                        if (monthUnit) monthUnit.style.width = `${dayCountInMonth * unitWidth}px`;
+                        currentMonth = currentDate.getUTCMonth();
+                        const monthName = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+                        monthUnit = document.createElement('div');
+                        monthUnit.className = 'gantt-timeline-unit upper';
+                        monthUnit.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                        upperRow.appendChild(monthUnit);
+                        dayCountInMonth = 0;
+                    }
+                    addUnit(lowerRow, currentDate.getUTCDate(), unitWidth, 'lower');
+                    const dayOfWeek = currentDate.getUTCDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) {
+                        const weekendEl = document.createElement('div');
+                        weekendEl.className = 'gantt-grid-weekend';
+                        weekendEl.style.left = `${totalUnits * unitWidth}px`;
+                        weekendEl.style.width = `${unitWidth}px`;
+                        this.gridEl.appendChild(weekendEl);
+                    }
+                    const gridLine = document.createElement('div');
+                    gridLine.className = 'gantt-grid-line';
+                    gridLine.style.left = `${totalUnits * unitWidth}px`;
+                    this.gridEl.appendChild(gridLine);
+
+                    currentDate = this.addDays(currentDate, 1);
+                    totalUnits++;
+                    dayCountInMonth++;
+                }
+                if (monthUnit) monthUnit.style.width = `${dayCountInMonth * unitWidth}px`;
+            } else if (viewMode === 'week') {
+                // Logic for Week View Header
+                while (currentDate <= endDate) {
+                    const year = currentDate.getUTCFullYear();
+                    const week = Math.ceil((this.daysBetween(new Date(`${year}-01-01T00:00:00Z`), currentDate) + 1) / 7);
+                    addUnit(upperRow, currentDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric', timeZone: 'UTC' }), unitWidth, 'upper');
+                    addUnit(lowerRow, `Semana ${week}`, unitWidth, 'lower');
+                    const gridLine = document.createElement('div');
+                    gridLine.className = 'gantt-grid-line';
+                    gridLine.style.left = `${totalUnits * unitWidth}px`;
+                    this.gridEl.appendChild(gridLine);
+                    currentDate = this.addDays(currentDate, 7);
+                    totalUnits++;
+                }
+            } else if (viewMode === 'month') {
+                // Logic for Month View Header
+                 while (currentDate <= endDate) {
+                    addUnit(upperRow, currentDate.getUTCFullYear(), unitWidth, 'upper');
+                    addUnit(lowerRow, currentDate.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' }), unitWidth, 'lower');
+                    const gridLine = document.createElement('div');
+                    gridLine.className = 'gantt-grid-line';
+                    gridLine.style.left = `${totalUnits * unitWidth}px`;
+                    this.gridEl.appendChild(gridLine);
+                    currentDate.setUTCMonth(currentDate.getUTCMonth() + 1);
+                    totalUnits++;
+                }
+            }
+
+            this.timeline.totalWidth = totalUnits * unitWidth;
+            headerEl.appendChild(upperRow);
+            headerEl.appendChild(lowerRow);
+            this.headerContainer.appendChild(headerEl);
+        },
+
         renderDependencies: function() {
+            const svgNS = 'http://www.w3.org/2000/svg';
             this.svgOverlay.querySelectorAll('path').forEach(p => p.remove());
             const barElements = {};
             this.chartContent.querySelectorAll('.gantt-bar-container').forEach(b => { 
@@ -1162,7 +895,7 @@ export function openGanttChart() {
 
             this.tasks.forEach(task => {
                 if(task.dependencies) {
-                    const deps = task.dependencies.split(',').map(d => d.trim());
+                    const deps = task.dependencies.split(',').map(d => d.trim()).filter(Boolean);
                     deps.forEach(depId => {
                         const predecessor = this.tasks.find(t => t.id === depId);
                         if(!predecessor || !barElements[task.id] || !barElements[predecessor.id]) return;
@@ -1172,13 +905,14 @@ export function openGanttChart() {
                         
                         const fromIndex = getTaskIndex(predecessor.id);
                         const toIndex = getTaskIndex(task.id);
+                        if (fromIndex === -1 || toIndex === -1) return;
 
                         const fromX = fromEl.offsetLeft + (predecessor.type === 'milestone' ? 12 : fromEl.offsetWidth);
                         const fromY = fromIndex * 40 + 20;
                         const toX = toEl.offsetLeft + (task.type === 'milestone' ? 12 : 0);
                         const toY = toIndex * 40 + 20;
                         
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        const path = document.createElementNS(svgNS, 'path');
                         const d = `M ${fromX} ${fromY} L ${fromX + 15} ${fromY} L ${fromX + 15} ${toY} L ${toX} ${toY}`;
                         path.setAttribute('d', d);
                         path.setAttribute('class', 'gantt-dependency-path');
@@ -1191,6 +925,7 @@ export function openGanttChart() {
         },
         
         calculateAndDrawCriticalPath: function() {
+            // ... (implementation is largely correct, no major changes needed)
             const tasks = this.tasks.filter(t => t.type !== 'parent');
             if (tasks.length === 0) return;
 
@@ -1199,7 +934,7 @@ export function openGanttChart() {
                 t.earlyFinish = 0;
                 t.lateStart = Infinity;
                 t.lateFinish = Infinity;
-                t.duration = this.daysBetween(t.start, t.end) + 1;
+                t.duration = this.daysBetween(this.parseDate(t.start), this.parseDate(t.end)) + 1;
             });
 
             const taskMap = new Map(tasks.map(t => [t.id, t]));
@@ -1277,49 +1012,19 @@ export function openGanttChart() {
                 }
             });
         },
-
-        // --- Adicionar e Manipular Tarefas ---
+        
         addTask: function(isMilestone = false) {
             const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            const endStr = this.addDays(today, isMilestone ? 0 : 5).toISOString().split('T')[0];
+            const start = this.formatDate(today);
+            const end = this.formatDate(this.addDays(today, isMilestone ? 0 : 4));
 
             const newTask = {
                 id: generateId('task'),
                 name: isMilestone ? 'Novo Marco' : 'Nova Tarefa',
-                start: todayStr, 
-                end: endStr,
-                assignee: '', 
-                status: 'todo', 
-                progress: 0, 
-                dependencies: '',
+                start, end,
+                assignee: '', status: 'todo', progress: 0, dependencies: '',
                 type: isMilestone ? 'milestone' : 'task',
                 parentId: this.selectedTaskId || null
-            };
-            
-            this.tasks.push(newTask);
-            this.markDirty();
-            this.updateAssigneeFilter();
-            this.renderAll();
-        },
-        
-        addParentTask: function() {
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-            const endStr = this.addDays(today, 7).toISOString().split('T')[0];
-
-            const newTask = {
-                id: generateId('parent'),
-                name: 'Novo Grupo',
-                start: todayStr, 
-                end: endStr,
-                assignee: '', 
-                status: 'todo', 
-                progress: 0, 
-                dependencies: '',
-                type: 'parent',
-                parentId: null,
-                collapsed: false
             };
             
             this.tasks.push(newTask);
@@ -1328,43 +1033,26 @@ export function openGanttChart() {
         },
         
         removeTask: function(taskId) {
-            // Encontrar a tarefa
-            const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-            if (taskIndex === -1) return;
-            
-            // Remover dependências relacionadas
+            this.tasks = this.tasks.filter(t => t.id !== taskId && t.parentId !== taskId);
             this.tasks.forEach(t => {
                 if (t.dependencies) {
-                    const deps = t.dependencies.split(',').map(d => d.trim());
-                    const newDeps = deps.filter(d => d !== taskId);
-                    t.dependencies = newDeps.join(',');
+                    t.dependencies = t.dependencies.split(',').map(d => d.trim()).filter(d => d !== taskId).join(',');
                 }
             });
-            
-            // Remover a tarefa
-            this.tasks.splice(taskIndex, 1);
-            
-            // Remover seleção se necessário
-            if (this.selectedTaskId === taskId) {
-                this.selectedTaskId = null;
-            }
-            
+            if (this.selectedTaskId === taskId) this.selectedTaskId = null;
             this.markDirty();
-            this.updateAssigneeFilter();
             this.renderAll();
         },
-        
+
         updateParentTasks: function() {
             const processNode = (task) => {
                 const children = this.tasks.filter(c => c.parentId === task.id);
                 if (children.length > 0) {
-                    children.forEach(processNode); // Process children first
-
-                    const startDates = children.map(c => new Date(c.start));
-                    const endDates = children.map(c => new Date(c.end));
-                    task.start = new Date(Math.min(...startDates)).toISOString().split('T')[0];
-                    task.end = new Date(Math.max(...endDates)).toISOString().split('T')[0];
-                    
+                    children.forEach(processNode);
+                    const startDates = children.map(c => this.parseDate(c.start));
+                    const endDates = children.map(c => this.parseDate(c.end));
+                    task.start = this.formatDate(new Date(Math.min(...startDates)));
+                    task.end = this.formatDate(new Date(Math.max(...endDates)));
                     const totalProgress = children.reduce((sum, c) => sum + (c.progress || 0), 0);
                     task.progress = Math.round(totalProgress / children.length);
                 }
@@ -1372,117 +1060,131 @@ export function openGanttChart() {
             this.tasks.filter(t => t.type === 'parent').forEach(processNode);
         },
 
-        // --- Manipuladores de Eventos ---
-        handleSidebarInput: function(e) {
-            const row = e.target.closest('.gantt-task-row');
+        // --- Event Handlers (Refactored) ---
+        handleSidebarLiveInput: function(e) {
+            const input = e.target;
+            const row = input.closest('.gantt-task-row');
             if (!row) return;
             const taskId = row.dataset.taskId;
-            const field = e.target.dataset.field;
+            const field = input.dataset.field;
+            const task = this.tasks.find(t => t.id === taskId);
+
+            if (task && (field === 'name' || field === 'progress' || field === 'assignee')) {
+                task[field] = input.value;
+                this.markDirty();
+                
+                // Partial DOM update for performance
+                if (field === 'name') {
+                    const barLabel = this.chartContent.querySelector(`.gantt-bar-container[data-task-id="${taskId}"] .gantt-bar-label`);
+                    if (barLabel) barLabel.textContent = input.value;
+                } else if (field === 'progress') {
+                    const progressBar = this.chartContent.querySelector(`.gantt-bar-container[data-task-id="${taskId}"] .gantt-bar-progress`);
+                    if (progressBar) progressBar.style.width = `${input.value}%`;
+                }
+            }
+        },
+
+        handleSidebarFinalInput: function(e) {
+            const input = e.target;
+            const row = input.closest('.gantt-task-row');
+            if (!row) return;
+            const taskId = row.dataset.taskId;
+            const field = input.dataset.field;
             const task = this.tasks.find(t => t.id === taskId);
             
             if (task) {
-                // Define o ID da tarefa sendo editada para que o foco possa ser restaurado
-                this.editingTaskId = taskId;
-                
-                // Atualiza o modelo de dados com o valor do input
-                task[field] = e.target.value;
-
-                if (field === 'start' && task.type !== 'milestone') {
-                    const duration = this.daysBetween(task.start, task.end);
-                    if (duration < 0) task.end = task.start;
-                }
-                
+                task[field] = input.value;
                 this.markDirty();
                 
-                // Chama o renderizador principal, que agora preservará o foco.
-                this.renderAll();
-            }
-        },
-        
-        handleSidebarClick: function(e) {
-            const expander = e.target.closest('.task-expander');
-            if(expander) {
-                const row = e.target.closest('.gantt-task-row');
-                const taskId = row.dataset.taskId;
-                const task = this.tasks.find(t => t.id === taskId);
-                if (task && task.type === 'parent') {
-                    task.collapsed = !task.collapsed;
-                    this.markDirty();
+                // A full re-render is justified for these changes
+                if (field === 'start' || field === 'end' || field === 'assignee') {
+                    if (field === 'assignee') this.updateAssigneeFilter();
                     this.renderAll();
                 }
+            }
+        },
+
+        handleSidebarClick: function(e) {
+            const row = e.target.closest('.gantt-task-row');
+            if (!row) return;
+
+            const taskId = row.dataset.taskId;
+            const task = this.tasks.find(t => t.id === taskId);
+
+            // Expander click
+            if (e.target.closest('.task-expander') && task.type === 'parent') {
+                task.collapsed = !task.collapsed;
+                this.markDirty();
+                this.renderAll();
                 return;
             }
-            
+
+            // Action button click
             const actionBtn = e.target.closest('.action-btn');
             if (actionBtn) {
                 const action = actionBtn.dataset.action;
-                const row = actionBtn.closest('.gantt-task-row');
-                const taskId = row.dataset.taskId;
-                
-                if (action === 'remove') {
-                    if (confirm('Tem certeza que deseja remover esta tarefa?')) {
-                        this.removeTask(taskId);
-                    }
-                } else if (action === 'add-child') {
+                if (action === 'remove') this.removeTask(taskId);
+                if (action === 'add-child') {
                     this.selectedTaskId = taskId;
                     this.addTask();
                 }
                 return;
             }
             
-            const row = e.target.closest('.gantt-task-row');
-            if (row) {
-                const taskId = row.dataset.taskId;
-
-                // Se o clique não foi em um campo de input,
-                // significa que o usuário está apenas selecionando a linha, não editando.
-                // Limpamos o estado de edição para evitar que o foco volte para um campo.
-                if (e.target.tagName.toLowerCase() !== 'input' && e.target.tagName.toLowerCase() !== 'select') {
-                    this.editingTaskId = null;
-                }
-                
+            // Row selection
+            if (e.target.tagName !== 'INPUT') {
                 this.selectedTaskId = taskId;
                 this.renderAll();
             }
         },
         
-        handleBarInteraction: function(e) {
+        getEventCoords: (e) => {
+            if (e.touches && e.touches.length) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY, pageX: e.touches[0].pageX, pageY: e.touches[0].pageY };
+            }
+            return { x: e.clientX, y: e.clientY, pageX: e.pageX, pageY: e.pageY };
+        },
+
+        handleBarInteractionStart: function(e) {
             const bar = e.target.closest('.gantt-bar, .gantt-milestone');
             if (!bar) return;
+            if (e.type === 'touchstart') e.preventDefault();
 
             const container = bar.closest('.gantt-bar-container');
             const taskId = container.dataset.taskId;
             const task = this.tasks.find(t => t.id === taskId);
             if (!task || task.type === 'parent') return;
 
-            this.hideTooltip();
-            const initialX = e.clientX;
-            const initialStart = new Date(task.start);
-            const initialEnd = new Date(task.end);
-            const handle = e.target.classList.contains('gantt-bar-handle') ? 
-                e.target.className.includes('left') ? 'left' : 'right' : null;
-            
-            // Atualizar seleção
             this.selectedTaskId = taskId;
-            this.renderAll();
+            this.renderSidebar();
+            
+            const coords = this.getEventCoords(e);
+            const initialX = coords.x;
+            const initialStart = this.parseDate(task.start);
+            const initialEnd = this.parseDate(task.end);
+            const handle = e.target.classList.contains('gantt-bar-handle') ? (e.target.classList.contains('left') ? 'left' : 'right') : null;
             
             const onMouseMove = (moveE) => {
-                const deltaX = moveE.clientX - initialX;
-                const deltaDays = Math.round(deltaX / this.timeline.unitWidth);
+                const moveCoords = this.getEventCoords(moveE);
+                const deltaX = moveCoords.x - initialX;
+                const deltaUnits = deltaX / this.timeline.unitWidth;
+                let deltaDays;
+
+                switch(this.timeline.viewMode) {
+                    case 'week': deltaDays = Math.round(deltaUnits * 7); break;
+                    case 'month': deltaDays = Math.round(deltaUnits * 30.4); break;
+                    default: deltaDays = Math.round(deltaUnits);
+                }
 
                 if (handle === 'left') {
                     const newStart = this.addDays(initialStart, deltaDays);
-                    if (newStart <= initialEnd) {
-                        task.start = newStart.toISOString().split('T')[0];
-                    }
+                    if (newStart <= initialEnd) task.start = this.formatDate(newStart);
                 } else if (handle === 'right') {
                     const newEnd = this.addDays(initialEnd, deltaDays);
-                    if (newEnd >= new Date(task.start)) {
-                        task.end = newEnd.toISOString().split('T')[0];
-                    }
-                } else { // Mover barra inteira
-                    task.start = this.addDays(initialStart, deltaDays).toISOString().split('T')[0];
-                    task.end = this.addDays(initialEnd, deltaDays).toISOString().split('T')[0];
+                    if (newEnd >= this.parseDate(task.start)) task.end = this.formatDate(newEnd);
+                } else {
+                    task.start = this.formatDate(this.addDays(initialStart, deltaDays));
+                    task.end = this.formatDate(this.addDays(initialEnd, deltaDays));
                 }
                 this.renderAll();
             };
@@ -1490,214 +1192,144 @@ export function openGanttChart() {
             const onMouseUp = () => {
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
+                document.removeEventListener('touchmove', onMouseMove);
+                document.removeEventListener('touchend', onMouseUp);
                 this.markDirty();
             };
 
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('touchmove', onMouseMove, { passive: false });
+            document.addEventListener('touchend', onMouseUp);
         },
-        
+
         handleBarMouseOver: function(e) {
             const barContainer = e.target.closest('.gantt-bar-container');
             if (barContainer) {
                 const taskId = barContainer.dataset.taskId;
                 const task = this.tasks.find(t => t.id === taskId);
-                if (task) this.showTooltip(e, task);
+                if (task) this.showTooltip(this.getEventCoords(e), task);
             }
         },
-        
+
         syncScroll: function(e) {
-            if (e.target === this.chartViewport) {
-                this.sidebarBody.scrollTop = this.chartViewport.scrollTop;
-                this.headerContainer.scrollLeft = this.chartViewport.scrollLeft;
+            // Prevent feedback loop
+            if (this.isSyncingScroll) return;
+            this.isSyncingScroll = true;
+
+            const target = e.target;
+            if (target === this.chartViewport) {
+                this.sidebarBody.scrollTop = target.scrollTop;
+                this.headerContainer.scrollLeft = target.scrollLeft;
             } else {
-                this.chartViewport.scrollTop = this.sidebarBody.scrollTop;
+                this.chartViewport.scrollTop = target.scrollTop;
             }
+            
+            // Allow next scroll event after a short delay
+            requestAnimationFrame(() => { this.isSyncingScroll = false; });
         },
         
         showContextMenu: function(e) {
             e.preventDefault();
-            
-            const barContainer = e.target.closest('.gantt-bar-container');
+            const coords = this.getEventCoords(e);
+
+            const barContainer = document.elementFromPoint(coords.x, coords.y)?.closest('.gantt-bar-container');
             if (!barContainer) return;
-            
+
             const taskId = barContainer.dataset.taskId;
-            const task = this.tasks.find(t => t.id === taskId);
-            if (!task) return;
-            
             this.selectedTaskId = taskId;
+            this.renderAll();
             
-            // Remover menu de contexto anterior
             const existingMenu = document.querySelector('.gantt-context-menu');
             if (existingMenu) existingMenu.remove();
             
             const menu = document.createElement('div');
             menu.className = 'gantt-context-menu';
-            menu.style.left = `${e.pageX}px`;
-            menu.style.top = `${e.pageY}px`;
+            menu.style.left = `${coords.pageX}px`;
+            menu.style.top = `${coords.pageY}px`;
             
             menu.innerHTML = `
-                <div class="gantt-context-menu-item" data-action="delete">
-                    <i class="fas fa-trash"></i> Remover Tarefa
-                </div>
-                <div class="gantt-context-menu-item" data-action="add-dependency">
-                    <i class="fas fa-link"></i> Adicionar Dependência
-                </div>
-                <div class="gantt-context-menu-item" data-action="mark-done">
-                    <i class="fas fa-check-circle"></i> Marcar como Concluída
-                </div>
-                <div class="gantt-context-menu-item" data-action="add-subtask">
-                    <i class="fas fa-plus-circle"></i> Adicionar Subtarefa
-                </div>
+                <div class="gantt-context-menu-item" data-action="delete"><i class="fas fa-trash"></i> Remover Tarefa</div>
+                <div class="gantt-context-menu-item" data-action="add-dependency"><i class="fas fa-link"></i> Adicionar Dependência</div>
+                <div class="gantt-context-menu-item" data-action="mark-done"><i class="fas fa-check-circle"></i> Marcar como Concluída</div>
             `;
             
             document.body.appendChild(menu);
             
-            // Fechar menu ao clicar em qualquer lugar
             const closeMenu = () => {
                 menu.remove();
                 document.removeEventListener('click', closeMenu);
+                document.removeEventListener('touchstart', closeMenu);
             };
             
-            document.addEventListener('click', closeMenu);
+            setTimeout(() => { // Allow current event to finish
+                document.addEventListener('click', closeMenu);
+                document.addEventListener('touchstart', closeMenu);
+            }, 0);
             
-            // Lidar com ações do menu
-            menu.querySelectorAll('.gantt-context-menu-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const action = item.dataset.action;
-                    
-                    if (action === 'delete') {
-                        this.removeTask(taskId);
-                    } else if (action === 'add-dependency') {
-                        this.promptForDependency(taskId);
-                    } else if (action === 'mark-done') {
-                        task.status = 'done';
-                        task.progress = 100;
-                        this.markDirty();
-                        this.renderAll();
-                    } else if (action === 'add-subtask') {
-                        this.addTask();
-                    }
-                    
-                    closeMenu();
-                });
+            menu.addEventListener('click', (evt) => {
+                evt.stopPropagation();
+                const item = evt.target.closest('.gantt-context-menu-item');
+                if(!item) return;
+
+                const action = item.dataset.action;
+                const task = this.tasks.find(t => t.id === taskId);
+                
+                if (action === 'delete') this.removeTask(taskId);
+                if (action === 'add-dependency') this.promptForDependency(taskId);
+                if (action === 'mark-done' && task) {
+                    task.status = 'done';
+                    task.progress = 100;
+                    this.markDirty();
+                    this.renderAll();
+                }
+                closeMenu();
             });
         },
         
         promptForDependency: function(taskId) {
+            if(!taskId) {
+                showNotification("Selecione uma tarefa de origem primeiro.", 3000, 'warning');
+                return;
+            }
+            const predecessorId = prompt("Digite o ID da tarefa predecessora (a que deve vir antes):");
+            if (!predecessorId) return;
+
             const task = this.tasks.find(t => t.id === taskId);
-            if (!task) return;
+            const predecessor = this.tasks.find(t => t.id === predecessorId);
             
-            const depId = prompt("Digite o ID da tarefa dependente:", task.dependencies || '');
-            if (depId === null) return;
-            
-            // Validar se o ID existe
-            const depTask = this.tasks.find(t => t.id === depId);
-            if (!depTask) {
-                showNotification("ID da tarefa não encontrado!", 3000, 'error');
+            if (!predecessor) {
+                showNotification(`Tarefa com ID "${predecessorId}" não encontrada.`, 3000, 'error');
                 return;
             }
             
-            // Adicionar dependência
             const deps = task.dependencies ? task.dependencies.split(',') : [];
-            if (!deps.includes(depId)) {
-                deps.push(depId);
+            if (!deps.includes(predecessorId)) {
+                deps.push(predecessorId);
                 task.dependencies = deps.join(',');
                 this.markDirty();
                 this.renderAll();
-                showNotification("Dependência adicionada com sucesso!", 2000);
+                showNotification("Dependência adicionada!", 2000);
             }
-        },
-        
-        linkSelectedTasks: function() {
-            if (!this.selectedTaskId) {
-                showNotification("Selecione uma tarefa primeiro!", 3000, 'warning');
-                return;
-            }
-            
-            const taskId = prompt("Digite o ID da tarefa para vincular:", "");
-            if (!taskId) return;
-            
-            const task = this.tasks.find(t => t.id === this.selectedTaskId);
-            const depTask = this.tasks.find(t => t.id === taskId);
-            
-            if (!task || !depTask) {
-                showNotification("ID da tarefa não encontrado!", 3000, 'error');
-                return;
-            }
-            
-            // Adicionar dependência
-            const deps = task.dependencies ? task.dependencies.split(',') : [];
-            if (!deps.includes(taskId)) {
-                deps.push(taskId);
-                task.dependencies = deps.join(',');
-                this.markDirty();
-                this.renderAll();
-                showNotification("Tarefas vinculadas com sucesso!", 2000);
-            }
-        },
-        
-        exportToImage: function() {
-            const container = this.chartContent;
-            html2canvas(container).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `gantt-chart-${new Date().toISOString().slice(0, 10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
         },
 
-        // --- Funções Utilitárias ---
-        showTooltip: function(e, task) {
-            const duration = this.daysBetween(task.start, task.end) + 1;
-            const statusText = {
-                'todo': 'A Fazer',
-                'inprogress': 'Em Progresso',
-                'done': 'Concluída',
-                'blocked': 'Bloqueada'
-            }[task.status] || 'Não Definido';
-            
+        // --- Utility & Setup Functions ---
+        showTooltip: function(coords, task) {
+            const duration = this.daysBetween(this.parseDate(task.start), this.parseDate(task.end)) + 1;
             this.tooltipEl.innerHTML = `
                 <div class="gantt-tooltip-title">${task.name}</div>
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Status:</span>
-                    <span><span class="status-indicator status-${task.status || 'todo'}"></span> ${statusText}</span>
-                </div>
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Início:</span>
-                    <span>${this.formatDate(task.start)}</span>
-                </div>
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Fim:</span>
-                    <span>${this.formatDate(task.end)}</span>
-                </div>
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Duração:</span>
-                    <span>${duration} dia${duration > 1 ? 's' : ''}</span>
-                </div>
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Progresso:</span>
-                    <span>${task.progress || 0}%</span>
-                </div>
-                 <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Responsável:</span>
-                    <span>${task.assignee || '-'}</span>
-                </div>
-                ${task.dependencies ? `
-                <div class="gantt-tooltip-row">
-                    <span class="gantt-tooltip-label">Dependências:</span>
-                    <span>${task.dependencies.split(',').join(', ')}</span>
-                </div>` : ''}
+                <div class="gantt-tooltip-row"><span class="gantt-tooltip-label">Início:</span><span>${this.formatDateLocale(this.parseDate(task.start))}</span></div>
+                <div class="gantt-tooltip-row"><span class="gantt-tooltip-label">Fim:</span><span>${this.formatDateLocale(this.parseDate(task.end))}</span></div>
+                <div class="gantt-tooltip-row"><span class="gantt-tooltip-label">Duração:</span><span>${duration} dia${duration > 1 ? 's' : ''}</span></div>
+                <div class="gantt-tooltip-row"><span class="gantt-tooltip-label">Progresso:</span><span>${task.progress || 0}%</span></div>
+                <div class="gantt-tooltip-row"><span class="gantt-tooltip-label">Responsável:</span><span>${task.assignee || '-'}</span></div>
             `;
-            this.tooltipEl.style.left = `${e.clientX + 15}px`;
-            this.tooltipEl.style.top = `${e.clientY + 15}px`;
+            this.tooltipEl.style.left = `${coords.x + 15}px`;
+            this.tooltipEl.style.top = `${coords.y + 15}px`;
             this.tooltipEl.classList.add('visible');
         },
         
-        hideTooltip: function() { 
-            this.tooltipEl.classList.remove('visible'); 
-        },
+        hideTooltip: function() { this.tooltipEl.classList.remove('visible'); },
         
         generateAvatar: function(name) {
             if (!name || name.trim() === '') return `<div class="avatar" style="background-color: #ccc;" title="Não atribuído"></div>`;
@@ -1710,481 +1342,157 @@ export function openGanttChart() {
         
         getFlatTaskOrder: function() {
             const order = [];
-            const visibleTasks = this.filteredTasks.length > 0 ? 
-                this.filteredTasks : 
-                this.tasks;
-            
+            const tasksToProcess = this.filteredTasks.length > 0 ? this.filteredTasks : this.tasks;
+
             const processNode = (task) => {
-                // Verificar se está no modo foco
-                if (this.focusModeParentId && task.parentId !== this.focusModeParentId) {
-                    return;
-                }
-                
                 order.push(task.id);
                 if (task.type === 'parent' && !task.collapsed) {
-                    visibleTasks.filter(t => t.parentId === task.id)
-                        .sort((a,b) => new Date(a.start) - new Date(b.start))
+                    tasksToProcess.filter(t => t.parentId === task.id)
+                        .sort((a, b) => this.parseDate(a.start) - this.parseDate(b.start))
                         .forEach(processNode);
                 }
             };
-            
-            visibleTasks.filter(t => 
-                !t.parentId && 
-                (!this.focusModeParentId || t.id === this.focusModeParentId)
-            )
-            .sort((a,b) => new Date(a.start) - new Date(b.start))
-            .forEach(processNode);
+
+            tasksToProcess.filter(t => !t.parentId)
+                .sort((a, b) => this.parseDate(a.start) - this.parseDate(b.start))
+                .forEach(processNode);
             
             return order;
         },
-        
-        saveEditingState: function() {
-            if (!this.editingTaskId) return null;
-
-            const activeEl = document.activeElement;
-            const row = activeEl ? activeEl.closest('.gantt-task-row') : null;
-
-            if (!row || row.dataset.taskId !== this.editingTaskId || !activeEl.dataset.field) {
-                this.editingTaskId = null;
-                return null;
-            }
-
-            return {
-                taskId: this.editingTaskId,
-                field: activeEl.dataset.field,
-                selectionStart: activeEl.selectionStart,
-                selectionEnd: activeEl.selectionEnd,
-            };
-        },
 
         restoreEditingState: function(state) {
-            if (!state || !state.taskId || !state.field) {
-                this.editingTaskId = null;
-                return;
-            }
-
+            if (!state) return;
             const row = this.sidebarBody.querySelector(`.gantt-task-row[data-task-id="${state.taskId}"]`);
-            if (!row) {
-                this.editingTaskId = null;
-                return;
-            }
-
+            if (!row) return;
             const inputToFocus = row.querySelector(`[data-field="${state.field}"]`);
             if (inputToFocus) {
                 inputToFocus.focus();
                 if (typeof inputToFocus.setSelectionRange === 'function') {
                     inputToFocus.setSelectionRange(state.selectionStart, state.selectionEnd);
                 }
-            } else {
-                this.editingTaskId = null;
             }
         },
-        
+
         setupSplitter: function() {
-            const splitter = this.splitter;
-            const sidebar = splitter.previousElementSibling;
             let isDragging = false;
             let startX, startWidth;
-            
-            splitter.addEventListener('mousedown', (e) => {
+
+            const onDown = (e) => {
                 isDragging = true;
-                splitter.classList.add('dragging');
-                startX = e.clientX;
-                startWidth = sidebar.offsetWidth;
+                this.splitter.classList.add('dragging');
+                const coords = this.getEventCoords(e);
+                startX = coords.x;
+                startWidth = this.splitter.previousElementSibling.offsetWidth;
                 e.preventDefault();
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            });
-            
-            const onMouseMove = (e) => {
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('touchmove', onMove, { passive: false });
+                document.addEventListener('mouseup', onUp);
+                document.addEventListener('touchend', onUp);
+            };
+
+            const onMove = (e) => {
                 if (!isDragging) return;
-                const newWidth = startWidth + (e.clientX - startX);
-                if (newWidth > 300 && newWidth < window.innerWidth - 300) {
-                    sidebar.style.width = `${newWidth}px`;
+                const coords = this.getEventCoords(e);
+                const newWidth = startWidth + (coords.x - startX);
+                if (newWidth > 200 && newWidth < winEl.offsetWidth - 200) {
+                    this.splitter.previousElementSibling.style.width = `${newWidth}px`;
                 }
             };
-            
-            const onMouseUp = () => {
+
+            const onUp = () => {
                 isDragging = false;
-                splitter.classList.remove('dragging');
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                // Re-renderar ao final para ajustar o gráfico ao novo tamanho
-                this.renderAll();
+                this.splitter.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                document.removeEventListener('touchend', onUp);
+                this.renderChart();
             };
+
+            this.splitter.addEventListener('mousedown', onDown);
+            this.splitter.addEventListener('touchstart', onDown, { passive: false });
         },
         
-        // NOVOS MÉTODOS ADICIONADOS PARA MELHORIAS
-        
-        // 1. Drag and drop para hierarquia
-        initDragAndDrop: function() {
-            this.sidebarBody.addEventListener('dragstart', e => {
-                const row = e.target.closest('.gantt-task-row');
-                if (row) {
-                    e.dataTransfer.setData('text/plain', row.dataset.taskId);
-                    e.dataTransfer.effectAllowed = 'move';
-                }
-            });
-            
-            this.sidebarBody.addEventListener('dragover', e => {
-                e.preventDefault();
-                const row = e.target.closest('.gantt-task-row');
-                if (row) {
-                    const rect = row.getBoundingClientRect();
-                    const middleY = rect.top + rect.height / 2;
-                    
-                    if (e.clientY < middleY) {
-                        row.classList.add('drag-over-top');
-                        row.classList.remove('drag-over-bottom');
-                    } else {
-                        row.classList.add('drag-over-bottom');
-                        row.classList.remove('drag-over-top');
-                    }
-                }
-            });
-            
-            this.sidebarBody.addEventListener('dragleave', e => {
-                const row = e.target.closest('.gantt-task-row');
-                if (row) {
-                    row.classList.remove('drag-over-top', 'drag-over-bottom');
-                }
-            });
-            
-            this.sidebarBody.addEventListener('drop', e => {
-                e.preventDefault();
-                const draggedTaskId = e.dataTransfer.getData('text/plain');
-                const targetRow = e.target.closest('.gantt-task-row');
-                
-                if (targetRow && draggedTaskId) {
-                    const targetTaskId = targetRow.dataset.taskId;
-                    const draggedTask = this.tasks.find(t => t.id === draggedTaskId);
-                    const targetTask = this.tasks.find(t => t.id === targetTaskId);
-                    
-                    if (draggedTask && targetTask) {
-                        // Determinar posicionamento
-                        const rect = targetRow.getBoundingClientRect();
-                        const middleY = rect.top + rect.height / 2;
-                        
-                        if (e.clientY < middleY) {
-                            // Inserir acima
-                            this.reparentTask(draggedTaskId, targetTask.parentId, targetTaskId, 'before');
-                        } else {
-                            // Inserir abaixo ou como filho
-                            if (targetTask.type === 'parent') {
-                                // Tornar filho
-                                this.reparentTask(draggedTaskId, targetTaskId);
-                            } else {
-                                // Inserir abaixo
-                                this.reparentTask(draggedTaskId, targetTask.parentId, targetTaskId, 'after');
-                            }
-                        }
-                    }
-                    
-                    targetRow.classList.remove('drag-over-top', 'drag-over-bottom');
-                }
-            });
-        },
-        
-        reparentTask: function(taskId, newParentId, referenceTaskId = null, position = 'child') {
-            const task = this.tasks.find(t => t.id === taskId);
-            if (!task) return;
-            
-            // Remover de antigo pai
-            const oldParentId = task.parentId;
-            
-            // Atualizar parentId
-            task.parentId = newParentId;
-            
-            // Reordenar na nova posição
-            if (referenceTaskId && position) {
-                const parentTasks = this.tasks.filter(t => t.parentId === newParentId);
-                const referenceIndex = parentTasks.findIndex(t => t.id === referenceTaskId);
-                
-                if (referenceIndex !== -1) {
-                    // Reordenar array
-                    const newIndex = position === 'before' ? referenceIndex : referenceIndex + 1;
-                    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-                    
-                    // Remover da posição atual
-                    this.tasks.splice(taskIndex, 1);
-                    
-                    // Encontrar nova posição
-                    const newPos = this.tasks.findIndex(t => t.id === referenceTaskId);
-                    this.tasks.splice(position === 'before' ? newPos : newPos + 1, 0, task);
-                }
-            }
-            
-            // Atualizar pais
-            this.updateParentTasks();
-            this.markDirty();
-            this.renderAll();
-        },
-        
-        // 2. Zoom com scroll
-        initScrollZoom: function() {
-            this.chartViewport.addEventListener('wheel', e => {
-                if (e.ctrlKey) {
-                    e.preventDefault();
-                    if (e.deltaY < 0) {
-                        this.zoomIn();
-                    } else {
-                        this.zoomOut();
-                    }
-                }
-            }, { passive: false });
-        },
-        
-        // 3. Edição direta no gráfico
-        initBarEditing: function() {
-            this.chartContent.addEventListener('dblclick', e => {
-                const barContainer = e.target.closest('.gantt-bar-container');
-                if (barContainer) {
-                    const taskId = barContainer.dataset.taskId;
-                    const task = this.tasks.find(t => t.id === taskId);
-                    
-                    if (task && task.type !== 'parent') {
-                        // Encontrar barra e adicionar campo de edição
-                        const bar = barContainer.querySelector('.gantt-bar');
-                        const barRect = bar.getBoundingClientRect();
-                        
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.value = task.name;
-                        input.style.position = 'absolute';
-                        input.style.left = '5px';
-                        input.style.width = `${barRect.width - 10}px`;
-                        input.style.height = `${barRect.height - 4}px`;
-                        input.style.zIndex = '10';
-                        input.style.background = 'var(--window-bg)';
-                        input.style.border = '1px solid var(--accent-color)';
-                        input.style.borderRadius = '4px';
-                        input.style.padding = '0 5px';
-                        input.style.fontSize = '0.85em';
-                        
-                        barContainer.appendChild(input);
-                        input.focus();
-                        
-                        const finishEdit = () => {
-                            task.name = input.value;
-                            barContainer.removeChild(input);
-                            this.markDirty();
-                            this.renderAll();
-                        };
-                        
-                        input.addEventListener('blur', finishEdit);
-                        input.addEventListener('keydown', e => {
-                            if (e.key === 'Enter') finishEdit();
-                        });
-                    }
-                }
-            });
-        },
-        
-        // 4. Criação visual de dependências
-        initDependencyCreation: function() {
-            // Botão na barra de ferramentas
-            winEl.querySelector(`#linkTasksBtn_${uniqueSuffix}`).addEventListener('click', () => {
-                if (this.selectedTaskId) {
-                    this.dependencyCreation = {
-                        active: true,
-                        fromTaskId: this.selectedTaskId
-                    };
-                    showNotification("Clique na tarefa de destino para criar dependência", 3000);
-                } else {
-                    showNotification("Selecione uma tarefa primeiro", 3000, 'warning');
-                }
-            });
-            
-            // Clique no gráfico para completar dependência
-            this.chartContent.addEventListener('click', e => {
-                if (!this.dependencyCreation.active) return;
-                
-                const barContainer = e.target.closest('.gantt-bar-container');
-                if (barContainer) {
-                    const toTaskId = barContainer.dataset.taskId;
-                    
-                    if (this.dependencyCreation.fromTaskId === toTaskId) {
-                        showNotification("Não é possível criar dependência para a mesma tarefa", 3000, 'error');
-                        return;
-                    }
-                    
-                    const task = this.tasks.find(t => t.id === this.dependencyCreation.fromTaskId);
-                    if (task) {
-                        const deps = task.dependencies ? task.dependencies.split(',') : [];
-                        if (!deps.includes(toTaskId)) {
-                            deps.push(toTaskId);
-                            task.dependencies = deps.join(',');
-                            this.markDirty();
-                            this.renderAll();
-                            showNotification("Dependência criada com sucesso!", 2000);
-                        }
-                    }
-                }
-                
-                this.dependencyCreation.active = false;
-                this.svgOverlay.querySelector('.dependency-creation')?.remove();
-            });
-            
-            // Desenhar linha temporária durante criação
-            this.chartContent.addEventListener('mousemove', e => {
-                if (!this.dependencyCreation.active) return;
-                
-                // Remover linha anterior
-                this.svgOverlay.querySelector('.dependency-creation')?.remove();
-                
-                const fromContainer = this.chartContent.querySelector(
-                    `.gantt-bar-container[data-task-id="${this.dependencyCreation.fromTaskId}"]`
-                );
-                
-                if (!fromContainer) return;
-                
-                const fromRect = fromContainer.getBoundingClientRect();
-                const toX = e.clientX;
-                const toY = e.clientY;
-                
-                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                const d = `M ${fromRect.right} ${fromRect.top + fromRect.height/2} L ${toX} ${toY}`;
-                path.setAttribute('d', d);
-                path.setAttribute('class', 'dependency-creation');
-                this.svgOverlay.appendChild(path);
-            });
-        },
-        
-        // 5. Filtragem de tarefas
         initFilters: function() {
             const searchInput = winEl.querySelector(`#ganttSearch_${uniqueSuffix}`);
             const statusFilter = winEl.querySelector(`#statusFilter_${uniqueSuffix}`);
             const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
-            const clearBtn = winEl.querySelector(`#clearFiltersBtn_${uniqueSuffix}`);
             
-            // Atualizar lista de responsáveis
-            this.updateAssigneeFilter();
-            
-            // Aplicar filtros
-            const applyFilters = () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                const status = statusFilter.value;
-                const assignee = assigneeFilter.value;
+            searchInput.addEventListener('input', () => this.renderAll());
+            statusFilter.addEventListener('change', () => this.renderAll());
+            assigneeFilter.addEventListener('change', () => this.renderAll());
+        },
+
+        applyFilters: function() {
+            const searchTerm = winEl.querySelector(`#ganttSearch_${uniqueSuffix}`).value.toLowerCase();
+            const status = winEl.querySelector(`#statusFilter_${uniqueSuffix}`).value;
+            const assignee = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`).value;
+
+            this.filteredTasks = this.tasks.filter(task => {
+                const parent = task.parentId ? this.tasks.find(t => t.id === task.parentId) : null;
+                if (parent && parent.collapsed) return false;
+
+                const nameMatch = searchTerm === '' || task.name.toLowerCase().includes(searchTerm);
+                const statusMatch = status === 'all' || task.status === status || task.type === 'parent';
+                const assigneeMatch = assignee === 'all' || task.assignee === assignee || task.type === 'parent';
                 
-                this.filteredTasks = this.tasks.filter(task => {
-                    // Filtro por texto
-                    if (searchTerm && !task.name.toLowerCase().includes(searchTerm)) {
-                        return false;
-                    }
-                    
-                    // Filtro por status
-                    if (status !== 'all' && task.status !== status) {
-                        return false;
-                    }
-                    
-                    // Filtro por responsável
-                    if (assignee !== 'all' && task.assignee !== assignee) {
-                        return false;
-                    }
-                    
-                    return true;
-                });
-                
-                this.renderAll();
-            };
-            
-            searchInput.addEventListener('input', applyFilters);
-            statusFilter.addEventListener('change', applyFilters);
-            assigneeFilter.addEventListener('change', applyFilters);
-            clearBtn.addEventListener('click', () => {
-                searchInput.value = '';
-                statusFilter.value = 'all';
-                assigneeFilter.value = 'all';
-                applyFilters();
+                return nameMatch && statusMatch && assigneeMatch;
             });
         },
         
         updateAssigneeFilter: function() {
             const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
+            const currentVal = assigneeFilter.value;
+            const allAssignees = [...new Set(this.tasks.map(t => t.assignee).filter(Boolean))];
             
-            // Coletar todos os responsáveis únicos
-            this.allAssignees = [...new Set(this.tasks
-                .map(t => t.assignee)
-                .filter(a => a && a.trim() !== '')
-            )];
-            
-            // Atualizar dropdown
             assigneeFilter.innerHTML = '<option value="all">Todos</option>';
-            this.allAssignees.forEach(assignee => {
+            allAssignees.forEach(assignee => {
                 const option = document.createElement('option');
                 option.value = assignee;
                 option.textContent = assignee;
                 assigneeFilter.appendChild(option);
             });
+            assigneeFilter.value = currentVal;
         },
         
-        // 6. Modo de foco
-        toggleFocusMode: function() {
-            if (this.selectedTaskId) {
-                const task = this.tasks.find(t => t.id === this.selectedTaskId);
-                if (task && task.type === 'parent') {
-                    this.focusModeParentId = this.selectedTaskId;
-                    this.renderAll();
-                }
-            }
+        initLongPressContextMenu: function() {
+            let pressTimer;
+            this.chartContent.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    this.showContextMenu(e);
+                }, 500);
+            }, { passive: false });
+            this.chartContent.addEventListener('touchend', () => clearTimeout(pressTimer));
+            this.chartContent.addEventListener('touchmove', () => clearTimeout(pressTimer));
         },
         
-        initFocusMode: function() {
-            winEl.querySelector(`#focusModeBtn_${uniqueSuffix}`).addEventListener('click', this.toggleFocusMode.bind(this));
-            
-            winEl.querySelector(`#exitFocusMode_${uniqueSuffix}`).addEventListener('click', () => {
-                this.focusModeParentId = null;
-                this.renderAll();
-            });
-        },
-        
-        // 7. Atalhos de teclado
         initKeyboardShortcuts: function() {
             winEl.addEventListener('keydown', e => {
-                // Ignorar se estiver editando texto
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-                
-                // Delete: Remover tarefa selecionada
-                if (e.key === 'Delete' && this.selectedTaskId) {
-                    this.removeTask(this.selectedTaskId);
-                }
-                
-                // Ctrl + N: Nova tarefa
-                if (e.ctrlKey && e.key === 'n') {
-                    e.preventDefault();
-                    this.addTask();
-                }
-                
-                // Ctrl + F: Foco na pesquisa
-                if (e.ctrlKey && e.key === 'f') {
-                    e.preventDefault();
-                    winEl.querySelector(`#ganttSearch_${uniqueSuffix}`).focus();
-                }
-                
-                // Ctrl + S: Salvar
-                if (e.ctrlKey && e.key === 's') {
-                    e.preventDefault();
-                    this.saveFile();
-                }
-                
-                // Esc: Sair do modo foco ou criação de dependência
-                if (e.key === 'Escape') {
-                    if (this.focusModeParentId) {
-                        this.focusModeParentId = null;
-                        this.renderAll();
-                    }
-                    if (this.dependencyCreation.active) {
-                        this.dependencyCreation.active = false;
-                        this.svgOverlay.querySelector('.dependency-creation')?.remove();
-                    }
-                }
+                if (e.key === 'Delete' && this.selectedTaskId) this.removeTask(this.selectedTaskId);
+                if (e.ctrlKey && e.key === 's') { e.preventDefault(); this.saveFile(); }
             });
+        },
+
+        getSampleData: function() {
+            const today = new Date();
+            const d = (days) => this.formatDate(this.addDays(today, days));
+            return [
+                { id: "parent1", name: "Fase 1: Planejamento", start: d(0), end: d(12), progress: 50, type: "parent", parentId: null, collapsed: false },
+                { id: "task1", name: "Definir Escopo", start: d(0), end: d(4), progress: 100, status: "done", assignee: "Alice", parentId: "parent1", dependencies: "" },
+                { id: "task2", name: "Criar Wireframes", start: d(5), end: d(9), progress: 50, status: "inprogress", assignee: "Bob", parentId: "parent1", dependencies: "task1" },
+                { id: "milestone1", name: "Escopo Aprovado", start: d(10), end: d(10), progress: 100, status: "done", type: "milestone", parentId: "parent1", dependencies: "task2" },
+                { id: "parent2", name: "Fase 2: Desenvolvimento", start: d(13), end: d(30), progress: 0, type: "parent", parentId: null, collapsed: false },
+                { id: "task3", name: "Setup do Ambiente", start: d(13), end: d(16), progress: 20, status: "inprogress", assignee: "Charlie", parentId: "parent2", dependencies: "milestone1" },
+                { id: "task4", name: "Desenvolvimento do Backend", start: d(17), end: d(25), progress: 0, status: "todo", assignee: "Alice", parentId: "parent2", dependencies: "task3" },
+                { id: "task5", name: "Desenvolvimento do Frontend", start: d(17), end: d(28), progress: 0, status: "todo", assignee: "Bob", parentId: "parent2", dependencies: "task3" },
+            ];
         },
         
         cleanup: () => {}
     };
 
-    initializeFileState(appState, "Roadmap do Projeto", "roadmap.gantt", "gantt-chart");
+    initializeFileState(appState, "Novo Roadmap", "roadmap.gantt", "gantt-chart");
     winData.currentAppInstance = appState;
     appState.init();
     return winId;
