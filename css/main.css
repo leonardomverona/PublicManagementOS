@@ -1035,15 +1035,4 @@ Sonoma Design System – v1.0
     .dock-item:hover {
         transform: scale(1.1); /* Animação mais simples */
     }
-
-    /* 6. Esconde a barra de tarefas com o relógio, pois o Dock se torna a barra principal. */
-    /* Se você quiser as duas barras, comente a linha abaixo. */
-    .taskbar {
-        display: none;
-    }
-
-    /* 7. Ajusta o desktop para ocupar a tela toda já que a taskbar sumiu */
-    .desktop {
-        height: 100vh;
-    }
 }
