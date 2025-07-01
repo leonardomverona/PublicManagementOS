@@ -1,58 +1,53 @@
-/* Ajustes para tablets (iPad) */
+/* ===============================================
+   ARQUIVO RESPONSIVE.CSS
+   =============================================== */
+
+/* Ajustes para tablets (iPad e similares) */
 @media (max-width: 1024px) {
-    .dock {
-        overflow-x: auto;
-        width: 90%;
-        justify-content: flex-start;
-    }
+    /* [CORRIGIDO] Ajusta o tamanho dos ícones sem mexer na lógica de visibilidade. */
     .dock-item {
-        min-width: 70px;
-        min-height: 70px;
-        font-size: 35px;
+        --dock-item-size: 55px;
     }
-    .window {
-        width: 90% !important;
-        left: 5% !important;
-        top: 5% !important;
-        height: auto !important;
-    }
+
+    /* Aumenta um pouco os alvos de toque */
     .taskbar-item, .clock, .app-button {
-        padding: 12px;
-        font-size: 1.2em;
+        padding: 10px 14px;
+        font-size: 1.1em;
     }
 }
 
-/* Ajustes para mobile */
+/* Ajustes para mobile (Celulares) */
 @media (max-width: 768px) {
+    /* [CORRIGIDO] Apenas ajusta o tamanho e aparência do dock, sem forçar sua posição.
+       A lógica de esconder/mostrar (bottom/opacity) virá do main.css */
     .dock {
-        bottom: 0;
-        border-radius: 0;
-        padding: 5px;
-        overflow-x: auto;
-        width: 100%;
-        justify-content: flex-start;
+        width: 95vw;
+        padding: 8px;
+        gap: 10px;
     }
+
+    /* Ícones um pouco menores para caber na tela */
     .dock-item {
-        min-width: 50px;
-        min-height: 50px;
-        font-size: 28px;
+        --dock-item-size: 50px;
     }
-    .taskbar {
-        flex-direction: column;
-        height: auto;
-        padding: 5px;
-    }
+
+    /* Aumenta o tamanho dos itens da barra de tarefas para toque */
     .taskbar-item, .clock, .app-button {
-        width: 100%;
         padding: 10px;
-        margin-bottom: 5px;
+        font-size: 1em;
     }
+    
+    /* [REMOVIDO] Todas as regras que mexiam com a visibilidade (.dock.hidden), 
+       transform, e 'bottom' do dock foram removidas daqui para evitar conflitos. */
+
+    /* Garante que as janelas não fiquem muito grandes na tela pequena */
     .window {
         width: 95% !important;
         left: 2.5% !important;
         top: 2.5% !important;
-        height: auto !important;
+        height: 90% !important; /* Altura definida para não vazar da tela */
     }
+
     .window-content, .title-bar {
         padding: 10px;
     }
@@ -60,31 +55,5 @@
 
 /* Melhorias gerais para touch */
 .window-control, .dock-item, .taskbar-item, .app-button {
-    touch-action: manipulation; /* otimiza eventos de toque */
-}
-
-/* Ajustes para mobile (max-width: 768px) */
-@media (max-width: 768px) {
-    /* Força o dock a ficar sempre visível e na posição correta em telas menores */
-    .dock, .dock.hidden {
-        transform: translateX(-50%) translateY(0) !important;
-        bottom: var(--taskbar-height) !important; /* Posiciona acima da barra de tarefas se ela estiver empilhada */
-        width: 95%;
-        padding: 8px;
-        gap: 10px;
-    }
-
-    /* Ajuste na barra de tarefas no mobile para acomodar o dock acima dela */
-    .taskbar {
-        padding-bottom: calc(var(--dock-item-size) + 25px); /* Adiciona espaço extra na parte inferior da taskbar */
-    }
-
-    /* Se a taskbar for vertical no mobile, o dock fica na parte inferior */
-    body:not(.taskbar-horizontal-on-mobile) .dock,
-    body:not(.taskbar-horizontal-on-mobile) .dock.hidden {
-        bottom: 5px !important;
-    }
-    body:not(.taskbar-horizontal-on-mobile) .taskbar {
-        padding-bottom: 5px; /* Reseta o padding se a taskbar não for horizontal */
-    }
+    touch-action: manipulation; /* Otimiza eventos de toque */
 }
