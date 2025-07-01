@@ -882,28 +882,44 @@ Sonoma Design System – v1.0
     margin-left: 10px;
     opacity: 0.4;
 }
-/* --- ESTILOS PARA OCULTAR O DOCK AUTOMATICAMENTE --- */
-
-/* Adiciona uma transição suave ao dock para a animação de mostrar/esconder */
+/* --- ESTILOS PARA OCULTAR O DOCK AUTOMATICAMENTE (UNIVERSAL E ESTÁVEL) --- */
 .dock {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Posição inicial visível */
+    bottom: var(--dock-total-bottom-offset);
+    transform: translateX(-50%); /* Apenas para centralizar horizontalmente */
+    
+    /* Animação suave para a propriedade 'bottom' e 'opacity' */
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    opacity: 1;
+
+    /* Estilos flexíveis que já estavam corretos */
+    width: clamp(320px, 90vw, 800px);
+    padding: var(--dock-padding);
+    gap: var(--dock-gap);
 }
 
-/* A classe .hidden desliza o dock para baixo, para fora da tela */
 .dock.hidden {
-    /* O translate-X continua sendo -50% para centralizar, e o Y esconde ele para baixo */
-    transform: translateX(-50%) translateY(calc(100% + 20px));
+    /* Posição oculta: move o dock para baixo usando 'bottom' */
+    bottom: -120px; /* Valor negativo para garantir que fique totalmente fora da tela */
+    opacity: 0;
+    pointer-events: none; /* Impede interações quando escondido */
 }
 
-/* A área invisível na parte inferior que ativa o dock */
+/* A área invisível na parte inferior que ativa o dock no DESKTOP */
 #dock-trigger-area {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 5px; /* Uma faixa fina na borda inferior */
-    z-index: 2005; /* Fica acima do dock escondido */
-    /* background: rgba(255,0,0,0.2);  <-- Descomente para depurar e ver a área */
+    height: 10px; /* Um pouco maior para facilitar o acionamento */
+    z-index: 2005;
+}
+
+/* Oculta a área de gatilho em dispositivos de toque, onde não faz sentido */
+@media (hover: none) and (pointer: coarse) {
+    #dock-trigger-area {
+        display: none;
+    }
 }
 
 /* [NOVO] Estilos de Impressão para PDF */
