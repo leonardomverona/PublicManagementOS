@@ -45,32 +45,29 @@ class WindowManager {
      * Lógica detalhada para ocultar/mostrar o Dock.
      * Esta função é o centro do comportamento de auto-ocultação.
      */
+
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
 
-        // Passo 1: Detectar se a tela é pequena (semelhante a um celular).
-        const isMobileScreen = window.innerWidth <= 768;
+        // A verificação de tela de celular foi removida.
+        // A lógica a seguir agora vale para desktop e mobile.
 
-        // Passo 2: Lógica para Telas Pequenas (Mobile).
-        if (isMobileScreen) {
-            dock.classList.remove('hidden');
-            return;
-        }
-
-        // Passo 3: Lógica para Desktops.
+        // O Dock só deve se esconder se houver PELO MENOS UMA janela aberta que NÃO esteja minimizada.
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
-                shouldHide = true;
-                break;
+                shouldHide = true; // Encontrou uma janela visível, então o Dock deve se esconder.
+                break; // Não precisa verificar o resto, a condição foi atendida.
             }
         }
 
-        // Passo 4: Aplicar a classe CSS.
+        // Aplicar a classe CSS com base na condição.
+        // A classe 'hidden' tem o CSS que desliza o Dock para fora da tela.
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
+            // Se não houver janelas visíveis (todas fechadas ou minimizadas), o Dock deve aparecer.
             dock.classList.remove('hidden');
         }
     }
