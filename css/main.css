@@ -994,6 +994,10 @@ Sonoma Design System – v1.0
    ============================================== */
 
 @media (max-width: 768px) {
+    /*
+    Em telas pequenas, o comportamento e a posição do Dock mudam drasticamente.
+    Ele se torna a barra de navegação principal, fixa na parte inferior.
+    */
 
     /* 1. Ajusta a aparência e o posicionamento do Dock para mobile. */
     .dock {
