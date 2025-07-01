@@ -44,40 +44,33 @@ class WindowManager {
     /**
      * Lógica detalhada para ocultar/mostrar o Dock.
      * Esta função é o centro do comportamento de auto-ocultação.
-     * @CORRIGIDO - A lógica agora diferencia telas de desktop e mobile pela largura, não pela capacidade de toque.
      */
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
 
         // Passo 1: Detectar se a tela é pequena (semelhante a um celular).
-        // Usar a largura da tela é mais confiável do que detectar a capacidade de toque,
-        // pois laptops com touchscreen devem se comportar como desktops.
         const isMobileScreen = window.innerWidth <= 768;
 
         // Passo 2: Lógica para Telas Pequenas (Mobile).
-        // Em uma tela pequena, o dock NUNCA deve se esconder. Ele é parte da navegação principal.
         if (isMobileScreen) {
             dock.classList.remove('hidden');
             return;
         }
 
         // Passo 3: Lógica para Desktops.
-        // O Dock só deve se esconder se houver PELO MENOS UMA janela aberta que NÃO esteja minimizada.
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
-                shouldHide = true; // Encontrou uma janela visível, então o Dock deve se esconder.
-                break; // Não precisa verificar o resto, a condição foi atendida.
+                shouldHide = true;
+                break;
             }
         }
 
         // Passo 4: Aplicar a classe CSS.
-        // A classe 'hidden' tem o CSS que desliza o Dock para fora da tela.
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
-            // Se não houver janelas visíveis (todas fechadas ou minimizadas), o Dock deve aparecer.
             dock.classList.remove('hidden');
         }
     }
@@ -583,6 +576,11 @@ export function initializeWebOS() {
         if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
     });
 
+    // @NOVO: Adiciona um listener para o evento de redimensionamento da janela.
+    // Isso garante que a visibilidade do dock seja reavaliada quando o usuário
+    // muda de uma visualização de desktop para mobile (ou vice-versa).
+    window.addEventListener('resize', () => window.windowManager.updateDockVisibility());
+
     window.windowManager.appLaunchActions = { 
         'open-file-system': apps.openFileSystem, 
         'open-gantt-chart': apps.openGanttChart, 
@@ -653,14 +651,10 @@ export function initializeWebOS() {
     const dockEl = document.getElementById('appDock');
     const triggerArea = document.getElementById('dock-trigger-area');
     
-    // @CORRIGIDO - A lógica de `mouseenter` foi simplificada para funcionar em todos os dispositivos com ponteiro (mouse).
     if (dockEl && triggerArea) {
-        // O evento 'mouseenter' só ocorre em dispositivos com ponteiro (mouse).
-        // Removemos a verificação desnecessária para garantir que funcione em todos os desktops.
         triggerArea.addEventListener('mouseenter', () => {
             dockEl.classList.remove('hidden');
         });
-        // A lógica de 'mouseleave' já chama a função correta para decidir se o dock deve ser ocultado novamente.
         dockEl.addEventListener('mouseleave', () => {
             window.windowManager.updateDockVisibility();
         });
