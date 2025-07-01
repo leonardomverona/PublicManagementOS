@@ -926,7 +926,6 @@ export function openGanttChart() {
         },
         
         calculateAndDrawCriticalPath: function() {
-            // ... (implementation is largely correct, no major changes needed)
             const tasks = this.tasks.filter(t => t.type !== 'parent');
             if (tasks.length === 0) return;
 
@@ -1081,7 +1080,6 @@ export function openGanttChart() {
             this.tasks.filter(t => t.type === 'parent').forEach(processNode);
         },
 
-        // --- Event Handlers (Refactored) ---
         handleSidebarLiveInput: function(e) {
             const input = e.target;
             const row = input.closest('.gantt-task-row');
@@ -1094,7 +1092,6 @@ export function openGanttChart() {
                 task[field] = input.value;
                 this.markDirty();
                 
-                // Partial DOM update for performance
                 if (field === 'name') {
                     const barLabel = this.chartContent.querySelector(`.gantt-bar-container[data-task-id="${taskId}"] .gantt-bar-label`);
                     if (barLabel) barLabel.textContent = input.value;
@@ -1117,7 +1114,6 @@ export function openGanttChart() {
                 task[field] = input.value;
                 this.markDirty();
                 
-                // A full re-render is justified for these changes
                 if (field === 'start' || field === 'end' || field === 'assignee') {
                     if (field === 'assignee') this.updateAssigneeFilter();
                     this.renderAll();
@@ -1132,7 +1128,6 @@ export function openGanttChart() {
             const taskId = row.dataset.taskId;
             const task = this.tasks.find(t => t.id === taskId);
 
-            // Expander click
             if (e.target.closest('.task-expander') && task.type === 'parent') {
                 task.collapsed = !task.collapsed;
                 this.markDirty();
@@ -1140,7 +1135,6 @@ export function openGanttChart() {
                 return;
             }
 
-            // Action button click
             const actionBtn = e.target.closest('.action-btn');
             if (actionBtn) {
                 const action = actionBtn.dataset.action;
@@ -1152,7 +1146,6 @@ export function openGanttChart() {
                 return;
             }
             
-            // Row selection
             if (e.target.tagName !== 'INPUT') {
                 this.selectedTaskId = taskId;
                 this.renderAll();
@@ -1185,40 +1178,24 @@ export function openGanttChart() {
             const initialEnd = this.parseDate(task.end);
             const handle = e.target.classList.contains('gantt-bar-handle') ? (e.target.classList.contains('left') ? 'left' : 'right') : null;
             
-            // Store initial position relative to timeline
-            const chartRect = this.chartContent.getBoundingClientRect();
-            const initialBarLeft = container.offsetLeft;
-            const initialBarWidth = container.offsetWidth;
-            
+            const pixelsPerDay = this.timeline.unitWidth / (this.timeline.viewMode === 'week' ? 7 : this.timeline.viewMode === 'month' ? 30.4 : 1);
+
             const onMouseMove = (moveE) => {
                 const moveCoords = this.getEventCoords(moveE);
                 const deltaX = moveCoords.x - initialX;
-                const newPosition = (initialBarLeft + deltaX) / this.timeline.unitWidth;
-                
-                // Convert position to days based on view mode
-                let daysDelta;
-                switch(this.timeline.viewMode) {
-                    case 'week': daysDelta = Math.round(newPosition * 7); break;
-                    case 'month': daysDelta = Math.round(newPosition * 30.4); break;
-                    default: daysDelta = Math.round(newPosition);
-                }
-                
-                // Calculate new date
-                const newDate = this.addDays(this.timeline.startDate, daysDelta);
+                const daysDelta = Math.round(deltaX / pixelsPerDay);
                 
                 if (handle === 'left') {
-                    if (newDate <= initialEnd) {
-                        task.start = this.formatDate(newDate);
-                    }
+                    const newStart = this.addDays(initialStart, daysDelta);
+                    if (newStart <= initialEnd) task.start = this.formatDate(newStart);
                 } else if (handle === 'right') {
-                    if (newDate >= this.parseDate(task.start)) {
-                        task.end = this.formatDate(newDate);
-                    }
+                    const newEnd = this.addDays(initialEnd, daysDelta);
+                    if (newEnd >= this.parseDate(task.start)) task.end = this.formatDate(newEnd);
                 } else {
-                    // Move entire task
                     const duration = this.daysBetween(initialStart, initialEnd);
-                    task.start = this.formatDate(newDate);
-                    task.end = this.formatDate(this.addDays(newDate, duration));
+                    const newStart = this.addDays(initialStart, daysDelta);
+                    task.start = this.formatDate(newStart);
+                    task.end = this.formatDate(this.addDays(newStart, duration));
                 }
                 
                 this.renderAll();
@@ -1248,7 +1225,6 @@ export function openGanttChart() {
         },
 
         syncScroll: function(e) {
-            // Prevent feedback loop
             if (this.isSyncingScroll) return;
             this.isSyncingScroll = true;
 
@@ -1260,7 +1236,6 @@ export function openGanttChart() {
                 this.chartViewport.scrollTop = target.scrollTop;
             }
             
-            // Allow next scroll event after a short delay
             requestAnimationFrame(() => { this.isSyncingScroll = false; });
         },
         
@@ -1275,8 +1250,7 @@ export function openGanttChart() {
             this.selectedTaskId = taskId;
             this.renderAll();
             
-            const existingMenu = document.querySelector('.gantt-context-menu');
-            if (existingMenu) existingMenu.remove();
+            document.querySelector('.gantt-context-menu')?.remove();
             
             const menu = document.createElement('div');
             menu.className = 'gantt-context-menu';
@@ -1297,7 +1271,7 @@ export function openGanttChart() {
                 document.removeEventListener('touchstart', closeMenu);
             };
             
-            setTimeout(() => { // Allow current event to finish
+            setTimeout(() => {
                 document.addEventListener('click', closeMenu);
                 document.addEventListener('touchstart', closeMenu);
             }, 0);
@@ -1348,7 +1322,6 @@ export function openGanttChart() {
             }
         },
 
-        // --- Utility & Setup Functions ---
         showTooltip: function(coords, task) {
             const duration = this.daysBetween(this.parseDate(task.start), this.parseDate(task.end)) + 1;
             this.tooltipEl.innerHTML = `
@@ -1463,25 +1436,30 @@ export function openGanttChart() {
             const status = winEl.querySelector(`#statusFilter_${uniqueSuffix}`).value;
             const assignee = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`).value;
 
-            this.filteredTasks = this.tasks.filter(task => {
-                const parent = task.parentId ? this.tasks.find(t => t.id === task.parentId) : null;
-                if (parent && parent.collapsed) return false;
+            const filteredIds = new Set();
+            const tasksToFilter = this.tasks.slice().reverse(); 
 
+            tasksToFilter.forEach(task => {
                 const nameMatch = searchTerm === '' || task.name.toLowerCase().includes(searchTerm);
-                const statusMatch = status === 'all' || task.status === status || task.type === 'parent';
-                const assigneeMatch = assignee === 'all' || task.assignee === assignee || task.type === 'parent';
+                const statusMatch = status === 'all' || task.status === status;
+                const assigneeMatch = assignee === 'all' || task.assignee === assignee;
                 
-                return nameMatch && statusMatch && assigneeMatch;
+                const hasVisibleChild = (this.tasks.filter(c => c.parentId === task.id).some(c => filteredIds.has(c.id)));
+                
+                if ((nameMatch && statusMatch && assigneeMatch) || hasVisibleChild) {
+                    filteredIds.add(task.id);
+                }
             });
+            this.filteredTasks = this.tasks.filter(t => filteredIds.has(t.id));
         },
         
         updateAssigneeFilter: function() {
             const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
             const currentVal = assigneeFilter.value;
-            const allAssignees = [...new Set(this.tasks.map(t => t.assignee).filter(Boolean)];
+            const allAssignees = [...new Set(this.tasks.map(t => t.assignee).filter(Boolean))];
             
             assigneeFilter.innerHTML = '<option value="all">Todos</option>';
-            allAssignees.forEach(assignee => {
+            allAssignees.sort().forEach(assignee => {
                 const option = document.createElement('option');
                 option.value = assignee;
                 option.textContent = assignee;
@@ -1541,7 +1519,8 @@ export function openGanttChart() {
                     progress: 70,
                     status: 'inprogress',
                     type: 'task',
-                    parentId: 'task1'
+                    parentId: 'task1',
+                    assignee: 'Alice'
                 },
                 {
                     id: 'task4',
@@ -1551,7 +1530,9 @@ export function openGanttChart() {
                     progress: 20,
                     status: 'todo',
                     type: 'task',
-                    parentId: 'task1'
+                    parentId: 'task1',
+                    assignee: 'Bob',
+                    dependencies: 'task3'
                 }
             ];
         },
