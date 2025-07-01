@@ -1,6 +1,8 @@
 import * as apps from './apps/index.js';
 import * as appUtils from './apps/app.js';
+
 // --- CONSTANTES GLOBAIS E UTILITÁRIOS ---
+
 export const STORAGE_KEYS = {
     WALLPAPER: 'webosWallpaper_gestaop_v1.6',
     THEME_DARK_MODE: 'darkMode_gestaop_v1.6',
@@ -8,9 +10,11 @@ export const STORAGE_KEYS = {
     MAP_NEURAL_STATE: 'webos_map_neural_state_v1.0',
     MAP_NEURAL_TRAINING_DATA: 'webos_map_neural_training_v1.0'
 };
+
 export function generateId(prefix = 'id') {
     return prefix + '_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
 }
+
 export function showNotification(message, duration = 3000) {
     const notificationElement = document.getElementById('notification');
     if (!notificationElement) {
@@ -23,7 +27,10 @@ export function showNotification(message, duration = 3000) {
         notificationElement.classList.remove('show');
     }, duration);
 }
+
+
 // --- CLASSES PRINCIPAIS DO SISTEMA ---
+
 class WindowManager {
     constructor() {
         this.windows = new Map();
@@ -33,6 +40,7 @@ class WindowManager {
         this.stageManager = new StageManager(this);
         this.appLaunchActions = {};
     }
+
     /**
      * Lógica detalhada para ocultar/mostrar o Dock.
      * Esta função é o centro do comportamento de auto-ocultação.
@@ -40,13 +48,16 @@ class WindowManager {
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
         if (!dock) return;
+
         // Passo 1: Detectar se a tela é pequena (semelhante a um celular).
         const isMobileScreen = window.innerWidth <= 768;
+
         // Passo 2: Lógica para Telas Pequenas (Mobile).
         if (isMobileScreen) {
             dock.classList.remove('hidden');
             return;
         }
+
         // Passo 3: Lógica para Desktops.
         let shouldHide = false;
         for (const winData of this.windows.values()) {
@@ -55,6 +66,7 @@ class WindowManager {
                 break;
             }
         }
+
         // Passo 4: Aplicar a classe CSS.
         if (shouldHide) {
             dock.classList.add('hidden');
@@ -62,22 +74,28 @@ class WindowManager {
             dock.classList.remove('hidden');
         }
     }
+
+
     createWindow(title, content, options = {}) {
         const winId = generateId('win');
         this.zIndex++;
+
         const win = document.createElement('div');
         win.id = winId;
         win.className = 'window';
         win.style.width = options.width || '700px';
         win.style.height = options.height || '500px';
+
         const taskbarHeightVal = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height'), 10) || 48;
         const maxLeft = window.innerWidth - parseInt(win.style.width, 10) - 20;
         const maxTop = window.innerHeight - parseInt(win.style.height, 10) - taskbarHeightVal - 20;
         win.style.left = options.left || `${Math.max(10, Math.random() * maxLeft)}px`;
         win.style.top = options.top || `${Math.max(10, Math.random() * maxTop)}px`;
         win.style.zIndex = this.zIndex;
+
         const titleBar = document.createElement('div');
         titleBar.className = 'title-bar';
+
         const controls = document.createElement('div');
         controls.className = 'window-controls';
         ['close', 'minimize', 'maximize'].forEach(type => {
@@ -92,9 +110,11 @@ class WindowManager {
             };
             controls.appendChild(btn);
         });
+
         const titleText = document.createElement('span');
         titleText.className = 'window-title-text';
         titleText.textContent = title;
+
         const windowContent = document.createElement('div');
         windowContent.className = 'window-content';
         if (options.appType) {
@@ -105,11 +125,13 @@ class WindowManager {
                windowContent.classList.add(`${options.appType.split(' ')[0]}-app-container`);
             }
         }
+
         if (typeof content === 'string') {
             windowContent.innerHTML = content;
         } else if (content instanceof HTMLElement) {
             windowContent.appendChild(content);
         }
+
         const resizeHandle = document.createElement('div');
         resizeHandle.className = 'resize-handle';
         
@@ -122,12 +144,16 @@ class WindowManager {
                 }
             }
         });
+
         titleBar.appendChild(controls);
         titleBar.appendChild(titleText);
+
         win.appendChild(titleBar);
         win.appendChild(windowContent);
         win.appendChild(resizeHandle);
+
         document.getElementById('desktop').appendChild(win);
+
         const winData = {
             element: win,
             title: title,
@@ -143,6 +169,7 @@ class WindowManager {
                     const resizeHandleEl = win.querySelector('.resize-handle');
                     if(controlsEl) controlsEl.style.visibility = 'hidden';
                     if(resizeHandleEl) resizeHandleEl.style.visibility = 'hidden';
+
                     const canvas = await html2canvas(win, {
                         scale: 0.25, logging: false, useCORS: true,
                         width: win.offsetWidth, height: win.offsetHeight,
@@ -168,11 +195,13 @@ class WindowManager {
         this.makeActive(winId);
         this._addDragAndResize(win, titleBar, resizeHandle, winId);
         this._createTaskbarItem(winId, title, options.appType);
+
         win.addEventListener('mousedown', () => this.makeActive(winId));
         if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
         this.updateDockVisibility();
         return winId;
     }
+
     makeActive(winId) {
         if (this.activeWindowId && this.windows.has(this.activeWindowId)) {
             this.windows.get(this.activeWindowId).element.classList.remove('active');
@@ -189,6 +218,7 @@ class WindowManager {
             }
         }
     }
+
     closeWindow(winId) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -211,6 +241,7 @@ class WindowManager {
             this.updateDockVisibility();
         }
     }
+
     minimizeWindow(winId) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -226,6 +257,7 @@ class WindowManager {
             this.updateDockVisibility();
         }
     }
+
     maximizeWindow(winId) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -264,6 +296,7 @@ class WindowManager {
             this.updateDockVisibility();
         }
     }
+
     updateWindowTitle(winId, newTitle) {
         if (this.windows.has(winId)) {
             const winData = this.windows.get(winId);
@@ -273,6 +306,7 @@ class WindowManager {
              if(this.stageManager.isActive) this.stageManager.updateStageThumbnails();
         }
     }
+
     _addDragAndResize(win, titleBar, resizeHandle, winId) {
         let offsetX, offsetY;
         titleBar.onmousedown = (e) => {
@@ -294,6 +328,7 @@ class WindowManager {
                 win.classList.remove('dragging');
             };
         };
+
         resizeHandle.onmousedown = (e) => {
             e.preventDefault();
             const winData = this.windows.get(winId);
@@ -305,6 +340,7 @@ class WindowManager {
             const initialMouseY = e.clientY;
             document.body.classList.add('resizing');
             win.classList.add('resizing');
+
             document.onmousemove = (moveEvent) => {
                 const newWidth = initialWidth + (moveEvent.clientX - initialMouseX);
                 const newHeight = initialHeight + (moveEvent.clientY - initialMouseY);
@@ -319,6 +355,7 @@ class WindowManager {
             };
         };
     }
+
     _createTaskbarItem(winId, title, appType) {
         const item = document.createElement('div');
         item.className = 'taskbar-item';
@@ -335,8 +372,11 @@ class WindowManager {
         }
         const appIconEl = actionKey ? document.querySelector(`.dock-item[data-action="${actionKey}"]`) : null;
         const appIconText = appIconEl ? appIconEl.textContent : '⚙️';
+
+
         item.innerHTML = `<span class="taskbar-item-icon" style="font-size: 1.2em; margin-right: 5px;">${appIconText}</span> <span class="taskbar-item-title">${title}</span>`;
         item.title = title;
+
         item.onclick = () => {
             const winData = this.windows.get(winId);
             if (this.stageManager.isActive) {
@@ -356,24 +396,30 @@ class WindowManager {
     _showTaskbarItemContextMenu(event, winId, taskbarItemElement) {
         const existingMenu = document.getElementById('taskbarContext');
         if (existingMenu) existingMenu.remove();
+
         const menu = document.createElement('div');
         menu.id = 'taskbarContext';
         menu.className = 'taskbar-item-context-menu';
+
         const closeButton = document.createElement('button');
         closeButton.innerHTML = `<i class="fas fa-times" style="margin-right: 5px;"></i> Fechar Janela`;
         closeButton.onclick = (e) => { e.stopPropagation(); this.closeWindow(winId); menu.remove(); };
         menu.appendChild(closeButton);
+
         document.body.appendChild(menu);
         const menuRect = menu.getBoundingClientRect();
         const itemRect = taskbarItemElement.getBoundingClientRect();
         let top = itemRect.top - menuRect.height - 5;
         let left = itemRect.left + (itemRect.width / 2) - (menuRect.width / 2);
+
         if (top < 0) top = itemRect.bottom + 5;
         if (left < 0) left = 5;
         if (left + menuRect.width > window.innerWidth) left = window.innerWidth - menuRect.width - 5;
+
         menu.style.top = `${top}px`;
         menu.style.left = `${left}px`;
         menu.style.display = 'block';
+
         const closeMenuHandler = (clickEvent) => {
             if (!menu.contains(clickEvent.target)) {
                 if(menu.parentNode) menu.remove();
@@ -382,11 +428,13 @@ class WindowManager {
         };
         setTimeout(() => document.addEventListener('click', closeMenuHandler, true), 0);
     }
+
     _removeTaskbarItem(winId) { const item = document.getElementById(`taskbar-item-${winId}`); if (item) item.remove(); }
     _updateTaskbarItemTitle(winId, newTitle) { const item = document.getElementById(`taskbar-item-${winId}`); if (item) { const titleEl = item.querySelector('.taskbar-item-title'); if(titleEl) titleEl.textContent = newTitle; item.title = newTitle; } }
     _updateTaskbarActiveState(winIdToActivate) { this.taskbarItemsContainer.querySelectorAll('.taskbar-item').forEach(item => item.classList.remove('active')); const activeItem = document.getElementById(`taskbar-item-${winIdToActivate}`); if (activeItem) activeItem.classList.add('active'); }
     _updateTaskbarItemVisual(winId, isMinimized) { const item = document.getElementById(`taskbar-item-${winId}`); if (item) { item.style.opacity = isMinimized ? '0.7' : '1'; } }
 }
+
 class ThemeManager {
     constructor(palettes) {
         this.isDark = localStorage.getItem(STORAGE_KEYS.THEME_DARK_MODE) === 'true';
@@ -438,7 +486,7 @@ class ThemeManager {
             document.documentElement.style.setProperty('--accent-light-translucent', `rgba(${r},${g},${b},0.1)`);
             document.documentElement.style.setProperty('--accent-dark-translucent', `rgba(${r},${g},${b},0.15)`);
         } else if (actualColorValue.startsWith('rgba')) {
-             const match = actualColorValue.match(/rgba?/);
+             const match = actualColorValue.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
              if(match) {
                 document.documentElement.style.setProperty('--accent-light-translucent', `rgba(${match[1]},${match[2]},${match[3]},0.1)`);
                 document.documentElement.style.setProperty('--accent-dark-translucent', `rgba(${match[1]},${match[2]},${match[3]},0.15)`);
@@ -499,6 +547,7 @@ class ThemeManager {
         if (selectedOption) selectedOption.classList.add('selected');
      }
 }
+
 class StageManager {
     constructor(windowMgr) { this.windowManager = windowMgr; this.isActive = false; this.overlay = document.getElementById('stageManagerOverlay'); this.sidebar = document.getElementById('stageManagerSidebar'); this.mainArea = document.getElementById('stageManagerMainArea'); this.toggleButton = document.getElementById('stageManagerToggle'); this.focusedAppId = null; this.originalWindowStates = new Map(); if(this.toggleButton) this.toggleButton.onclick = () => this.toggle(); }
     toggle() { this.isActive = !this.isActive; this.overlay.classList.toggle('active', this.isActive); if(this.toggleButton) this.toggleButton.classList.toggle('active', this.isActive); if (this.isActive) { this.windowManager.windows.forEach((winData, winId) => { if (!winData.minimized && winData.element.style.display !== 'none') { this.originalWindowStates.set(winId, { left: winData.element.style.left, top: winData.element.style.top, width: winData.element.style.width, height: winData.element.style.height, zIndex: winData.element.style.zIndex, transform: winData.element.style.transform || '' }); } }); const activeOrFirstVisible = this.windowManager.activeWindowId || Array.from(this.windowManager.windows.keys()).find(id => !this.windowManager.windows.get(id).minimized && this.windowManager.windows.get(id).element.style.display !== 'none' ); if (activeOrFirstVisible) { this.focusApp(activeOrFirstVisible); } else { this.updateStageThumbnails(); } } else { this.restoreWindows(); this.originalWindowStates.clear(); } }
@@ -508,24 +557,27 @@ class StageManager {
 }
     
 // --- INICIALIZAÇÃO E EVENTOS GLOBAIS ---
+
 const accentPalettes = { light: [{ name: "Azul Padrão", color: "var(--accent-light)" }, { name: "Rosa", color: "#FF2D55" }, { name: "Verde", color: "#34C759" }, { name: "Laranja", color: "#FF9500" }, { name: "Roxo", color: "#AF52DE" }, { name: "Amarelo", color: "#FFCC00" }, { name: "Grafite", color: "#8E8E93"}, { name: "Ciano", color: "#5AC8FA"}], dark: [{ name: "Azul Padrão", color: "var(--accent-dark)" }, { name: "Rosa", color: "#FF375F" }, { name: "Verde", color: "#30D158" }, { name: "Laranja", color: "#FF9F0A" }, { name: "Roxo", color: "#BF5AF2" }, { name: "Amarelo", color: "#FFD60A" }, { name: "Grafite", color: "#98989D"}, { name: "Ciano", color: "#64D2FF"} ] };
+
 export function initializeWebOS() {
     if (window.webOSInitialized) return;
     window.webOSInitialized = true;
+
     window.windowManager = new WindowManager();
     window.themeManager = new ThemeManager(accentPalettes);
     
     updateClockTime();
     setInterval(updateClockTime, 10000);
+
     window.addEventListener('beforeunload', (e) => {
         let hasUnsavedChanges = false;
         window.windowManager.windows.forEach(winData => { if (winData.currentAppInstance?.isDirty) hasUnsavedChanges = true; });
         if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; }
     });
-    // @NOVO: Adiciona um listener para o evento de redimensionamento da janela.
-    // Isso garante que a visibilidade do dock seja reavaliada quando o usuário
-    // muda de uma visualização de desktop para mobile (ou vice-versa).
+
     window.addEventListener('resize', () => window.windowManager.updateDockVisibility());
+
     window.windowManager.appLaunchActions = { 
         'open-file-system': apps.openFileSystem, 
         'open-gantt-chart': apps.openGanttChart, 
@@ -563,6 +615,7 @@ export function initializeWebOS() {
     
     window.themeManager.applyThemeVariables();
     document.getElementById('darkModeToggle').onclick = () => window.themeManager.toggleDarkMode();
+
     const wallpaperInput = document.getElementById('wallpaperInput');
     if (wallpaperInput) {
         wallpaperInput.addEventListener('change', e => {
@@ -572,6 +625,7 @@ export function initializeWebOS() {
                 }
                 return;
             }
+
             const reader = new FileReader();
             reader.onload = ev => {
                 document.body.style.backgroundImage = `url(${ev.target.result})`;
@@ -581,6 +635,7 @@ export function initializeWebOS() {
             reader.readAsDataURL(e.target.files[0]);
         });
     }
+
     const contextMenuHTML = `<div class="context-menu-item" data-action="open-file-system"><i class="fas fa-folder"></i> Explorador (Nuvem)</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="toggle-theme-settings"><i class="fas fa-palette"></i> Aparência</div><div class="context-menu-color-palette-container" id="contextMenuColorPaletteContainer" style="display: none;"><div class="context-menu-color-palette" id="accentColorPaletteMenu"></div><div style="padding: 8px 14px; display:flex; align-items:center; justify-content: space-between;"><span style="font-size:0.9em;">Modo Escuro</span><label class="switch" for="darkModeToggleMenu"><input type="checkbox" id="darkModeToggleMenu"><span class="slider round"></span></label></div></div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="choose-wallpaper"><i class="fas fa-image"></i> Alterar Papel de Parede</div><div class="context-menu-item" data-action="show-desktop"><i class="fas fa-desktop"></i> Mostrar Área de Trabalho</div><div class="context-menu-separator"></div><div class="context-menu-item" data-action="shutdown"><i class="fas fa-power-off"></i> Sair da Conta</div>`;
     const desktopContextMenuEl = document.getElementById('desktopContextMenu');
     if(desktopContextMenuEl) desktopContextMenuEl.innerHTML = contextMenuHTML;
@@ -589,41 +644,32 @@ export function initializeWebOS() {
     if (window.mapNeuralManager) {
         window.mapNeuralManager.loadState();
     }
+
     const dockEl = document.getElementById('appDock');
     const triggerArea = document.getElementById('dock-trigger-area');
     
+    // @CORRIGIDO - A lógica de mouseenter/mouseleave agora é condicional ao tamanho da tela,
+    // evitando conflitos de eventos na visualização mobile.
     if (dockEl && triggerArea) {
-        // Em telas grandes (desktop) adiciona os eventos de mouse
-        if (window.innerWidth > 768) {
-            triggerArea.addEventListener('mouseenter', () => {
+        triggerArea.addEventListener('mouseenter', () => {
+            const isMobileScreen = window.innerWidth <= 768;
+            if (!isMobileScreen) {
                 dockEl.classList.remove('hidden');
-            });
-            dockEl.addEventListener('mouseleave', () => {
-                window.windowManager.updateDockVisibility();
-            });
-        } else {
-            // Em telas pequenas, não usa a área de trigger e garante que o dock está visível
-            dockEl.classList.remove('hidden');
-        }
-    }
-    
-    // Ajustes para o dock em dispositivos móveis
-    if (window.innerWidth <= 768) {
-        if (dockEl) {
-            dockEl.style.height = 'auto';
-            dockEl.style.overflowX = 'auto';
-            dockEl.style.overflowY = 'hidden';
-            dockEl.style.whiteSpace = 'nowrap';
-            // Garantir que o dock fique visível
-            dockEl.classList.remove('hidden');
-        }
+            }
+        });
+
+        dockEl.addEventListener('mouseleave', () => {
+            window.windowManager.updateDockVisibility();
+        });
     }
     
     window.windowManager.updateDockVisibility();
     
     showNotification(`Bem-vindo(a) de volta!`, 3500);
 }
+
 function updateClockTime() { const clockEl = document.getElementById('clock'); if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
+
 function chooseWallpaper() { 
     const wallpaperInput = document.getElementById('wallpaperInput');
     if (wallpaperInput) {
@@ -642,6 +688,7 @@ function shutdown() {
         window.authManager.signOut();
     }
 }
+
 let desktopMenuInitialized = false;
 function setupDesktopContextMenuListeners() {
     const deskMenu = document.getElementById('desktopContextMenu'); 
@@ -665,6 +712,7 @@ function setupDesktopContextMenuListeners() {
     });
     desktopMenuInitialized = true;
 }
+
 function showDesktopContextMenu(x, y) {
     const deskMenu = document.getElementById('desktopContextMenu'); if (!deskMenu) return; if (!desktopMenuInitialized) setupDesktopContextMenuListeners();
     window.themeManager._setupAccentPalette(); const colorPaletteContainer = document.getElementById('contextMenuColorPaletteContainer'); if (colorPaletteContainer) colorPaletteContainer.style.display = 'none';
