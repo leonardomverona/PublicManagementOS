@@ -1477,16 +1477,7 @@ export function openGanttChart() {
         getSampleData: function() {
             const today = new Date();
             const d = (days) => this.formatDate(this.addDays(today, days));
-            return [
-                { id: "parent1", name: "Fase 1: Planejamento", start: d(0), end: d(12), progress: 50, type: "parent", parentId: null, collapsed: false },
-                { id: "task1", name: "Definir Escopo", start: d(0), end: d(4), progress: 100, status: "done", assignee: "Alice", parentId: "parent1", dependencies: "" },
-                { id: "task2", name: "Criar Wireframes", start: d(5), end: d(9), progress: 50, status: "inprogress", assignee: "Bob", parentId: "parent1", dependencies: "task1" },
-                { id: "milestone1", name: "Escopo Aprovado", start: d(10), end: d(10), progress: 100, status: "done", type: "milestone", parentId: "parent1", dependencies: "task2" },
-                { id: "parent2", name: "Fase 2: Desenvolvimento", start: d(13), end: d(30), progress: 0, type: "parent", parentId: null, collapsed: false },
-                { id: "task3", name: "Setup do Ambiente", start: d(13), end: d(16), progress: 20, status: "inprogress", assignee: "Charlie", parentId: "parent2", dependencies: "milestone1" },
-                { id: "task4", name: "Desenvolvimento do Backend", start: d(17), end: d(25), progress: 0, status: "todo", assignee: "Alice", parentId: "parent2", dependencies: "task3" },
-                { id: "task5", name: "Desenvolvimento do Frontend", start: d(17), end: d(28), progress: 0, status: "todo", assignee: "Bob", parentId: "parent2", dependencies: "task3" },
-            ];
+            return [];
         },
         
         cleanup: () => {}
