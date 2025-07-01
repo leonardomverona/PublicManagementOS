@@ -329,12 +329,12 @@ export function openGanttChart() {
                 .gantt-sidebar {
                     width: 100%;
                     max-width: 100%;
-                    height: 50vh; /* Assign fixed portion of viewport */
+                    height: 40vh; /* Reduced height for mobile */
                     border-right: none;
                     border-bottom: 2px solid var(--separator-color);
                 }
                 .gantt-chart-area {
-                    height: 50vh; /* The other half */
+                    height: 60vh; /* Increased height for chart */
                 }
                 .gantt-splitter {
                     display: none;
@@ -365,6 +365,7 @@ export function openGanttChart() {
                 }
                 .app-button span { display: none; } /* Hide text on buttons */
                 .app-button i { margin-right: 0; } /* Remove margin when text is hidden */
+                .app-button { padding: 8px 10px; } /* More touch-friendly */
             }
         </style>
 
@@ -1032,6 +1033,26 @@ export function openGanttChart() {
             this.renderAll();
         },
         
+        addParentTask: function() {
+            const today = new Date();
+            const start = this.formatDate(today);
+            const end = this.formatDate(this.addDays(today, 7));
+
+            const newTask = {
+                id: generateId('parent'),
+                name: 'Novo Grupo',
+                start, end,
+                assignee: '', status: 'todo', progress: 0, dependencies: '',
+                type: 'parent',
+                collapsed: false,
+                parentId: null
+            };
+
+            this.tasks.push(newTask);
+            this.markDirty();
+            this.renderAll();
+        },
+        
         removeTask: function(taskId) {
             this.tasks = this.tasks.filter(t => t.id !== taskId && t.parentId !== taskId);
             this.tasks.forEach(t => {
@@ -1164,28 +1185,42 @@ export function openGanttChart() {
             const initialEnd = this.parseDate(task.end);
             const handle = e.target.classList.contains('gantt-bar-handle') ? (e.target.classList.contains('left') ? 'left' : 'right') : null;
             
+            // Store initial position relative to timeline
+            const chartRect = this.chartContent.getBoundingClientRect();
+            const initialBarLeft = container.offsetLeft;
+            const initialBarWidth = container.offsetWidth;
+            
             const onMouseMove = (moveE) => {
                 const moveCoords = this.getEventCoords(moveE);
                 const deltaX = moveCoords.x - initialX;
-                const deltaUnits = deltaX / this.timeline.unitWidth;
-                let deltaDays;
-
+                const newPosition = (initialBarLeft + deltaX) / this.timeline.unitWidth;
+                
+                // Convert position to days based on view mode
+                let daysDelta;
                 switch(this.timeline.viewMode) {
-                    case 'week': deltaDays = Math.round(deltaUnits * 7); break;
-                    case 'month': deltaDays = Math.round(deltaUnits * 30.4); break;
-                    default: deltaDays = Math.round(deltaUnits);
+                    case 'week': daysDelta = Math.round(newPosition * 7); break;
+                    case 'month': daysDelta = Math.round(newPosition * 30.4); break;
+                    default: daysDelta = Math.round(newPosition);
                 }
-
+                
+                // Calculate new date
+                const newDate = this.addDays(this.timeline.startDate, daysDelta);
+                
                 if (handle === 'left') {
-                    const newStart = this.addDays(initialStart, deltaDays);
-                    if (newStart <= initialEnd) task.start = this.formatDate(newStart);
+                    if (newDate <= initialEnd) {
+                        task.start = this.formatDate(newDate);
+                    }
                 } else if (handle === 'right') {
-                    const newEnd = this.addDays(initialEnd, deltaDays);
-                    if (newEnd >= this.parseDate(task.start)) task.end = this.formatDate(newEnd);
+                    if (newDate >= this.parseDate(task.start)) {
+                        task.end = this.formatDate(newDate);
+                    }
                 } else {
-                    task.start = this.formatDate(this.addDays(initialStart, deltaDays));
-                    task.end = this.formatDate(this.addDays(initialEnd, deltaDays));
+                    // Move entire task
+                    const duration = this.daysBetween(initialStart, initialEnd);
+                    task.start = this.formatDate(newDate);
+                    task.end = this.formatDate(this.addDays(newDate, duration));
                 }
+                
                 this.renderAll();
             };
 
@@ -1443,7 +1478,7 @@ export function openGanttChart() {
         updateAssigneeFilter: function() {
             const assigneeFilter = winEl.querySelector(`#assigneeFilter_${uniqueSuffix}`);
             const currentVal = assigneeFilter.value;
-            const allAssignees = [...new Set(this.tasks.map(t => t.assignee).filter(Boolean))];
+            const allAssignees = [...new Set(this.tasks.map(t => t.assignee).filter(Boolean)];
             
             assigneeFilter.innerHTML = '<option value="all">Todos</option>';
             allAssignees.forEach(assignee => {
@@ -1477,7 +1512,48 @@ export function openGanttChart() {
         getSampleData: function() {
             const today = new Date();
             const d = (days) => this.formatDate(this.addDays(today, days));
-            return [];
+            return [
+                {
+                    id: 'task1',
+                    name: 'Fase de Planejamento',
+                    start: d(0),
+                    end: d(14),
+                    progress: 30,
+                    status: 'inprogress',
+                    type: 'parent',
+                    collapsed: false
+                },
+                {
+                    id: 'task2',
+                    name: 'Reunião de Kick-off',
+                    start: d(0),
+                    end: d(0),
+                    progress: 100,
+                    status: 'done',
+                    type: 'milestone',
+                    parentId: 'task1'
+                },
+                {
+                    id: 'task3',
+                    name: 'Definição de Escopo',
+                    start: d(1),
+                    end: d(7),
+                    progress: 70,
+                    status: 'inprogress',
+                    type: 'task',
+                    parentId: 'task1'
+                },
+                {
+                    id: 'task4',
+                    name: 'Design de UI/UX',
+                    start: d(5),
+                    end: d(14),
+                    progress: 20,
+                    status: 'todo',
+                    type: 'task',
+                    parentId: 'task1'
+                }
+            ];
         },
         
         cleanup: () => {}
