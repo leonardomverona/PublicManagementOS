@@ -44,6 +44,8 @@ class WindowManager {
     /**
      * Lógica detalhada para ocultar/mostrar o Dock.
      * Esta função é o centro do comportamento de auto-ocultação.
+     * @CORRIGIDO: A lógica para telas móveis foi ajustada para garantir
+     * que o dock fique sempre visível, corrigindo o bug de visibilidade parcial.
      */
     updateDockVisibility() {
         const dock = document.getElementById('appDock');
@@ -54,11 +56,18 @@ class WindowManager {
 
         // Passo 2: Lógica para Telas Pequenas (Mobile).
         if (isMobileScreen) {
+            // Em telas de celular, o dock deve estar sempre visível.
+            // Removemos a classe 'hidden' e definimos o estilo 'transform' como 'none'
+            // para anular qualquer estilo CSS que possa movê-lo para fora da tela.
             dock.classList.remove('hidden');
+            dock.style.transform = 'none';
             return;
         }
 
         // Passo 3: Lógica para Desktops.
+        // Primeiro, limpamos o estilo inline para que o comportamento de auto-ocultação do desktop funcione.
+        dock.style.transform = '';
+        
         let shouldHide = false;
         for (const winData of this.windows.values()) {
             if (!winData.minimized) {
@@ -67,7 +76,7 @@ class WindowManager {
             }
         }
 
-        // Passo 4: Aplicar a classe CSS.
+        // Passo 4: Aplicar a classe CSS para ocultar/mostrar no desktop.
         if (shouldHide) {
             dock.classList.add('hidden');
         } else {
@@ -724,3 +733,5 @@ document.getElementById('desktop').addEventListener('touchstart', (e) => { if (e
 function clearLongPressTimer() { clearTimeout(longPressTimer); longPressTimer = null; }
 document.getElementById('desktop').addEventListener('touchend', clearLongPressTimer); document.getElementById('desktop').addEventListener('touchcancel', clearLongPressTimer);
 document.getElementById('desktop').addEventListener('touchmove', (e) => { if (longPressTimer && touchStartX && touchStartY && (Math.abs(e.touches[0].clientX-touchStartX) > 10 || Math.abs(e.touches[0].clientY-touchStartY) > 10)) clearLongPressTimer(); });
+
+}
