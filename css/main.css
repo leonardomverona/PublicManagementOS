@@ -995,29 +995,51 @@ Sonoma Design System – v1.0
 
 @media (max-width: 768px) {
 
-    .desktop {
-        height: calc(100vh - var(--taskbar-height));
-    }
-
+    /* 1. Ajusta a aparência e o posicionamento do Dock para mobile. */
     .dock {
-        bottom: var(--dock-total-bottom-offset); 
-        width: 95vw;
+        bottom: 10px; /* Posição fixa e mais próxima da borda. */
+        width: 95vw; /* Ocupa quase toda a largura para fácil acesso. */
         padding: 8px;
         gap: 10px;
-        border-radius: 18px;
+        border-radius: 18px; /* Um pouco menos arredondado em telas menores */
+        
+        /* Garante que ele tenha a animação correta ao aparecer/sumir */
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
     }
 
+    /* 2. GARANTE que o Dock NUNCA se esconda em telas pequenas. */
+    /* Esta é a correção mais importante. */
+    /* Ela sobrescreve a regra que o esconde no desktop. */
+    .dock.hidden {
+        transform: translateX(-50%) translateY(0); /* Neutraliza o translateY que o esconde. */
+        opacity: 1;
+        pointer-events: auto;
+    }
 
+    /* 3. Oculta a área de gatilho do mouse, que é inútil em dispositivos de toque/mobile. */
     #dock-trigger-area {
         display: none !important;
     }
 
+    /* 4. Ajusta o tamanho dos ícones no Dock para caber melhor na tela. */
     .dock-item {
         --dock-item-size: 50px; /* Ícones um pouco menores */
         font-size: calc(var(--dock-item-size) * 0.5);
     }
 
+    /* 5. Remove a animação de hover complexa que não funciona bem no toque. */
     .dock-item:hover {
-        transform: scale(1.1);
+        transform: scale(1.1); /* Animação mais simples */
+    }
+
+    /* 6. Esconde a barra de tarefas com o relógio, pois o Dock se torna a barra principal. */
+    /* Se você quiser as duas barras, comente a linha abaixo. */
+    .taskbar {
+        display: none;
+    }
+
+    /* 7. Ajusta o desktop para ocupar a tela toda já que a taskbar sumiu */
+    .desktop {
+        height: 100vh;
     }
 }
