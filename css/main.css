@@ -1001,7 +1001,7 @@ Sonoma Design System – v1.0
 
     /* 1. Ajusta a aparência e o posicionamento do Dock para mobile. */
     .dock {
-        bottom: 10px; /* Posição fixa e mais próxima da borda. */
+        bottom: var(--dock-total-bottom-offset); /* Posição correta: acima da barra de tarefas. */
         width: 95vw; /* Ocupa quase toda a largura para fácil acesso. */
         padding: 8px;
         gap: 10px;
