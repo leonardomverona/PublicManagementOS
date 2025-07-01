@@ -10,7 +10,7 @@ export function openKanbanBoard() {
             .kanban-board-app-container { padding: 0 !important; background-color: #f5f7fa; }
             .dark-mode .kanban-board-app-container { background-color: #252936; }
             .kanban-board-app { display: flex; flex-direction: column; height: 100%; }
-            .kanban-board { display: flex; padding: 20px; gap: 20px; overflow-x: auto; flex-grow: 1; }
+            .kanban-board { display: flex; padding: 20px; gap: 20px; overflow-x: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; /* Melhora o scroll no iOS */ }
             .kanban-column { background: var(--input-bg); border-radius: 12px; min-width: 320px; max-width: 320px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid var(--separator-color); }
             .dark-mode .kanban-column { background: #2c3140; }
             .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--separator-color); }
@@ -19,7 +19,7 @@ export function openKanbanBoard() {
             .column-actions .action-btn:hover { background: var(--hover-highlight-color); color: var(--danger-color); }
             .cards-container { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; min-height: 100px; }
             .cards-container.drag-over { background: var(--accent-light-translucent); outline: 2px dashed var(--accent-color); }
-            .kanban-card { background: var(--window-bg); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.07); cursor: grab; transition: all 0.2s; border-left: 5px solid var(--secondary-text-color); }
+            .kanban-card { background: var(--window-bg); border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.07); cursor: grab; transition: all 0.2s; border-left: 5px solid var(--secondary-text-color); user-select: none; /* Impede seleção de texto ao arrastar */ }
             .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
             .kanban-card.high-priority { border-left-color: #dc3545; }
             .kanban-card.medium-priority { border-left-color: #ffc107; }
@@ -45,6 +45,11 @@ export function openKanbanBoard() {
             .add-card-btn { margin: 0 10px 10px 10px; padding: 10px; border-radius: 6px; border: 1px dashed var(--input-border-color); background: transparent; color: var(--secondary-text-color); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
             .add-card-btn:hover { border-color: var(--accent-color); color: var(--accent-color); background: var(--hover-highlight-color); }
             .kanban-card.dragging { opacity: 0.5; transform: rotate(3deg); }
+            /* @NOVO: Estilo para o fantasma do card no modo touch */
+            .kanban-card.touch-ghost { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.8; transform: rotate(5deg); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+            /* @NOVO: Esconde o card original enquanto está sendo arrastado com o dedo */
+            .kanban-card.touch-dragging { opacity: 0.4; }
+
         </style>
 
         <div class="app-toolbar kanban-toolbar">
@@ -131,7 +136,6 @@ export function openKanbanBoard() {
                 col.id = col.id || generateId('col'); 
                 (col.cards || []).forEach(card => { 
                     card.id = card.id || generateId('card');
-                    // Backward compatibility: convert string tags to objects
                     card.tags = (card.tags || []).map(tag => typeof tag === 'string' ? {text: tag, color: 'gray'} : tag);
                 }); 
             }); 
@@ -156,12 +160,19 @@ export function openKanbanBoard() {
                 }
             });
 
+            // Eventos de Mouse (Drag and Drop)
             this.boardEl.addEventListener('click', (e) => this.handleBoardClick(e));
             this.boardEl.addEventListener('dragstart', (e) => this.handleDragStart(e));
             this.boardEl.addEventListener('dragend', (e) => this.handleDragEnd(e));
             this.boardEl.addEventListener('dragover', (e) => this.handleDragOver(e));
             this.boardEl.addEventListener('drop', (e) => this.handleDrop(e));
             this.boardEl.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+
+            // @MODIFICADO: Adiciona eventos de Toque
+            this.boardEl.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+            this.boardEl.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+            this.boardEl.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+
 
             if(!this.boardData.columns.length) this.loadDefaultBoard(); 
             this.renderBoard(); 
@@ -193,8 +204,9 @@ export function openKanbanBoard() {
             const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem data';
             const tagsHTML = (card.tags || []).map(tag => `<span class="card-tag tag-${tag.color || 'gray'}">${tag.text}</span>`).join('');
 
+            // @MODIFICADO: Remove o atributo draggable para evitar conflito com touch
             return `
-                <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}" draggable="true">
+                <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}">
                     <div class="card-header"><span class="card-title">${card.title}</span></div>
                     ${card.description ? `<p class="card-description">${card.description}</p>` : ''}
                     <div class="card-meta">
@@ -206,6 +218,9 @@ export function openKanbanBoard() {
         },
 
         handleBoardClick: function(e) {
+            // @MODIFICADO: Evita abrir modal se estivermos arrastando com o toque
+            if (this.isTouchDragging) return;
+
             const addCardBtn = e.target.closest('[data-action="add-card"]');
             const deleteColBtn = e.target.closest('[data-action="delete-column"]');
             const cardEl = e.target.closest('.kanban-card');
@@ -264,19 +279,9 @@ export function openKanbanBoard() {
             const color = this.modal.newTagColor.value;
             if (!text) return;
         
-            // 1. Pega as tags que já existem no modal
-            const currentTags = Array.from(this.modal.tagsContainer.children).map(el => ({
-                text: el.textContent.slice(0, -2).trim(), // Remove o ' ×' do final
-                color: el.dataset.color
-            }));
-        
-            // 2. Adiciona a nova tag à lista
+            const currentTags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0, -2).trim(), color: el.dataset.color }));
             currentTags.push({ text, color });
-        
-            // 3. Renderiza a lista completa e atualizada de tags
             this.renderModalTags(currentTags);
-        
-            // 4. Limpa o input para a próxima tag
             this.modal.newTagText.value = '';
             this.modal.newTagText.focus();
         },
@@ -285,16 +290,11 @@ export function openKanbanBoard() {
 
         saveCard: function() {
             const tags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0, -2).trim(), color: el.dataset.color }));
-
             const cardData = {
-                title: this.modal.title.value || 'Nova Tarefa',
-                priority: this.modal.priority.value,
-                dueDate: this.modal.dueDate.value,
-                assignee: this.modal.assignee.value,
-                description: this.modal.description.value,
-                tags: tags
+                title: this.modal.title.value || 'Nova Tarefa', priority: this.modal.priority.value,
+                dueDate: this.modal.dueDate.value, assignee: this.modal.assignee.value,
+                description: this.modal.description.value, tags: tags
             };
-
             if (this.editingCardId) {
                 const column = this.boardData.columns.find(col => col.id === this.editingColumnId);
                 const cardIndex = column.cards.findIndex(c => c.id === this.editingCardId);
@@ -323,9 +323,10 @@ export function openKanbanBoard() {
             this.renderBoard(filteredData);
         },
         
+        // --- Lógica de Drag and Drop para Mouse ---
         draggedCardEl: null, sourceColumnId: null,
-        handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
-        handleDragEnd: function() { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl = null; this.sourceColumnId = null; } },
+        handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; e.target.setAttribute('draggable', true); this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
+        handleDragEnd: function(e) { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl.setAttribute('draggable', false); this.draggedCardEl = null; this.sourceColumnId = null; } },
         handleDragOver: function(e) { e.preventDefault(); const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.add('drag-over'); } },
         handleDragLeave: function(e) { const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.remove('drag-over'); } },
         handleDrop: function(e) {
@@ -344,7 +345,116 @@ export function openKanbanBoard() {
             }
         },
 
-        cleanup: () => {}
+        // --- @NOVO: Lógica de Drag and Drop para Toque ---
+        touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0,
+        isTouchDragging: false, longPressTimer: null,
+
+        handleTouchStart: function(e) {
+            const cardEl = e.target.closest('.kanban-card');
+            if (!cardEl) return;
+            
+            // Inicia um timer para o "long press"
+            this.longPressTimer = setTimeout(() => {
+                this.isTouchDragging = true; // Inicia o arrastar
+                
+                // Prepara o card original e o fantasma
+                this.touchStartEl = cardEl;
+                this.sourceColumnId = cardEl.closest('.kanban-column').dataset.columnId;
+                cardEl.classList.add('touch-dragging');
+
+                this.touchGhostEl = cardEl.cloneNode(true);
+                this.touchGhostEl.classList.add('touch-ghost');
+                document.body.appendChild(this.touchGhostEl);
+
+                // Posiciona o fantasma
+                const touch = e.touches[0];
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+                this.touchGhostEl.style.width = `${cardEl.offsetWidth}px`;
+                this.moveGhost(touch.clientX, touch.clientY);
+                
+                e.preventDefault(); // Impede o scroll da página enquanto arrasta
+            }, 200); // Atraso de 200ms para diferenciar clique de arrastar
+        },
+
+        handleTouchMove: function(e) {
+            if (!this.isTouchDragging || !this.touchGhostEl) return;
+            e.preventDefault(); // Impede o scroll
+            
+            const touch = e.touches[0];
+            this.moveGhost(touch.clientX, touch.clientY);
+
+            // Adiciona feedback visual à coluna sob o dedo
+            this.touchGhostEl.style.display = 'none'; // Esconde fantasma para detectar elemento abaixo
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            this.touchGhostEl.style.display = '';
+            
+            this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
+            const columnContainer = elementBelow ? elementBelow.closest('.cards-container') : null;
+            if (columnContainer) {
+                columnContainer.classList.add('drag-over');
+            }
+        },
+
+        handleTouchEnd: function(e) {
+            clearTimeout(this.longPressTimer); // Cancela o timer se o dedo for solto antes
+
+            if (!this.isTouchDragging || !this.touchGhostEl) {
+                this.isTouchDragging = false;
+                return;
+            }
+
+            // Pega a posição final do toque
+            const touch = e.changedTouches[0];
+            this.touchGhostEl.style.display = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            this.touchGhostEl.style.display = '';
+            
+            const targetColumnEl = elementBelow ? elementBelow.closest('.kanban-column') : null;
+
+            if (targetColumnEl) {
+                const cardId = this.touchStartEl.dataset.cardId;
+                const targetColumnId = targetColumnEl.dataset.columnId;
+
+                // Move os dados
+                if (this.sourceColumnId !== targetColumnId) {
+                    const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
+                    const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
+                    if(cardIndex > -1) {
+                        const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
+                        const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                        targetColumn.cards.push(cardToMove);
+                        this.markDirty();
+                        this.renderBoard();
+                    }
+                }
+            }
+
+            // Limpeza
+            this.touchStartEl.classList.remove('touch-dragging');
+            document.body.removeChild(this.touchGhostEl);
+            this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
+            
+            this.touchGhostEl = null;
+            this.touchStartEl = null;
+            this.sourceColumnId = null;
+            
+            // Pequeno delay para evitar que o clique seja disparado logo após soltar
+            setTimeout(() => { this.isTouchDragging = false; }, 100);
+        },
+
+        moveGhost: function(x, y) {
+            if (!this.touchGhostEl) return;
+            this.touchGhostEl.style.left = `${x - this.touchGhostEl.offsetWidth / 2}px`;
+            this.touchGhostEl.style.top = `${y - this.touchGhostEl.offsetHeight / 2}px`;
+        },
+
+        cleanup: () => {
+             // @NOVO: Garante que o fantasma seja removido se a janela for fechada
+             if(appState.touchGhostEl && appState.touchGhostEl.parentElement) {
+                appState.touchGhostEl.parentElement.removeChild(appState.touchGhostEl);
+             }
+        }
     };
 
     initializeFileState(appState, "Novo Kanban Board", "board.kanban", "kanban-board");
