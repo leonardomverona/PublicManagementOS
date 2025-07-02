@@ -62,7 +62,7 @@ export function openKanbanBoard() {
         </div>
         <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
-        <!-- O resto do seu HTML do modal aqui... (sem alterações) -->
+        <!-- Modal HTML (sem alterações) -->
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
@@ -166,7 +166,7 @@ export function openKanbanBoard() {
             this.boardEl.addEventListener('drop', (e) => this.handleDrop(e));
             this.boardEl.addEventListener('dragleave', (e) => this.handleDragLeave(e));
 
-            // @CORREÇÃO: Adiciona listeners mousedown/mouseup para gerenciar o 'draggable'
+            // Adiciona listeners mousedown/mouseup para gerenciar o 'draggable'
             this.boardEl.addEventListener('mousedown', (e) => {
                 if (e.target.closest('.kanban-card')) {
                     e.target.closest('.kanban-card').setAttribute('draggable', true);
@@ -215,7 +215,6 @@ export function openKanbanBoard() {
             const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem data';
             const tagsHTML = (card.tags || []).map(tag => `<span class="card-tag tag-${tag.color || 'gray'}">${tag.text}</span>`).join('');
 
-            // @CORREÇÃO: O atributo draggable é FALSO por padrão. Será ativado pelo mousedown.
             return `
                 <div class="kanban-card ${priorityInfo}" data-card-id="${card.id}" draggable="false">
                     <div class="card-header"><span class="card-title">${card.title}</span></div>
@@ -251,6 +250,7 @@ export function openKanbanBoard() {
             }
         },
 
+        // Métodos do Modal (sem alterações)
         openModal: function(cardId = null, columnId = null) {
             this.editingCardId = cardId;
             this.editingColumnId = columnId;
@@ -271,7 +271,6 @@ export function openKanbanBoard() {
             this.modal.description.value = card ? card.description : '';
             this.renderModalTags(card ? card.tags : []);
         },
-
         renderModalTags: function(tags) {
             this.modal.tagsContainer.innerHTML = '';
             (tags || []).forEach(tag => {
@@ -283,7 +282,6 @@ export function openKanbanBoard() {
                 this.modal.tagsContainer.appendChild(tagEl);
             });
         },
-
         addTagToModal: function() {
             const text = this.modal.newTagText.value.trim();
             const color = this.modal.newTagColor.value;
@@ -295,9 +293,7 @@ export function openKanbanBoard() {
             this.modal.newTagText.value = '';
             this.modal.newTagText.focus();
         },
-
         closeModal: function() { this.modal.overlay.style.display = 'none'; },
-
         saveCard: function() {
             const tags = Array.from(this.modal.tagsContainer.children).map(el => ({ text: el.textContent.slice(0, -2).trim(), color: el.dataset.color }));
             const cardData = {
@@ -317,7 +313,6 @@ export function openKanbanBoard() {
         },
         
         addColumn: function() { const title = prompt("Nome da nova coluna:", "Nova Coluna"); if (title) { this.boardData.columns.push({ id: generateId('col'), title, cards: [] }); this.markDirty(); this.renderBoard(); } },
-
         filterBoard: function() {
             const query = this.searchInput.value.trim().toLowerCase();
             if (!query) { this.renderBoard(); return; }
@@ -339,44 +334,45 @@ export function openKanbanBoard() {
         handleDragEnd: function(e) { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl.setAttribute('draggable', false); this.draggedCardEl = null; this.sourceColumnId = null; } },
         handleDragOver: function(e) { e.preventDefault(); const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.add('drag-over'); } },
         handleDragLeave: function(e) { const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.remove('drag-over'); } },
+        
+        // @ALTERAÇÃO: Lógica de drop unificada para mover e reordenar.
         handleDrop: function(e) {
             e.preventDefault();
             const targetColumnEl = e.target.closest('.kanban-column');
-            
-            // Limpa o destaque visual da coluna de destino
             const cardsContainer = e.target.closest('.cards-container');
-            if (cardsContainer) {
-                cardsContainer.classList.remove('drag-over');
-            }
-
+            if (cardsContainer) cardsContainer.classList.remove('drag-over');
+            
             if (targetColumnEl && this.draggedCardEl) {
                 const cardId = this.draggedCardEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
 
-                // Não faz nada se a soltura for na mesma coluna, mas o estado será limpo pelo dragend
-                if (this.sourceColumnId === targetColumnId) {
-                    return;
-                }
-
+                // 1. Encontrar e remover o card do seu local de origem nos dados
                 const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
+                if (!sourceColumn) return;
                 const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
+                if (cardIndex === -1) return;
+                const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
 
-                if (cardIndex > -1) {
-                    // 1. Atualiza o modelo de dados
-                    const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
-                    const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                // 2. Encontrar a coluna de destino e a posição de inserção
+                const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                const targetCardEl = e.target.closest('.kanban-card');
+
+                if (targetCardEl && targetCardEl !== this.draggedCardEl) {
+                    // Inserir antes do card de destino
+                    const targetCardId = targetCardEl.dataset.cardId;
+                    const targetIndex = targetColumn.cards.findIndex(c => c.id === targetCardId);
+                    targetColumn.cards.splice(targetIndex, 0, cardToMove);
+                } else {
+                    // Inserir no final da coluna
                     targetColumn.cards.push(cardToMove);
-                    this.markDirty();
-
-                    // 2. Limpa o estado do Drag & Drop ANTES de renderizar.
-                    // Isso é crucial para que `handleBoardClick` não fique bloqueado.
-                    this.draggedCardEl.classList.remove('dragging');
-                    this.draggedCardEl = null;
-                    this.sourceColumnId = null;
-
-                    // 3. Renderiza o quadro com o novo estado
-                    this.renderBoard();
                 }
+                
+                // 3. Marcar como alterado, limpar estado e re-renderizar
+                this.markDirty();
+                this.draggedCardEl.classList.remove('dragging');
+                this.draggedCardEl = null;
+                this.sourceColumnId = null;
+                this.renderBoard();
             }
         },
 
@@ -420,6 +416,7 @@ export function openKanbanBoard() {
             }
         },
 
+        // @ALTERAÇÃO: Lógica de touch end unificada para mover e reordenar.
         handleTouchEnd: function(e) {
             clearTimeout(this.longPressTimer);
             if (!this.isTouchDragging || !this.touchGhostEl) {
@@ -428,30 +425,35 @@ export function openKanbanBoard() {
             }
 
             const touch = e.changedTouches[0];
-            // Esconde o fantasma para detectar o elemento real por baixo
             this.touchGhostEl.style.display = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            
-            let cardMoved = false;
             const targetColumnEl = elementBelow ? elementBelow.closest('.kanban-column') : null;
 
+            let cardMoved = false;
             if (targetColumnEl) {
                 const cardId = this.touchStartEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
 
-                if (this.sourceColumnId !== targetColumnId) {
-                    const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
-                    const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
-                    if (cardIndex > -1) {
-                        const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
-                        const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
+                const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
+
+                if (cardIndex > -1) {
+                    const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
+                    const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                    const targetCardEl = elementBelow.closest('.kanban-card');
+
+                    if (targetCardEl && targetCardEl !== this.touchStartEl) {
+                        const targetCardId = targetCardEl.dataset.cardId;
+                        const targetIndex = targetColumn.cards.findIndex(c => c.id === targetCardId);
+                        targetColumn.cards.splice(targetIndex, 0, cardToMove);
+                    } else {
                         targetColumn.cards.push(cardToMove);
-                        cardMoved = true;
                     }
+                    cardMoved = true;
                 }
             }
 
-            // 1. Limpa TODO o estado e elementos do DOM relacionados ao toque *ANTES* de renderizar
+            // Limpa o estado e os elementos do DOM relacionados ao toque
             this.touchStartEl.classList.remove('touch-dragging');
             document.body.removeChild(this.touchGhostEl);
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -460,7 +462,7 @@ export function openKanbanBoard() {
             this.sourceColumnId = null;
             setTimeout(() => { this.isTouchDragging = false; }, 100);
 
-            // 2. Se um card foi movido, marque como "sujo" e renderize o quadro
+            // Se um card foi movido, marque como "sujo" e renderize o quadro
             if (cardMoved) {
                 this.markDirty();
                 this.renderBoard();
