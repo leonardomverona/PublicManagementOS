@@ -14,7 +14,7 @@ export function openKanbanBoard() {
             .kanban-column { background: var(--input-bg); border-radius: 12px; min-width: 320px; max-width: 320px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid var(--separator-color); }
             .dark-mode .kanban-column { background: #2c3140; }
             .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--separator-color); }
-            .column-title { font-weight: 600; font-size: 1.1rem; color: var(--text-color); }
+            .column-title { font-weight: 600; font-size: 1.1rem; color: var(--text-color); cursor: pointer; flex-grow: 1; padding: 5px 0;}
             .column-actions .action-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color); transition: all 0.2s; }
             .column-actions .action-btn:hover { background: var(--hover-highlight-color); color: var(--danger-color); }
             .cards-container { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; min-height: 100px; }
@@ -44,6 +44,13 @@ export function openKanbanBoard() {
             #tagManagerList_${uniqueSuffix} li { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--separator-color); }
             #tagManagerList_${uniqueSuffix} li:last-child { border-bottom: none; }
             .tag-manager-actions { margin-left: auto; display: flex; gap: 8px; }
+            .column-title-input {
+                width: 100%;
+                font-size: 1.1rem;
+                font-weight: 600;
+                border: 1px solid var(--accent-color);
+                margin: 0;
+            }
         </style>
         
         <div class="app-toolbar kanban-toolbar">
@@ -59,7 +66,6 @@ export function openKanbanBoard() {
         </div>
         <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
-        <!-- Modal de Edição de Card -->
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
@@ -96,8 +102,6 @@ export function openKanbanBoard() {
                 </div>
             </div>
         </div>
-
-        <!-- Modal do Gerenciador de Tags -->
         <div class="modal-overlay" id="tagManagerModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 101;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 500px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
@@ -178,7 +182,6 @@ export function openKanbanBoard() {
                 return;
             }
             
-            // Lógica de migração para arquivos antigos sem o sistema de tags global
             if (data && !data.tags) {
                 const globalTags = new Map();
                 let nextTagId = 1;
@@ -196,7 +199,7 @@ export function openKanbanBoard() {
                             }
                             newTagIds.push(globalTags.get(tagKey).id);
                         });
-                        card.tags = newTagIds; // Substitui o array de objetos por IDs
+                        card.tags = newTagIds;
                     });
                 });
                 data.tags = Array.from(globalTags.values());
@@ -233,6 +236,7 @@ export function openKanbanBoard() {
             this.tagManager.list.addEventListener('click', (e) => this.handleTagManagerClick(e));
 
             this.boardEl.addEventListener('click', (e) => this.handleBoardClick(e));
+            this.boardEl.addEventListener('dblclick', (e) => this.handleColumnTitleDblClick(e));
             this.boardEl.addEventListener('dragstart', (e) => this.handleDragStart(e));
             this.boardEl.addEventListener('dragend', (e) => this.handleDragEnd(e));
             this.boardEl.addEventListener('dragover', (e) => this.handleDragOver(e));
@@ -274,7 +278,12 @@ export function openKanbanBoard() {
                 const cardsHTML = column.cards.map(card => this.renderCard(card)).join('');
 
                 columnEl.innerHTML = `
-                    <div class="column-header"><span class="column-title">${column.title}</span><div class="column-actions"><button class="action-btn" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button></div></div>
+                    <div class="column-header">
+                        <span class="column-title">${column.title}</span>
+                        <div class="column-actions">
+                            <button class="action-btn" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
                     <div class="cards-container">${cardsHTML}</div>
                     <button class="add-card-btn" data-action="add-card"><i class="fas fa-plus"></i> Adicionar Tarefa</button>
                 `;
@@ -303,6 +312,45 @@ export function openKanbanBoard() {
                     </div>
                     ${tagsHTML ? `<div class="card-tags">${tagsHTML}</div>` : ''}
                 </div>`;
+        },
+
+        handleColumnTitleDblClick: function(e) {
+            const titleEl = e.target.closest('.column-title');
+            if (!titleEl || this.boardEl.querySelector('.column-title-input')) return;
+
+            const columnId = titleEl.closest('.kanban-column').dataset.columnId;
+            const currentTitle = titleEl.textContent;
+
+            const inputEl = document.createElement('input');
+            inputEl.type = 'text';
+            inputEl.className = 'app-input column-title-input';
+            inputEl.value = currentTitle;
+
+            titleEl.replaceWith(inputEl);
+            inputEl.focus();
+            inputEl.select();
+
+            const saveOrCancel = (save) => {
+                if (save) {
+                    const newTitle = inputEl.value.trim();
+                    const column = this.boardData.columns.find(c => c.id === columnId);
+                    if (newTitle && column && column.title !== newTitle) {
+                        column.title = newTitle;
+                        this.markDirty();
+                    }
+                }
+                this.renderBoard();
+            };
+            
+            inputEl.addEventListener('blur', () => saveOrCancel(true));
+            inputEl.addEventListener('keydown', (evt) => {
+                if (evt.key === 'Enter') {
+                    evt.preventDefault(); // Impede submissão de formulário, se houver
+                    saveOrCancel(true);
+                } else if (evt.key === 'Escape') {
+                    saveOrCancel(false);
+                }
+            });
         },
 
         openCardModal: function(cardId = null, columnId = null) {
