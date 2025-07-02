@@ -49,47 +49,20 @@ export function openKanbanBoard() {
             .column-drag-handle:hover { opacity: 1; }
             .kanban-column.column-dragging { opacity: 0.4; background: var(--hover-highlight-color); border-style: dashed; }
             .column-placeholder { border: 2px dashed var(--accent-color); background: var(--accent-light-translucent); border-radius: 12px; min-width: 320px; max-width: 320px; flex-shrink: 0; margin: 0; }
-            
-            /* Estilos específicos para impressão do Kanban */
-            @media print {
-                .kanban-toolbar,
-                .add-card-btn,
-                .column-actions,
-                .column-drag-handle {
-                    display: none !important;
-                }
-                .kanban-board {
-                    flex-direction: column !important;
-                    overflow: visible !important;
-                    height: auto !important;
-                    padding: 0 !important;
-                    gap: 30px !important;
-                }
-                .kanban-column {
-                    min-width: 100%;
-                    max-width: 100%;
-                    page-break-inside: avoid;
-                }
-                .kanban-card {
-                    page-break-inside: avoid;
-                }
-            }
         </style>
         
-        <div class="kanban-board-app-container">
-            <div class="app-toolbar kanban-toolbar">
-                 ${getStandardAppToolbarHTML()}
-                <div class="toolbar-group" style="margin-left: auto;">
-                    <button id="manageTagsBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-tags"></i> Gerenciar Tags</button>
-                    <button id="addColumnBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Nova Coluna</button>
-                </div>
-                <div class="search-box" style="position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--secondary-text-color);"></i>
-                    <input type="text" id="searchInput_${uniqueSuffix}" class="app-input" placeholder="Buscar tarefas..." style="margin-bottom:0; width: 250px; padding-left: 35px;">
-                </div>
+        <div class="app-toolbar kanban-toolbar">
+             ${getStandardAppToolbarHTML()}
+            <div class="toolbar-group" style="margin-left: auto;">
+                <button id="manageTagsBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-tags"></i> Gerenciar Tags</button>
+                <button id="addColumnBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Nova Coluna</button>
             </div>
-            <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
+            <div class="search-box" style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--secondary-text-color);"></i>
+                <input type="text" id="searchInput_${uniqueSuffix}" class="app-input" placeholder="Buscar tarefas..." style="margin-bottom:0; width: 250px; padding-left: 35px;">
+            </div>
         </div>
+        <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
@@ -651,7 +624,6 @@ export function openKanbanBoard() {
             else if (this.draggedCardEl) {
                 const columnContainer = e.target.closest('.cards-container'); 
                 if (columnContainer) { 
-                    this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
                     columnContainer.classList.add('drag-over'); 
                 }
             }
@@ -675,7 +647,8 @@ export function openKanbanBoard() {
             } 
             else if (this.draggedCardEl) {
                 const targetColumnEl = e.target.closest('.kanban-column');
-                this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
+                const cardsContainer = e.target.closest('.cards-container');
+                if (cardsContainer) cardsContainer.classList.remove('drag-over');
                 
                 if (targetColumnEl) {
                     const cardId = this.draggedCardEl.dataset.cardId;
@@ -714,13 +687,13 @@ export function openKanbanBoard() {
                 this.draggedCardEl.classList.remove('dragging');
                 this.draggedCardEl = null; 
                 this.sourceColumnId = null;
-                this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
             }
         },
 
         touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0, 
         isTouchDragging: false, longPressTimer: null,
         handleTouchStart: function(e) {
+            // Nota: Arrastar colunas por toque não está implementado. Apenas cards.
             const cardEl = e.target.closest('.kanban-card'); 
             if (!cardEl) return;
             this.longPressTimer = setTimeout(() => {
