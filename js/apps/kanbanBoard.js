@@ -6,7 +6,7 @@ export function openKanbanBoard() {
     const winId = window.windowManager.createWindow('Quadro Kanban', '', { width: '1200px', height: '750px', appType: 'kanban-board' });
     const content = `
         <style>
-            /* Estilos Kanban (sem alterações nos existentes) */
+            /* Kanban App Specific Styles */
             .kanban-board-app-container { padding: 0 !important; background-color: #f5f7fa; }
             .dark-mode .kanban-board-app-container { background-color: #252936; }
             .kanban-board-app { display: flex; flex-direction: column; height: 100%; }
@@ -32,8 +32,6 @@ export function openKanbanBoard() {
             .card-tags { display: flex; flex-wrap: wrap; gap: 8px; }
             .card-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); }
             .dark-mode .card-tag { border-color: rgba(255,255,255,0.1); }
-
-            /* Estilos de Botões e Modais */
             .modal-tag .remove-tag { cursor: pointer; margin-left: 6px; font-weight: bold; opacity: 0.7; }
             .modal-tag .remove-tag:hover { opacity: 1; }
             .add-card-btn { margin: 0 10px 10px 10px; padding: 10px; border-radius: 6px; border: 1px dashed var(--input-border-color); background: transparent; color: var(--secondary-text-color); display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
@@ -42,13 +40,10 @@ export function openKanbanBoard() {
             .kanban-card.touch-ghost { position: absolute; z-index: 1000; pointer-events: none; opacity: 0.8; transform: rotate(5deg); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
             .kanban-card.touch-dragging { opacity: 0.4; }
             .color-picker-input { padding: 0; height: 38px; width: 50px; border: 1px solid var(--input-border-color); border-radius: 6px; cursor: pointer; background-color: transparent; }
-
-            /* Estilos do Gerenciador de Tags */
             #tagManagerList_${uniqueSuffix} { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
             #tagManagerList_${uniqueSuffix} li { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--separator-color); }
             #tagManagerList_${uniqueSuffix} li:last-child { border-bottom: none; }
             .tag-manager-actions { margin-left: auto; display: flex; gap: 8px; }
-
         </style>
         
         <div class="app-toolbar kanban-toolbar">
@@ -64,7 +59,7 @@ export function openKanbanBoard() {
         </div>
         <div class="kanban-board" id="kanbanBoard_${uniqueSuffix}"></div>
 
-        <!-- Modal de Edição de Card (Atualizado) -->
+        <!-- Modal de Edição de Card -->
         <div class="modal-overlay" id="cardModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 600px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
                 <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
@@ -78,17 +73,14 @@ export function openKanbanBoard() {
                         <div class="form-group"><label>Data de Vencimento</label><input type="date" class="app-input" id="cardDueDateInput"></div>
                         <div class="form-group" style="grid-column: span 2;"><label>Responsável</label><input type="text" class="app-input" id="cardAssigneeInput"></div>
                         <div class="form-group" style="grid-column: span 2;"><label>Descrição</label><textarea class="app-textarea" id="cardDescriptionInput" rows="4"></textarea></div>
-                        
                         <div class="form-group" style="grid-column: span 2;">
                             <label>Tags</label>
                             <div id="cardTagsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; padding: 5px 0; min-height: 20px;"></div>
-                            
                             <label style="margin-top: 15px;">Adicionar Tag</label>
                             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                                 <select class="app-select" id="existingTagSelect" style="flex-grow: 1; margin: 0;"><option value="">Selecionar existente...</option></select>
                                 <button class="app-button secondary" id="addExistingTagBtn" type="button" style="padding: 8px 12px;">Add</button>
                             </div>
-
                             <label style="margin-top: 10px;">Criar Nova Tag</label>
                             <div style="display: flex; gap: 10px;">
                                 <input type="text" class="app-input" id="newTagTextInput" placeholder="Nova tag..." style="flex-grow: 1; margin: 0;">
@@ -105,14 +97,17 @@ export function openKanbanBoard() {
             </div>
         </div>
 
-        <!-- NOVO: Modal do Gerenciador de Tags -->
+        <!-- Modal do Gerenciador de Tags -->
         <div class="modal-overlay" id="tagManagerModal_${uniqueSuffix}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 101;">
             <div class="modal-content" style="background: var(--window-bg); border-radius: 12px; width: 100%; max-width: 500px; box-shadow: var(--shadow); display: flex; flex-direction: column;">
-                <div class="modal-header"><h3>Gerenciar Tags</h3><button class="modal-close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">×</button></div>
+                <div class="modal-header" style="padding: 20px; border-bottom: 1px solid var(--separator-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 1.3rem; font-weight: 600;">Gerenciar Tags</h3>
+                    <button class="modal-close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--secondary-text-color);">×</button>
+                </div>
                 <div class="modal-body" style="padding: 25px;">
                     <ul id="tagManagerList_${uniqueSuffix}"></ul>
                 </div>
-                <div class="form-footer" style="display: flex; justify-content: flex-end; padding: 20px; border-top: 1px solid var(--separator-color);">
+                <div class="form-footer" style="display: flex; justify-content: flex-end; gap: 12px; padding: 20px; border-top: 1px solid var(--separator-color);">
                      <button class="app-button tag-manager-close-btn">Fechar</button>
                 </div>
             </div>
@@ -125,7 +120,7 @@ export function openKanbanBoard() {
     const appState = {
         winId,
         appDataType: 'kanban-board',
-        boardData: { columns: [], tags: [] }, // NOVA ESTRUTURA DE DADOS
+        boardData: { columns: [], tags: [] },
         editingCardId: null,
         editingColumnId: null,
         
@@ -133,7 +128,6 @@ export function openKanbanBoard() {
         searchInput: winData.element.querySelector(`#searchInput_${uniqueSuffix}`),
         addColumnBtn: winData.element.querySelector(`#addColumnBtn_${uniqueSuffix}`),
         
-        // MODAL DO CARD
         cardModal: {
             overlay: winData.element.querySelector(`#cardModal_${uniqueSuffix}`),
             title: winData.element.querySelector(`#cardTitleInput`),
@@ -152,7 +146,6 @@ export function openKanbanBoard() {
             closeBtn: winData.element.querySelector(`#cardModal_${uniqueSuffix} .modal-close`),
         },
 
-        // NOVO: GERENCIADOR DE TAGS
         tagManager: {
             btn: winData.element.querySelector(`#manageTagsBtn_${uniqueSuffix}`),
             overlay: winData.element.querySelector(`#tagManagerModal_${uniqueSuffix}`),
@@ -161,7 +154,6 @@ export function openKanbanBoard() {
             footerCloseBtn: winData.element.querySelector(`#tagManagerModal_${uniqueSuffix} .tag-manager-close-btn`),
         },
 
-        // Função auxiliar para contraste de cor
         getContrastColor: function(hexcolor) {
             if (hexcolor.slice(0, 1) === '#') { hexcolor = hexcolor.slice(1); }
             const r = parseInt(hexcolor.substr(0, 2), 16);
@@ -171,13 +163,18 @@ export function openKanbanBoard() {
             return (yiq >= 128) ? '#000000' : '#ffffff';
         },
 
-        getData: function() { return this.boardData; },
+        getData: function() { 
+            return this.boardData; 
+        },
+
         loadData: function(dataString, fileMeta) { 
             let data;
-            try { data = JSON.parse(dataString); } catch (e) {
-                showNotification("Erro ao ler arquivo Kanban.", 3000);
-                this.loadDefaultBoard();
-                this.renderBoard();
+            try { 
+                data = JSON.parse(dataString); 
+            } catch (e) {
+                showNotification("Erro ao ler arquivo Kanban.", 3000); 
+                this.loadDefaultBoard(); 
+                this.renderBoard(); 
                 return;
             }
             
@@ -191,10 +188,10 @@ export function openKanbanBoard() {
                         (card.tags || []).forEach(oldTag => {
                             const tagKey = `${oldTag.text.toLowerCase()}|${oldTag.color}`;
                             if (!globalTags.has(tagKey)) {
-                                globalTags.set(tagKey, {
-                                    id: `tag-${nextTagId++}`,
-                                    text: oldTag.text,
-                                    color: oldTag.color === 'gray' ? '#cccccc' : oldTag.color
+                                globalTags.set(tagKey, { 
+                                    id: `tag-${nextTagId++}`, 
+                                    text: oldTag.text, 
+                                    color: oldTag.color === 'gray' ? '#cccccc' : oldTag.color 
                                 });
                             }
                             newTagIds.push(globalTags.get(tagKey).id);
@@ -221,25 +218,20 @@ export function openKanbanBoard() {
             this.addColumnBtn.onclick = () => this.addColumn(); 
             this.searchInput.oninput = () => this.filterBoard();
             
-            // Eventos do Modal do Card
             this.cardModal.saveBtn.onclick = () => this.saveCard();
             this.cardModal.cancelBtn.onclick = () => this.closeCardModal();
             this.cardModal.closeBtn.onclick = () => this.closeCardModal();
             this.cardModal.tagsContainer.addEventListener('click', (e) => {
-                if(e.target.classList.contains('remove-tag')) {
-                    e.target.parentElement.remove();
-                }
+                if(e.target.classList.contains('remove-tag')) { e.target.parentElement.remove(); }
             });
             this.cardModal.addExistingTagBtn.onclick = () => this.addExistingTagToModal();
             this.cardModal.createNewTagBtn.onclick = () => this.createNewTagInModal();
 
-            // Eventos do Gerenciador de Tags
             this.tagManager.btn.onclick = () => this.openTagManager();
             this.tagManager.closeBtn.onclick = () => this.closeTagManager();
             this.tagManager.footerCloseBtn.onclick = () => this.closeTagManager();
             this.tagManager.list.addEventListener('click', (e) => this.handleTagManagerClick(e));
 
-            // Eventos de Drag and Drop (sem alterações na lógica de eventos)
             this.boardEl.addEventListener('click', (e) => this.handleBoardClick(e));
             this.boardEl.addEventListener('dragstart', (e) => this.handleDragStart(e));
             this.boardEl.addEventListener('dragend', (e) => this.handleDragEnd(e));
@@ -294,7 +286,6 @@ export function openKanbanBoard() {
             const priorityInfo = { high: 'high-priority', medium: 'medium-priority', low: 'low-priority' }[card.priority] || 'medium-priority';
             const formatDate = (dateString) => dateString ? new Date(dateString + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem data';
             
-            // Renderiza tags buscando na lista global
             const tagsHTML = (card.tags || []).map(tagId => {
                 const tag = this.boardData.tags.find(t => t.id === tagId);
                 if (!tag) return '';
@@ -314,7 +305,6 @@ export function openKanbanBoard() {
                 </div>`;
         },
 
-        // --- Lógica do Modal de Card ---
         openCardModal: function(cardId = null, columnId = null) {
             this.editingCardId = cardId;
             this.editingColumnId = columnId;
@@ -339,7 +329,9 @@ export function openKanbanBoard() {
             this.populateExistingTagsDropdown(cardTagIds);
         },
         
-        closeCardModal: function() { this.cardModal.overlay.style.display = 'none'; },
+        closeCardModal: function() { 
+            this.cardModal.overlay.style.display = 'none'; 
+        },
 
         renderAppliedCardTags: function(tagIds) {
             this.cardModal.tagsContainer.innerHTML = '';
@@ -380,7 +372,7 @@ export function openKanbanBoard() {
             if (!currentTagIds.includes(selectedTagId)) {
                 currentTagIds.push(selectedTagId);
                 this.renderAppliedCardTags(currentTagIds);
-                this.populateExistingTagsDropdown(currentTagIds); // Atualiza o dropdown
+                this.populateExistingTagsDropdown(currentTagIds);
             }
         },
 
@@ -392,12 +384,10 @@ export function openKanbanBoard() {
                 return;
             }
 
-            // Cria a nova tag globalmente
             const newTag = { id: generateId('tag'), text, color };
             this.boardData.tags.push(newTag);
             this.markDirty();
 
-            // Adiciona a nova tag ao card atual
             const currentTagIds = Array.from(this.cardModal.tagsContainer.children).map(el => el.dataset.tagId);
             currentTagIds.push(newTag.id);
             this.renderAppliedCardTags(currentTagIds);
@@ -425,20 +415,23 @@ export function openKanbanBoard() {
                 const column = this.boardData.columns.find(col => col.id === this.editingColumnId);
                 if (column) { column.cards.push({ id: generateId('card'), ...cardData }); }
             }
-            this.markDirty(); this.closeCardModal(); this.renderBoard();
+            this.markDirty(); 
+            this.closeCardModal(); 
+            this.renderBoard();
         },
         
-        // --- Lógica do Gerenciador de Tags ---
         openTagManager: function() {
             this.renderTagManager();
             this.tagManager.overlay.style.display = 'flex';
         },
+
         closeTagManager: function() {
             this.tagManager.overlay.style.display = 'none';
         },
+
         renderTagManager: function() {
             const list = this.tagManager.list;
-            list.innerHTML = ''; // Limpa a lista
+            list.innerHTML = '';
             this.boardData.tags.forEach(tag => {
                 const li = document.createElement('li');
                 li.dataset.tagId = tag.id;
@@ -454,6 +447,7 @@ export function openKanbanBoard() {
                 list.appendChild(li);
             });
         },
+
         handleTagManagerClick: function(e) {
             const actionBtn = e.target.closest('[data-action]');
             if (!actionBtn) return;
@@ -464,17 +458,15 @@ export function openKanbanBoard() {
 
             if (action === 'delete-tag') {
                 if (confirm(`Tem certeza que deseja excluir a tag "${tag.text}"? Ela será removida de todos os cards.`)) {
-                    // Remove da lista global
                     this.boardData.tags = this.boardData.tags.filter(t => t.id !== tagId);
-                    // Remove de todos os cards
                     this.boardData.columns.forEach(col => {
                         col.cards.forEach(card => {
                             card.tags = (card.tags || []).filter(id => id !== tagId);
                         });
                     });
                     this.markDirty();
-                    this.renderTagManager(); // Atualiza o modal
-                    this.renderBoard(); // Atualiza o quadro
+                    this.renderTagManager();
+                    this.renderBoard();
                 }
             } else if (action === 'edit-tag') {
                 li.innerHTML = `
@@ -500,10 +492,6 @@ export function openKanbanBoard() {
             }
         },
 
-        // --- Outras Funções (clique, add coluna, filtro, drag-and-drop) ---
-        // A lógica dessas funções permanece a mesma das versões anteriores.
-        // A reordenação já está implementada.
-        
         handleBoardClick: function(e) {
             if (this.isTouchDragging || this.draggedCardEl) return;
             const addCardBtn = e.target.closest('[data-action="add-card"]');
@@ -516,14 +504,24 @@ export function openKanbanBoard() {
                 if (confirm("Tem certeza que deseja excluir esta coluna e todos os seus cartões?")) {
                     const columnId = deleteColBtn.closest('.kanban-column').dataset.columnId;
                     this.boardData.columns = this.boardData.columns.filter(c => c.id !== columnId);
-                    this.markDirty(); this.renderBoard();
+                    this.markDirty();
+                    this.renderBoard();
                 }
             } else if (cardEl) {
                 const cardId = cardEl.dataset.cardId;
                 this.openCardModal(cardId);
             }
         },
-        addColumn: function() { const title = prompt("Nome da nova coluna:", "Nova Coluna"); if (title) { this.boardData.columns.push({ id: generateId('col'), title, cards: [] }); this.markDirty(); this.renderBoard(); } },
+
+        addColumn: function() { 
+            const title = prompt("Nome da nova coluna:", "Nova Coluna"); 
+            if (title) { 
+                this.boardData.columns.push({ id: generateId('col'), title, cards: [] }); 
+                this.markDirty(); 
+                this.renderBoard(); 
+            } 
+        },
+
         filterBoard: function() {
             const query = this.searchInput.value.trim().toLowerCase();
             if (!query) { this.renderBoard(); return; }
@@ -539,16 +537,43 @@ export function openKanbanBoard() {
             });
             this.renderBoard(filteredData);
         },
-        draggedCardEl: null, sourceColumnId: null,
-        handleDragStart: function(e) { if (e.target.classList.contains('kanban-card')) { this.draggedCardEl = e.target; this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; setTimeout(() => e.target.classList.add('dragging'), 0); } },
-        handleDragEnd: function(e) { if (this.draggedCardEl) { this.draggedCardEl.classList.remove('dragging'); this.draggedCardEl.setAttribute('draggable', false); this.draggedCardEl = null; this.sourceColumnId = null; } },
-        handleDragOver: function(e) { e.preventDefault(); const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.add('drag-over'); } },
-        handleDragLeave: function(e) { const columnEl = e.target.closest('.cards-container'); if (columnEl) { columnEl.classList.remove('drag-over'); } },
+        
+        draggedCardEl: null, 
+        sourceColumnId: null,
+        handleDragStart: function(e) { 
+            if (e.target.classList.contains('kanban-card')) { 
+                this.draggedCardEl = e.target; 
+                this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; 
+                setTimeout(() => e.target.classList.add('dragging'), 0); 
+            } 
+        },
+        handleDragEnd: function(e) { 
+            if (this.draggedCardEl) { 
+                this.draggedCardEl.classList.remove('dragging'); 
+                this.draggedCardEl.setAttribute('draggable', false); 
+                this.draggedCardEl = null; 
+                this.sourceColumnId = null; 
+            } 
+        },
+        handleDragOver: function(e) { 
+            e.preventDefault(); 
+            const columnEl = e.target.closest('.cards-container'); 
+            if (columnEl) { 
+                columnEl.classList.add('drag-over'); 
+            } 
+        },
+        handleDragLeave: function(e) { 
+            const columnEl = e.target.closest('.cards-container'); 
+            if (columnEl) { 
+                columnEl.classList.remove('drag-over'); 
+            } 
+        },
         handleDrop: function(e) {
             e.preventDefault();
             const targetColumnEl = e.target.closest('.kanban-column');
             const cardsContainer = e.target.closest('.cards-container');
             if (cardsContainer) cardsContainer.classList.remove('drag-over');
+            
             if (targetColumnEl && this.draggedCardEl) {
                 const cardId = this.draggedCardEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
@@ -566,6 +591,7 @@ export function openKanbanBoard() {
                 } else {
                     targetColumn.cards.push(cardToMove);
                 }
+                
                 this.markDirty();
                 this.draggedCardEl.classList.remove('dragging');
                 this.draggedCardEl = null;
@@ -573,31 +599,56 @@ export function openKanbanBoard() {
                 this.renderBoard();
             }
         },
-        touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0, isTouchDragging: false, longPressTimer: null,
+
+        touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0, 
+        isTouchDragging: false, longPressTimer: null,
         handleTouchStart: function(e) {
-            const cardEl = e.target.closest('.kanban-card'); if (!cardEl) return;
+            const cardEl = e.target.closest('.kanban-card'); 
+            if (!cardEl) return;
             this.longPressTimer = setTimeout(() => {
-                this.isTouchDragging = true; this.touchStartEl = cardEl; this.sourceColumnId = cardEl.closest('.kanban-column').dataset.columnId;
-                cardEl.classList.add('touch-dragging'); this.touchGhostEl = cardEl.cloneNode(true); this.touchGhostEl.classList.add('touch-ghost');
-                document.body.appendChild(this.touchGhostEl); const touch = e.touches[0]; this.touchStartX = touch.clientX; this.touchStartY = touch.clientY;
-                this.touchGhostEl.style.width = `${cardEl.offsetWidth}px`; this.moveGhost(touch.clientX, touch.clientY); e.preventDefault();
+                this.isTouchDragging = true; 
+                this.touchStartEl = cardEl; 
+                this.sourceColumnId = cardEl.closest('.kanban-column').dataset.columnId;
+                cardEl.classList.add('touch-dragging'); 
+                this.touchGhostEl = cardEl.cloneNode(true); 
+                this.touchGhostEl.classList.add('touch-ghost');
+                document.body.appendChild(this.touchGhostEl); 
+                const touch = e.touches[0]; 
+                this.touchStartX = touch.clientX; 
+                this.touchStartY = touch.clientY;
+                this.touchGhostEl.style.width = `${cardEl.offsetWidth}px`; 
+                this.moveGhost(touch.clientX, touch.clientY); 
+                e.preventDefault();
             }, 200);
         },
         handleTouchMove: function(e) {
-            if (!this.isTouchDragging || !this.touchGhostEl) return; e.preventDefault();
-            const touch = e.touches[0]; this.moveGhost(touch.clientX, touch.clientY); this.touchGhostEl.style.display = 'none';
-            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY); this.touchGhostEl.style.display = '';
+            if (!this.isTouchDragging || !this.touchGhostEl) return; 
+            e.preventDefault();
+            const touch = e.touches[0]; 
+            this.moveGhost(touch.clientX, touch.clientY); 
+            this.touchGhostEl.style.display = 'none';
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY); 
+            this.touchGhostEl.style.display = '';
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
-            const columnContainer = elementBelow ? elementBelow.closest('.cards-container') : null; if (columnContainer) { columnContainer.classList.add('drag-over'); }
+            const columnContainer = elementBelow ? elementBelow.closest('.cards-container') : null; 
+            if (columnContainer) { 
+                columnContainer.classList.add('drag-over'); 
+            }
         },
         handleTouchEnd: function(e) {
-            clearTimeout(this.longPressTimer); if (!this.isTouchDragging || !this.touchGhostEl) { this.isTouchDragging = false; return; }
-            const touch = e.changedTouches[0]; this.touchGhostEl.style.display = 'none';
+            clearTimeout(this.longPressTimer); 
+            if (!this.isTouchDragging || !this.touchGhostEl) {
+                this.isTouchDragging = false; 
+                return;
+            }
+            const touch = e.changedTouches[0]; 
+            this.touchGhostEl.style.display = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
             const targetColumnEl = elementBelow ? elementBelow.closest('.kanban-column') : null;
             let cardMoved = false;
             if (targetColumnEl) {
-                const cardId = this.touchStartEl.dataset.cardId; const targetColumnId = targetColumnEl.dataset.columnId;
+                const cardId = this.touchStartEl.dataset.cardId; 
+                const targetColumnId = targetColumnEl.dataset.columnId;
                 const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
                 const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
                 if (cardIndex > -1) {
@@ -608,18 +659,36 @@ export function openKanbanBoard() {
                         const targetCardId = targetCardEl.dataset.cardId;
                         const targetIndex = targetColumn.cards.findIndex(c => c.id === targetCardId);
                         targetColumn.cards.splice(targetIndex, 0, cardToMove);
-                    } else { targetColumn.cards.push(cardToMove); }
+                    } else { 
+                        targetColumn.cards.push(cardToMove); 
+                    }
                     cardMoved = true;
                 }
             }
-            this.touchStartEl.classList.remove('touch-dragging'); document.body.removeChild(this.touchGhostEl);
+
+            this.touchStartEl.classList.remove('touch-dragging'); 
+            document.body.removeChild(this.touchGhostEl);
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
-            this.touchGhostEl = null; this.touchStartEl = null; this.sourceColumnId = null;
+            this.touchGhostEl = null; 
+            this.touchStartEl = null; 
+            this.sourceColumnId = null;
             setTimeout(() => { this.isTouchDragging = false; }, 100);
-            if (cardMoved) { this.markDirty(); this.renderBoard(); }
+            
+            if (cardMoved) { 
+                this.markDirty(); 
+                this.renderBoard(); 
+            }
         },
-        moveGhost: function(x, y) { if (!this.touchGhostEl) return; this.touchGhostEl.style.left = `${x - this.touchGhostEl.offsetWidth / 2}px`; this.touchGhostEl.style.top = `${y - this.touchGhostEl.offsetHeight / 2}px`; },
-        cleanup: () => { if(appState.touchGhostEl && appState.touchGhostEl.parentElement) { appState.touchGhostEl.parentElement.removeChild(appState.touchGhostEl); } }
+        moveGhost: function(x, y) { 
+            if (!this.touchGhostEl) return; 
+            this.touchGhostEl.style.left = `${x - this.touchGhostEl.offsetWidth / 2}px`; 
+            this.touchGhostEl.style.top = `${y - this.touchGhostEl.offsetHeight / 2}px`; 
+        },
+        cleanup: () => { 
+            if(appState.touchGhostEl && appState.touchGhostEl.parentElement) {
+                appState.touchGhostEl.parentElement.removeChild(appState.touchGhostEl);
+            }
+        }
     };
 
     initializeFileState(appState, "Novo Kanban Board", "board.kanban", "kanban-board");
