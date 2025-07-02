@@ -13,7 +13,7 @@ export function openKanbanBoard() {
             .kanban-board { display: flex; padding: 20px; gap: 20px; overflow-x: auto; flex-grow: 1; -webkit-overflow-scrolling: touch; }
             .kanban-column { background: var(--input-bg); border-radius: 12px; min-width: 320px; max-width: 320px; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid var(--separator-color); }
             .dark-mode .kanban-column { background: #2c3140; }
-            .column-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--separator-color); }
+            .column-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--separator-color); gap: 10px;}
             .column-title { font-weight: 600; font-size: 1.1rem; color: var(--text-color); cursor: pointer; flex-grow: 1; padding: 5px 0;}
             .column-actions .action-btn { width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color); transition: all 0.2s; }
             .column-actions .action-btn:hover { background: var(--hover-highlight-color); color: var(--danger-color); }
@@ -44,13 +44,11 @@ export function openKanbanBoard() {
             #tagManagerList_${uniqueSuffix} li { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid var(--separator-color); }
             #tagManagerList_${uniqueSuffix} li:last-child { border-bottom: none; }
             .tag-manager-actions { margin-left: auto; display: flex; gap: 8px; }
-            .column-title-input {
-                width: 100%;
-                font-size: 1.1rem;
-                font-weight: 600;
-                border: 1px solid var(--accent-color);
-                margin: 0;
-            }
+            .column-title-input { width: 100%; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--accent-color); margin: 0; }
+            .column-drag-handle { cursor: grab; color: var(--secondary-text-color); opacity: 0.5; transition: opacity 0.2s; padding: 5px; }
+            .column-drag-handle:hover { opacity: 1; }
+            .kanban-column.column-dragging { opacity: 0.4; background: var(--hover-highlight-color); border-style: dashed; }
+            .column-placeholder { border: 2px dashed var(--accent-color); background: var(--accent-light-translucent); border-radius: 12px; min-width: 320px; max-width: 320px; flex-shrink: 0; margin: 0; }
         </style>
         
         <div class="app-toolbar kanban-toolbar">
@@ -157,6 +155,11 @@ export function openKanbanBoard() {
             closeBtn: winData.element.querySelector(`#tagManagerModal_${uniqueSuffix} .modal-close`),
             footerCloseBtn: winData.element.querySelector(`#tagManagerModal_${uniqueSuffix} .tag-manager-close-btn`),
         },
+
+        draggedCardEl: null,
+        sourceColumnId: null,
+        draggedColumnEl: null,
+        placeholderEl: null,
 
         getContrastColor: function(hexcolor) {
             if (hexcolor.slice(0, 1) === '#') { hexcolor = hexcolor.slice(1); }
@@ -279,6 +282,7 @@ export function openKanbanBoard() {
 
                 columnEl.innerHTML = `
                     <div class="column-header">
+                        <i class="fas fa-grip-vertical column-drag-handle" draggable="true" title="Arrastar para reordenar"></i>
                         <span class="column-title">${column.title}</span>
                         <div class="column-actions">
                             <button class="action-btn" data-action="delete-column" title="Excluir Coluna"><i class="fas fa-trash"></i></button>
@@ -345,7 +349,7 @@ export function openKanbanBoard() {
             inputEl.addEventListener('blur', () => saveOrCancel(true));
             inputEl.addEventListener('keydown', (evt) => {
                 if (evt.key === 'Enter') {
-                    evt.preventDefault(); // Impede submissão de formulário, se houver
+                    evt.preventDefault();
                     saveOrCancel(true);
                 } else if (evt.key === 'Escape') {
                     saveOrCancel(false);
@@ -541,7 +545,7 @@ export function openKanbanBoard() {
         },
 
         handleBoardClick: function(e) {
-            if (this.isTouchDragging || this.draggedCardEl) return;
+            if (this.isTouchDragging || this.draggedCardEl || this.draggedColumnEl) return;
             const addCardBtn = e.target.closest('[data-action="add-card"]');
             const deleteColBtn = e.target.closest('[data-action="delete-column"]');
             const cardEl = e.target.closest('.kanban-card');
@@ -586,71 +590,110 @@ export function openKanbanBoard() {
             this.renderBoard(filteredData);
         },
         
-        draggedCardEl: null, 
-        sourceColumnId: null,
-        handleDragStart: function(e) { 
-            if (e.target.classList.contains('kanban-card')) { 
-                this.draggedCardEl = e.target; 
-                this.sourceColumnId = e.target.closest('.kanban-column').dataset.columnId; 
-                setTimeout(() => e.target.classList.add('dragging'), 0); 
+        handleDragStart: function(e) {
+            if (e.target.classList.contains('column-drag-handle')) {
+                this.draggedColumnEl = e.target.closest('.kanban-column');
+                this.placeholderEl = document.createElement('div');
+                this.placeholderEl.className = 'column-placeholder';
+                this.placeholderEl.style.height = this.draggedColumnEl.offsetHeight + 'px';
+                setTimeout(() => {
+                    this.draggedColumnEl.classList.add('column-dragging');
+                }, 0);
             } 
+            else if (e.target.closest('.kanban-card') && e.target.closest('.kanban-card').draggable) { 
+                this.draggedCardEl = e.target.closest('.kanban-card'); 
+                this.sourceColumnId = this.draggedCardEl.closest('.kanban-column').dataset.columnId; 
+                setTimeout(() => this.draggedCardEl.classList.add('dragging'), 0);
+            }
         },
-        handleDragEnd: function(e) { 
-            if (this.draggedCardEl) { 
-                this.draggedCardEl.classList.remove('dragging'); 
-                this.draggedCardEl.setAttribute('draggable', false); 
-                this.draggedCardEl = null; 
-                this.sourceColumnId = null; 
+
+        handleDragOver: function(e) {
+            e.preventDefault();
+            if (this.draggedColumnEl) {
+                const targetColumn = e.target.closest('.kanban-column');
+                if (targetColumn && targetColumn !== this.draggedColumnEl && !this.placeholderEl.contains(targetColumn)) {
+                    const rect = targetColumn.getBoundingClientRect();
+                    const midpoint = rect.left + rect.width / 2;
+                    if (e.clientX < midpoint) {
+                        this.boardEl.insertBefore(this.placeholderEl, targetColumn);
+                    } else {
+                        this.boardEl.insertBefore(this.placeholderEl, targetColumn.nextSibling);
+                    }
+                }
             } 
+            else if (this.draggedCardEl) {
+                const columnContainer = e.target.closest('.cards-container'); 
+                if (columnContainer) { 
+                    columnContainer.classList.add('drag-over'); 
+                }
+            }
         },
-        handleDragOver: function(e) { 
-            e.preventDefault(); 
-            const columnEl = e.target.closest('.cards-container'); 
-            if (columnEl) { 
-                columnEl.classList.add('drag-over'); 
-            } 
+
+        handleDragLeave: function(e) {
+            if (e.target.classList.contains('cards-container')) {
+                e.target.classList.remove('drag-over');
+            }
         },
-        handleDragLeave: function(e) { 
-            const columnEl = e.target.closest('.cards-container'); 
-            if (columnEl) { 
-                columnEl.classList.remove('drag-over'); 
-            } 
-        },
+
         handleDrop: function(e) {
             e.preventDefault();
-            const targetColumnEl = e.target.closest('.kanban-column');
-            const cardsContainer = e.target.closest('.cards-container');
-            if (cardsContainer) cardsContainer.classList.remove('drag-over');
-            
-            if (targetColumnEl && this.draggedCardEl) {
-                const cardId = this.draggedCardEl.dataset.cardId;
-                const targetColumnId = targetColumnEl.dataset.columnId;
-                const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
-                if (!sourceColumn) return;
-                const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
-                if (cardIndex === -1) return;
-                const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
-                const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
-                const targetCardEl = e.target.closest('.kanban-card');
-                if (targetCardEl && targetCardEl !== this.draggedCardEl) {
-                    const targetCardId = targetCardEl.dataset.cardId;
-                    const targetIndex = targetColumn.cards.findIndex(c => c.id === targetCardId);
-                    targetColumn.cards.splice(targetIndex, 0, cardToMove);
-                } else {
-                    targetColumn.cards.push(cardToMove);
+            if (this.draggedColumnEl) {
+                if (this.placeholderEl && this.placeholderEl.parentElement) {
+                    this.placeholderEl.parentElement.replaceChild(this.draggedColumnEl, this.placeholderEl);
+                    const newColumnOrder = Array.from(this.boardEl.querySelectorAll('.kanban-column')).map(col => col.dataset.columnId);
+                    this.boardData.columns.sort((a, b) => newColumnOrder.indexOf(a.id) - newColumnOrder.indexOf(b.id));
+                    this.markDirty();
                 }
+            } 
+            else if (this.draggedCardEl) {
+                const targetColumnEl = e.target.closest('.kanban-column');
+                const cardsContainer = e.target.closest('.cards-container');
+                if (cardsContainer) cardsContainer.classList.remove('drag-over');
                 
-                this.markDirty();
+                if (targetColumnEl) {
+                    const cardId = this.draggedCardEl.dataset.cardId;
+                    const targetColumnId = targetColumnEl.dataset.columnId;
+                    const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
+                    if (!sourceColumn) return;
+                    const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
+                    if (cardIndex === -1) return;
+                    const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
+                    const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                    const targetCardEl = e.target.closest('.kanban-card');
+                    if (targetCardEl && targetCardEl !== this.draggedCardEl) {
+                        const targetCardId = targetCardEl.dataset.cardId;
+                        const targetIndex = targetColumn.cards.findIndex(c => c.id === targetCardId);
+                        targetColumn.cards.splice(targetIndex, 0, cardToMove);
+                    } else {
+                        targetColumn.cards.push(cardToMove);
+                    }
+                    this.markDirty();
+                    this.renderBoard();
+                }
+            }
+        },
+        
+        handleDragEnd: function(e) {
+            if (this.draggedColumnEl) {
+                this.draggedColumnEl.classList.remove('column-dragging');
+                if (this.placeholderEl && this.placeholderEl.parentElement) {
+                    this.placeholderEl.parentElement.removeChild(this.placeholderEl);
+                }
+                this.draggedColumnEl = null;
+                this.placeholderEl = null;
+                this.renderBoard(); 
+            }
+            if (this.draggedCardEl) { 
                 this.draggedCardEl.classList.remove('dragging');
-                this.draggedCardEl = null;
+                this.draggedCardEl = null; 
                 this.sourceColumnId = null;
-                this.renderBoard();
             }
         },
 
         touchGhostEl: null, touchStartEl: null, touchStartX: 0, touchStartY: 0, 
         isTouchDragging: false, longPressTimer: null,
         handleTouchStart: function(e) {
+            // Nota: Arrastar colunas por toque não está implementado. Apenas cards.
             const cardEl = e.target.closest('.kanban-card'); 
             if (!cardEl) return;
             this.longPressTimer = setTimeout(() => {
@@ -715,7 +758,9 @@ export function openKanbanBoard() {
             }
 
             this.touchStartEl.classList.remove('touch-dragging'); 
-            document.body.removeChild(this.touchGhostEl);
+            if (this.touchGhostEl && this.touchGhostEl.parentElement) {
+                this.touchGhostEl.parentElement.removeChild(this.touchGhostEl);
+            }
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
             this.touchGhostEl = null; 
             this.touchStartEl = null; 
@@ -732,9 +777,12 @@ export function openKanbanBoard() {
             this.touchGhostEl.style.left = `${x - this.touchGhostEl.offsetWidth / 2}px`; 
             this.touchGhostEl.style.top = `${y - this.touchGhostEl.offsetHeight / 2}px`; 
         },
-        cleanup: () => { 
-            if(appState.touchGhostEl && appState.touchGhostEl.parentElement) {
-                appState.touchGhostEl.parentElement.removeChild(appState.touchGhostEl);
+        cleanup: function() { 
+            if(this.touchGhostEl && this.touchGhostEl.parentElement) {
+                this.touchGhostEl.parentElement.removeChild(this.touchGhostEl);
+            }
+            if (this.placeholderEl && this.placeholderEl.parentElement) {
+                this.placeholderEl.parentElement.removeChild(this.placeholderEl);
             }
         }
     };
