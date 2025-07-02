@@ -342,16 +342,41 @@ export function openKanbanBoard() {
         handleDrop: function(e) {
             e.preventDefault();
             const targetColumnEl = e.target.closest('.kanban-column');
+            
+            // Limpa o destaque visual da coluna de destino
+            const cardsContainer = e.target.closest('.cards-container');
+            if (cardsContainer) {
+                cardsContainer.classList.remove('drag-over');
+            }
+
             if (targetColumnEl && this.draggedCardEl) {
-                targetColumnEl.querySelector('.cards-container').classList.remove('drag-over');
                 const cardId = this.draggedCardEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
+
+                // Não faz nada se a soltura for na mesma coluna, mas o estado será limpo pelo dragend
+                if (this.sourceColumnId === targetColumnId) {
+                    return;
+                }
+
                 const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
                 const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
-                const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
-                const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
-                targetColumn.cards.push(cardToMove);
-                this.markDirty(); this.renderBoard();
+
+                if (cardIndex > -1) {
+                    // 1. Atualiza o modelo de dados
+                    const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
+                    const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
+                    targetColumn.cards.push(cardToMove);
+                    this.markDirty();
+
+                    // 2. Limpa o estado do Drag & Drop ANTES de renderizar.
+                    // Isso é crucial para que `handleBoardClick` não fique bloqueado.
+                    this.draggedCardEl.classList.remove('dragging');
+                    this.draggedCardEl = null;
+                    this.sourceColumnId = null;
+
+                    // 3. Renderiza o quadro com o novo estado
+                    this.renderBoard();
+                }
             }
         },
 
@@ -397,28 +422,36 @@ export function openKanbanBoard() {
 
         handleTouchEnd: function(e) {
             clearTimeout(this.longPressTimer);
-            if (!this.isTouchDragging || !this.touchGhostEl) { this.isTouchDragging = false; return; }
+            if (!this.isTouchDragging || !this.touchGhostEl) {
+                this.isTouchDragging = false;
+                return;
+            }
+
             const touch = e.changedTouches[0];
+            // Esconde o fantasma para detectar o elemento real por baixo
             this.touchGhostEl.style.display = 'none';
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-            this.touchGhostEl.style.display = '';
+            
+            let cardMoved = false;
             const targetColumnEl = elementBelow ? elementBelow.closest('.kanban-column') : null;
 
             if (targetColumnEl) {
                 const cardId = this.touchStartEl.dataset.cardId;
                 const targetColumnId = targetColumnEl.dataset.columnId;
+
                 if (this.sourceColumnId !== targetColumnId) {
                     const sourceColumn = this.boardData.columns.find(c => c.id === this.sourceColumnId);
                     const cardIndex = sourceColumn.cards.findIndex(c => c.id === cardId);
-                    if(cardIndex > -1) {
+                    if (cardIndex > -1) {
                         const [cardToMove] = sourceColumn.cards.splice(cardIndex, 1);
                         const targetColumn = this.boardData.columns.find(c => c.id === targetColumnId);
                         targetColumn.cards.push(cardToMove);
-                        this.markDirty();
-                        this.renderBoard();
+                        cardMoved = true;
                     }
                 }
             }
+
+            // 1. Limpa TODO o estado e elementos do DOM relacionados ao toque *ANTES* de renderizar
             this.touchStartEl.classList.remove('touch-dragging');
             document.body.removeChild(this.touchGhostEl);
             this.boardEl.querySelectorAll('.cards-container.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -426,6 +459,12 @@ export function openKanbanBoard() {
             this.touchStartEl = null;
             this.sourceColumnId = null;
             setTimeout(() => { this.isTouchDragging = false; }, 100);
+
+            // 2. Se um card foi movido, marque como "sujo" e renderize o quadro
+            if (cardMoved) {
+                this.markDirty();
+                this.renderBoard();
+            }
         },
 
         moveGhost: function(x, y) {
