@@ -147,29 +147,45 @@ export function handleExportToPDF(winId) {
     }
 
     const winEl = winData.element;
+    const contentEl = winEl.querySelector('.window-content'); 
+    
+    if (!contentEl) {
+        showNotification("Conteúdo da janela não encontrado para exportação.", 3000);
+        return;
+    }
+
     const titleEl = winEl.querySelector('.window-title-text');
     const originalTitle = document.title;
     
     document.title = titleEl ? titleEl.textContent.replace('*','') : 'Exportação PMOS';
     document.body.classList.add('printing-mode');
-    winEl.classList.add('window-to-print');
+    
+    contentEl.classList.add('window-to-print');
     
     showNotification("Preparando para exportação. Use 'Salvar como PDF' na caixa de impressão.", 4000);
 
     setTimeout(() => {
         window.print();
+        
         const cleanupPrintStyles = () => {
             document.body.classList.remove('printing-mode');
-            winEl.classList.remove('window-to-print');
+            contentEl.classList.remove('window-to-print');
             document.title = originalTitle;
+            
+            // Remove o listener para não interferir em outras impressões
+            window.onafterprint = null; 
         };
+
+        // Adiciona o listener para limpar os estilos APÓS a caixa de diálogo de impressão ser fechada
         if (window.onafterprint !== undefined) {
             window.onafterprint = cleanupPrintStyles;
         } else {
+            // Fallback para navegadores que não suportam onafterprint (raro)
             setTimeout(cleanupPrintStyles, 500);
         }
     }, 250);
 }
+
 
 /**
  * Abre o explorador de arquivos para o usuário selecionar um arquivo para abrir.
