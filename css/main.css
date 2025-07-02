@@ -893,7 +893,7 @@ Sonoma Design System – v1.0
     opacity: 1;
 
     /* Estilos flexíveis que já estavam corretos */
-    width: clamp(320px, 90vw, 800px);
+    width: clamp(320px, 98vw, 1200px);
     padding: var(--dock-padding);
     gap: var(--dock-gap);
 }
