@@ -154,13 +154,18 @@ export function handleExportToPDF(winId) {
         return;
     }
 
+    // Procura por um contêiner de aplicativo específico.
+    // Isso é útil para apps como o Kanban que têm um wrapper principal.
+    let elementToPrint = contentEl.querySelector('[class*="-app-container"]') || contentEl;
+
     const titleEl = winEl.querySelector('.window-title-text');
     const originalTitle = document.title;
     
     document.title = titleEl ? titleEl.textContent.replace('*','') : 'Exportação PMOS';
     document.body.classList.add('printing-mode');
     
-    contentEl.classList.add('window-to-print');
+    // Aplica a classe ao elemento mais específico encontrado.
+    elementToPrint.classList.add('window-to-print');
     
     showNotification("Preparando para exportação. Use 'Salvar como PDF' na caixa de impressão.", 4000);
 
@@ -169,18 +174,14 @@ export function handleExportToPDF(winId) {
         
         const cleanupPrintStyles = () => {
             document.body.classList.remove('printing-mode');
-            contentEl.classList.remove('window-to-print');
+            elementToPrint.classList.remove('window-to-print');
             document.title = originalTitle;
-            
-            // Remove o listener para não interferir em outras impressões
             window.onafterprint = null; 
         };
 
-        // Adiciona o listener para limpar os estilos APÓS a caixa de diálogo de impressão ser fechada
         if (window.onafterprint !== undefined) {
             window.onafterprint = cleanupPrintStyles;
         } else {
-            // Fallback para navegadores que não suportam onafterprint (raro)
             setTimeout(cleanupPrintStyles, 500);
         }
     }, 250);
