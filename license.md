@@ -15,5 +15,7 @@ Para obter permissão para qualquer uso, entre em contato com o titular dos dire
 Ao acessar ou baixar este software, você concorda integralmente com os termos desta licença.
 
 Leonardo Verona
+
 leonardo.verona@icloud.com
+
 2025
