@@ -10,10 +10,10 @@ Realizar engenharia reversa, descompilar, desmontar ou tentar de qualquer forma 
 Tornar este software ou qualquer parte dele disponível a terceiros, por qualquer meio, sem autorização expressa do titular dos direitos.
 Qualquer uso não autorizado constitui violação dos direitos autorais e estará sujeito às sanções civis e criminais cabíveis.
 
-Para obter permissão para qualquer uso, entre em contato com o titular dos direitos pelo e-mail: [SEU E-MAIL AQUI].
+Para obter permissão para qualquer uso, entre em contato com o titular dos direitos pelo e-mail: leonardo.verona@icloud.com
 
 Ao acessar ou baixar este software, você concorda integralmente com os termos desta licença.
 
 Leonardo Verona
-[leomarques20@gmail.com]
-[2025]
+leonardo.verona@icloud.com
+2025
