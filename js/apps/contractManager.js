@@ -3,111 +3,49 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * Features:
- * - Main dashboard with key performance indicators (KPIs), charts, and a filterable list of contracts.
- * - Opens individual contracts in a separate, dedicated editor window.
- * - Detailed contract editor with multiple tabs for:
- *   - Financial Tracking (budget, expenses, payments)
- *   - Physical Tracking (milestones, deliverables)
- *   - Amendments (additives)
- *   - Invoices
- * - Uses Chart.js for rich visualizations on the main dashboard.
- * - Uses custom-rendered SVG doughnut charts in the contract detail view for a lightweight footprint.
- * - Full file I/O capabilities for both the master contract list and individual contract files.
- * - Includes data validation (e.g., for Brazilian CNPJ).
- * - Modern, responsive UI with support for dark/light themes.
+ * @version 5.1 - Fixes dark mode reactivity, critical TypeError on save, and chart loading.
  */
 
 import { generateId, showNotification } from '../main.js';
 import { getStandardAppToolbarHTML, initializeFileState, setupAppToolbarActions } from './app.js';
-// The problematic import has been removed. We now assume Chart.js is loaded globally.
-// import Chart from 'chart.js/auto'; 
+// The import for Chart.js is removed. It must be loaded via a <script> tag in index.html
+// e.g., <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
 // ===================================================================================
 // #region SHARED UTILITY FUNCTIONS
 // ===================================================================================
 
-/**
- * Formats a string into Brazilian CNPJ format (XX.XXX.XXX/XXXX-XX).
- * @param {string} cnpj - The raw CNPJ string (digits only).
- * @returns {string} The formatted CNPJ string.
- */
 function formatCNPJ(cnpj) {
     if (!cnpj) return '';
-    cnpj = cnpj.replace(/\D/g, ''); // Remove all non-digit characters
+    cnpj = cnpj.replace(/\D/g, '');
     return cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 }
 
-/**
- * Validates a Brazilian CNPJ number.
- * @param {string} cnpj - The CNPJ to validate (can be formatted or digits only).
- * @returns {boolean} True if the CNPJ is valid, false otherwise.
- */
 function validateCNPJ(cnpj) {
     if (!cnpj) return false;
     cnpj = cnpj.replace(/[^\d]+/g, '');
-
-    if (cnpj === '' || cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) {
-        return false;
-    }
-
-    let size = cnpj.length - 2;
-    let numbers = cnpj.substring(0, size);
-    const digits = cnpj.substring(size);
-    let sum = 0;
-    let pos = size - 7;
-
-    for (let i = size; i >= 1; i--) {
-        sum += parseInt(numbers.charAt(size - i), 10) * pos--;
-        if (pos < 2) {
-            pos = 9;
-        }
-    }
-
+    if (cnpj === '' || cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+    let size = cnpj.length - 2, numbers = cnpj.substring(0, size), digits = cnpj.substring(size), sum = 0, pos = size - 7;
+    for (let i = size; i >= 1; i--) { sum += parseInt(numbers.charAt(size - i), 10) * pos--; if (pos < 2) pos = 9; }
     let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    if (result !== parseInt(digits.charAt(0), 10)) {
-        return false;
-    }
-
-    size = size + 1;
-    numbers = cnpj.substring(0, size);
-    sum = 0;
-    pos = size - 7;
-    for (let i = size; i >= 1; i--) {
-        sum += parseInt(numbers.charAt(size - i), 10) * pos--;
-        if (pos < 2) {
-            pos = 9;
-        }
-    }
+    if (result !== parseInt(digits.charAt(0), 10)) return false;
+    size = size + 1; numbers = cnpj.substring(0, size); sum = 0; pos = size - 7;
+    for (let i = size; i >= 1; i--) { sum += parseInt(numbers.charAt(size - i), 10) * pos--; if (pos < 2) pos = 9; }
     result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
-    
     return result === parseInt(digits.charAt(1), 10);
 }
 
-/**
- * Formats a number as a Brazilian currency string (R$ X.XXX,XX).
- * @param {number} value - The numeric value.
- * @returns {string} The formatted currency string.
- */
 function formatCurrency(value) {
     const num = parseFloat(value) || 0;
     return `R$ ${num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-
 // ===================================================================================
 // #endregion
 // ===================================================================================
-// #region CONTRACT DETAIL EDITOR (Based on the single-contract view)
+// #region CONTRACT DETAIL EDITOR
 // ===================================================================================
 
-/**
- * Opens a detailed, tab-based editor for a single contract in a new window.
- * @param {object} initialData - The full data object for the contract to be edited.
- * @param {string} fileId - The ID of the file associated with this contract, if it exists.
- * @param {function} onSaveCallback - A function to call when the contract is saved, passing the updated data.
- * @returns {string} The ID of the newly created window.
- */
 export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     const uniqueSuffix = generateId('contract_detail');
     const windowTitle = `Editor de Contrato - ${initialData.details.numeroContrato || 'Novo Contrato'}`;
@@ -115,16 +53,16 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
     const content = `
     <style>
-        :root {
+        :root { /* Light Mode Defaults */
             --separator-color: #e2e8f0; --toolbar-bg: #f8fafc; --window-bg: #fff; --text-color: #212529;
             --input-bg: #fff; --input-border: #cbd5e1;
             --kpi-good: #28a745; --kpi-warn: #ffc107; --kpi-danger: #dc3545;
         }
-        .dark-mode {
+        .dark-mode { /* Dark Mode Overrides */
             --separator-color: #4a5568; --toolbar-bg: #2d3748; --window-bg: #1a202c; --text-color: #e2e8f0;
             --input-bg: #2d3748; --input-border: #4a5568;
         }
-        .contract-container-v4 { display: flex; flex-direction: column; height: 100%; overflow: hidden; background-color: var(--window-bg); color: var(--text-color); }
+        .contract-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; background-color: var(--window-bg); color: var(--text-color); }
         .main-content-v4 { display: flex; flex: 1; overflow: hidden; }
         .main-form-column { width: 480px; min-width: 480px; border-right: 1px solid var(--separator-color); padding: 10px; overflow-y: auto; }
         .tabs-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -141,7 +79,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .form-section[open] summary::after { transform: rotate(90deg); }
         .form-section-content { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px; }
         .form-grid-full { grid-column: 1 / -1; }
-        /* Modal, Table, KPI, Chart Styles */
+        /* Other styles */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; align-items: center; justify-content: center; }
         .modal-content { background: var(--window-bg); color: var(--text-color); padding: 20px; border-radius: 8px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
@@ -164,8 +102,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .chart-legend .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .doughnut-center-text { fill: var(--text-color); font-size: 1.5em; font-weight: 700; }
     </style>
-    <div class="app-toolbar">${getStandardAppToolbarHTML()}</div>
-    <div class="contract-container-v4">
+    <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
+    <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
         <div class="main-content-v4">
             <div class="main-form-column" id="mainFormContainer_${uniqueSuffix}">
                 <details class="form-section" open><summary>Identificação do Contrato</summary><div class="form-section-content">
@@ -237,13 +175,13 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     Object.keys(tabContentMap).forEach(key => { windowContent.querySelector(`[data-tab-content="${key}"]`).innerHTML = tabContentMap[key]; });
     
     const appState = {
-        winId, appDataType: 'contract-detail_v5.0',
-        data: {}, // Will be loaded from initialData
-        fileId: fileId,
-        onSave: onSaveCallback,
+        winId, appDataType: 'contract-editor_v5.1',
+        data: {},
+        onSaveCallback: onSaveCallback,
+        themeObserver: null,
         ui: {
-            container: windowContent.querySelector('.contract-container-v4'),
-            form: windowContent.querySelector('.main-form-column'),
+            container: windowContent.querySelector(`#editorContainer_${uniqueSuffix}`),
+            form: windowContent.querySelector(`#mainFormContainer_${uniqueSuffix}`),
             valorGlobalDisplay: windowContent.querySelector(`#valorGlobalDisplay_${uniqueSuffix}`),
             mainSeiContainer: windowContent.querySelector(`#mainSeiContainer_${uniqueSuffix}`),
             tabButtons: windowContent.querySelectorAll('.contract-tracking-tabs-v4 .contract-tab-button'),
@@ -284,44 +222,68 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         currentModal: { mode: null, type: null, id: null },
 
         getData: function() { this.updateDetailsFromUI(); return this.data; },
-        loadData: function(data, fileMeta) { 
-            this.data = JSON.parse(JSON.stringify(data)); // Deep copy to avoid modifying original object
-            if (fileMeta) {
-                this.fileId = fileMeta.id; 
-                this.markClean(); 
-                window.windowManager.updateWindowTitle(this.winId, fileMeta.name); 
-            }
+        loadData: function(data) { 
+            this.data = JSON.parse(JSON.stringify(data)); // Deep copy
             this.renderAll(); 
         },
 
-        init: function() { 
-            const self = this;
-            setupAppToolbarActions(this);
-
-            // Override the save function to include the callback
-            const originalSaveFile = this.saveFile.bind(this);
-            this.saveFile = async (isSaveAs = false) => {
-                const result = await originalSaveFile(isSaveAs);
-                if (result.success && this.onSave) {
-                    this.onSave(this.getData());
-                }
-                return result;
-            };
+        init: function() {
+            // REFACTORED SAVE LOGIC: This editor doesn't use the standard file system.
+            // It has its own save method that triggers a callback.
+            // We wire the toolbar buttons to our custom methods.
+            const toolbar = winData.element.querySelector('.app-toolbar');
+            const saveBtn = toolbar.querySelector('.save-file-btn');
+            if(saveBtn) saveBtn.onclick = () => this.saveChanges();
             
-            if (document.body.classList.contains('dark-mode')) this.ui.container.classList.add('dark-mode');
-            
+            this.setupThemeObserver();
             this._registerEventListeners();
-            this.loadData(initialData); // Load the data passed into the editor
+            this.loadData(initialData);
+        },
+
+        // NEW METHOD: Save changes and notify the parent window via callback.
+        saveChanges: function() {
+            if (this.onSaveCallback) {
+                this.updateDetailsFromUI();
+                this.onSaveCallback(this.data);
+                showNotification("Alterações salvas e dashboard atualizado!", 3000, "success");
+                // Optionally, close the editor after saving
+                // window.windowManager.closeWindow(this.winId);
+            } else {
+                showNotification("Nenhuma ação de salvamento configurada.", 4000, "error");
+            }
+        },
+        
+        // DARK MODE FIX: Observe body for class changes to reactively apply dark mode.
+        setupThemeObserver: function() {
+            const appContainer = this.ui.container;
+            const applyTheme = () => {
+                if(document.body.classList.contains('dark-mode')) {
+                    appContainer.classList.add('dark-mode');
+                } else {
+                    appContainer.classList.remove('dark-mode');
+                }
+            };
+
+            this.themeObserver = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    if (mutation.attributeName === 'class') {
+                        applyTheme();
+                    }
+                });
+            });
+
+            this.themeObserver.observe(document.body, { attributes: true });
+            applyTheme(); // Apply theme on init
         },
         
         _registerEventListeners: function() {
             this.eventHandlers.formInput = (e) => {
                 const field = e.target.dataset.field;
                 if (field) {
-                    this.markDirty();
                     if(field.endsWith('.cnpj')) {
                         e.target.value = formatCNPJ(e.target.value);
                     }
+                    this.updateDetailsFromUI();
                 }
             };
             this.ui.form.addEventListener('input', this.eventHandlers.formInput);
@@ -378,11 +340,13 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     if (index === keys.length - 1) {
                         current[key] = input.type === 'number' ? parseFloat(input.value) || 0 : input.value;
                     } else {
-                        if (!current[key]) current[key] = {};
+                        if (!current[key] || typeof current[key] !== 'object') current[key] = {};
                         current = current[key];
                     }
                 });
             });
+            window.windowManager.updateWindowTitle(this.winId, `Editor de Contrato - ${this.data.details.numeroContrato}`);
+            this.recalculateTotals();
             this.renderMainSei();
         },
         
@@ -441,7 +405,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     return `<td>${col.f ? col.f(value) : value}</td>`;
                 }).join('');
                 
-                // Added a check for sei properties before calling the function
                 if (item.hasOwnProperty('sei_number') || item.hasOwnProperty('sei_link')) {
                     cellsHTML += `<td>${this._getSeiLinkHTML(item)}</td>`;
                 }
@@ -486,15 +449,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         _getModalFormHTML: function(type, entry = {}) {
             const today = new Date().toISOString().split('T')[0];
-            const seiFields = `
-                <input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}">
-                <input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">`;
-            
-            const getItemOptions = (selectedId) => {
-                return (this.data.items || []).map(i => 
-                    `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`
-                ).join('');
-            };
+            const seiFields = `<input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">`;
+            const getItemOptions = (selectedId) => (this.data.items || []).map(i => `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`).join('');
 
             switch(type) {
                 case 'items': return `<div class="modal-form-grid"><input id="f_numeroSiad" class="app-input" placeholder="Nº SIAD" value="${entry.numeroSiad || ''}"><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="Valor Financeiro (R$)" value="${entry.valorFinanceiro || ''}"><textarea id="f_descricao" class="app-textarea form-grid-full" placeholder="Descrição">${entry.descricao || ''}</textarea></div>`;
@@ -523,13 +479,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 case 'items': Object.assign(entry, { numeroSiad: getVal('numeroSiad'), descricao: getVal('descricao'), valorFinanceiro: getFloat('valorFinanceiro') }); break;
                 case 'financial': Object.assign(entry, { date: getVal('date'), type: getVal('type'), value: getFloat('value'), description: getVal('description'), ...seiData }); break;
                 case 'physical': const item = this.data.items.find(i => i.id === getVal('itemId')); Object.assign(entry, { itemId: getVal('itemId'), item: item ? item.descricao : 'Item inválido', date_planned: getVal('date_planned'), date_done: getVal('date_done'), status: getVal('status'), ...seiData }); break;
-                case 'amendments': const newEndDate = getVal('new_end_date'); Object.assign(entry, { number: getVal('number'), type: getVal('type'), date: getVal('date'), value_change: getFloat('value_change'), new_end_date: newEndDate, object: getVal('object'), ...seiData }); if (newEndDate) { this.data.details.vigenciaAtual = newEndDate; this.renderMainForm(); }; break;
+                case 'amendments': const newEndDate = getVal('new_end_date'); Object.assign(entry, { number: getVal('number'), type: getVal('type'), date: getVal('date'), value_change: getFloat('value_change'), new_end_date: newEndDate, object: getVal('object'), ...seiData }); if (newEndDate) { this.data.details.vigenciaAtual = newEndDate; }; break;
                 case 'invoices': const attested = getVal('date_attested'), payment = getVal('date_payment'); let status = getVal('status'); if(payment) status='pago'; else if(attested) status='atestado'; Object.assign(entry, { number:getVal('number'), value:getFloat('value'), date_issue:getVal('date_issue'), date_attested:attested, date_due:getVal('date_due'), date_payment:payment, status, ...seiData }); break;
             }
 
             if (mode === 'add') this.data[dataArrayName].push(entry);
             
-            this.markDirty();
             this.renderAll();
             this.closeModal();
         },
@@ -545,7 +500,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             if(deleteBtn) {
                 if (confirm(`Tem certeza que deseja excluir este item?`)) {
                     this.data[tableType] = this.data[tableType].filter(item => item.id !== row.dataset.id);
-                    this.markDirty(); 
                     this.renderAll();
                 }
             }
@@ -638,13 +592,13 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         cleanup: function() {
-            // This method is called by the window manager when the window is closed
-            // It's a good place to remove any manually added global listeners if any existed.
-            // All listeners here are scoped to the window's content, so they will be GC'd.
+            // DARK MODE FIX: Disconnect the observer when the window is closed to prevent memory leaks.
+            if (this.themeObserver) {
+                this.themeObserver.disconnect();
+            }
         }
     };
     
-    initializeFileState(appState, `Novo Contrato`, `contrato.gcontract`, 'contract-editor');
     winData.currentAppInstance = appState;
     appState.init();
     return winId;
@@ -653,17 +607,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 // ===================================================================================
 // #endregion
 // ===================================================================================
-// #region MAIN CONTRACT MANAGER / DASHBOARD (Based on the multi-contract view)
+// #region MAIN CONTRACT MANAGER / DASHBOARD
 // ===================================================================================
 
-/**
- * Opens the main Contract Management dashboard window.
- * This view lists all contracts and provides summary dashboards.
- * @returns {string} The ID of the newly created window.
- */
 export function openContractManager() {
     const uniqueSuffix = generateId('contract_manager');
-    const winId = window.windowManager.createWindow('Gestão de Contratos 5.0', '', { 
+    const winId = window.windowManager.createWindow('Gestão de Contratos 5.1', '', { 
         width: '1400px', 
         height: '900px', 
         appType: 'contract-manager' 
@@ -671,7 +620,7 @@ export function openContractManager() {
     
     const content = `
     <div class="app-toolbar">${getStandardAppToolbarHTML()}</div>
-    <div class="contract-container-v2">
+    <div class="contract-manager-container" id="managerContainer_${uniqueSuffix}">
         <div class="contract-dashboard">
             <div class="dashboard-header">
                 <h3><i class="fas fa-chart-line"></i> Dashboard de Contratos</h3>
@@ -682,7 +631,7 @@ export function openContractManager() {
                         <option value="365">Vencem no próximo ano</option>
                         <option value="all" selected>Todos</option>
                     </select>
-                    <button id="refreshDashboard_${uniqueSuffix}" class="app-button"><i class="fas fa-sync-alt"></i></button>
+                    <button id="refreshDashboard_${uniqueSuffix}" class="app-button" title="Atualizar Dashboard"><i class="fas fa-sync-alt"></i></button>
                 </div>
             </div>
             
@@ -710,11 +659,13 @@ export function openContractManager() {
             </div>
             
             <div class="dashboard-charts">
-                <div class="chart-container">
-                    <canvas id="financialChart_${uniqueSuffix}" height="250"></canvas>
+                <div class="chart-wrapper-main">
+                    <h4>Valor por Contrato</h4>
+                    <canvas id="financialChart_${uniqueSuffix}"></canvas>
                 </div>
-                <div class="chart-container">
-                    <canvas id="statusChart_${uniqueSuffix}" height="250"></canvas>
+                <div class="chart-wrapper-main">
+                    <h4>Distribuição por Status</h4>
+                    <canvas id="statusChart_${uniqueSuffix}"></canvas>
                 </div>
             </div>
             
@@ -745,23 +696,24 @@ export function openContractManager() {
     </div>
         
     <style>
-        .contract-container-v2 {
-            display: flex; flex-direction: column; height: 100%; padding: 15px; background: #f8fafc;
-        }
+        .contract-manager-container { display: flex; flex-direction: column; height: 100%; padding: 15px; background: var(--window-bg); color: var(--text-color); }
         .contract-dashboard { display: flex; flex-direction: column; gap: 20px; }
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
         .dashboard-filters { display: flex; gap: 10px; }
         .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
-        .dashboard-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; border-left: 4px solid #3498db; }
+        .dashboard-card { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; border-left: 4px solid #3498db; }
         .dashboard-card:nth-child(2) { border-left-color: #2ecc71; }
         .dashboard-card:nth-child(3) { border-left-color: #f39c12; }
         .dashboard-card:nth-child(4) { border-left-color: #9b59b6; }
         .card-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
         .card-label { color: #718096; font-size: 14px; }
         .card-icon { position: absolute; top: 15px; right: 15px; font-size: 24px; color: #e2e8f0; }
+        .dark-mode .card-icon { color: #4a5568; }
+        .dark-mode .card-label { color: #a0aec0; }
         .dashboard-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .chart-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .contracts-list { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .chart-wrapper-main { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .chart-wrapper-main h4 { margin-top: 0; margin-bottom: 15px; text-align: center; }
+        .contracts-list { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     </style>`;
     
@@ -772,10 +724,12 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v5.0',
-        contracts: [], // Will hold full contract objects
+        appDataType: 'contract-manager_v5.1',
+        contracts: [],
         charts: {},
+        themeObserver: null,
         ui: {
+            container: document.getElementById(`managerContainer_${uniqueSuffix}`),
             totalValue: document.getElementById(`totalValue_${uniqueSuffix}`),
             activeContracts: document.getElementById(`activeContracts_${uniqueSuffix}`),
             expiringSoon: document.getElementById(`expiringSoon_${uniqueSuffix}`),
@@ -790,7 +744,8 @@ export function openContractManager() {
         
         init: function() {
             setupAppToolbarActions(this);
-            this.loadSampleData(); // Load initial data
+            this.setupThemeObserver();
+            this.loadSampleData();
             
             this.ui.addContractBtn.onclick = () => this.createNewContract();
             this.ui.refreshBtn.onclick = () => this.refreshDashboard();
@@ -798,8 +753,31 @@ export function openContractManager() {
             
             this.renderDashboard();
         },
+        
+        setupThemeObserver: function() {
+            const appContainer = this.ui.container;
+            const applyTheme = () => {
+                if(document.body.classList.contains('dark-mode')) {
+                    appContainer.classList.add('dark-mode');
+                } else {
+                    appContainer.classList.remove('dark-mode');
+                }
+                 // Re-render charts for theme change if they exist
+                if (this.charts.financial) this.renderCharts();
+            };
 
-        // Override loadData to properly handle the list of contracts
+            this.themeObserver = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    if (mutation.attributeName === 'class') {
+                        applyTheme();
+                    }
+                });
+            });
+
+            this.themeObserver.observe(document.body, { attributes: true });
+            applyTheme();
+        },
+
         loadData: function(dataString, fileMeta) {
             try {
                 const parsedData = JSON.parse(dataString);
@@ -810,55 +788,27 @@ export function openContractManager() {
                     window.windowManager.updateWindowTitle(this.winId, fileMeta.name);
                     this.renderDashboard();
                     showNotification("Lista de contratos carregada com sucesso.", 3000, "success");
-                } else {
-                    throw new Error("O arquivo não contém uma lista de contratos válida.");
-                }
-            } catch (e) {
-                showNotification(`Erro ao carregar arquivo: ${e.message}`, 5000, "error");
-            }
+                } else { throw new Error("O arquivo não contém uma lista de contratos válida."); }
+            } catch (e) { showNotification(`Erro ao carregar arquivo: ${e.message}`, 5000, "error"); }
         },
 
-        // Override getData to return the array of contracts
-        getData: function() {
-            return this.contracts;
-        },
+        getData: function() { return this.contracts; },
 
         loadSampleData: function() {
             this.contracts = [
                 {
-                    id: 'ctr-smp-001',
-                    details: {
-                        numeroContrato: 'CTR/2023/001',
-                        contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' },
-                        contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' },
-                        valorGlobal: 150000,
-                        situacao: 'ativo',
-                        dataAssinatura: '2023-01-15',
-                        vigenciaAtual: '2024-08-14',
-                    },
-                    items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }],
-                    financial: [], physical: [], amendments: [], invoices: []
+                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: '2025-01-14' },
+                    items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
                 },
                 {
-                    id: 'ctr-smp-002',
-                    details: {
-                        numeroContrato: 'CTR/2023/045',
-                        contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' },
-                        contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' },
-                        valorGlobal: 230000,
-                        situacao: 'concluido',
-                        dataAssinatura: '2022-11-01',
-                        vigenciaAtual: '2023-12-31',
-                    },
-                    items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }],
-                    financial: [], physical: [], amendments: [], invoices: []
+                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
+                    items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }], financial: [], physical: [], amendments: [], invoices: []
                 }
             ];
         },
         
         renderDashboard: function() {
-            this.markDirty(); // Any rendering suggests potential for a save of the whole list
-            // Update cards
+            this.markDirty();
             const totalValue = this.contracts.reduce((sum, c) => sum + (c.details.valorGlobal || 0), 0);
             const activeContracts = this.contracts.filter(c => c.details.situacao === 'ativo').length;
             const expiringSoon = this.contracts.filter(c => {
@@ -881,12 +831,10 @@ export function openContractManager() {
         
         getFilteredContracts: function() {
             const filter = this.ui.timeFilter.value;
-            if (filter === 'all') {
-                return this.contracts;
-            }
+            if (filter === 'all') return this.contracts;
             const days = parseInt(filter, 10);
             const today = new Date();
-            const limitDate = new Date(today);
+            const limitDate = new Date();
             limitDate.setDate(today.getDate() + days);
 
             return this.contracts.filter(c => {
@@ -909,11 +857,7 @@ export function openContractManager() {
                     <td>${formatCurrency(contract.details.valorGlobal)}</td>
                     <td><span class="status-badge ${contract.details.situacao}">${this.getStatusText(contract.details.situacao)}</span></td>
                     <td>${contract.details.vigenciaAtual ? new Date(contract.details.vigenciaAtual + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
-                    <td>
-                        <button class="app-button small" data-action="edit" data-id="${contract.id}" title="Editar Contrato">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                    </td>
+                    <td><button class="app-button small" data-action="edit" data-id="${contract.id}" title="Editar Contrato"><i class="fas fa-edit"></i></button></td>
                 `;
                 tbody.appendChild(row);
             });
@@ -930,16 +874,19 @@ export function openContractManager() {
         
         renderCharts: function() {
             if (typeof Chart === 'undefined') {
-                console.error("Chart.js is not loaded. Please include it via a <script> tag.");
+                console.error("Chart.js is not loaded. Please include it via a <script> tag for charts to appear.");
                 return;
             }
 
             if (this.charts.financial) this.charts.financial.destroy();
             if (this.charts.status) this.charts.status.destroy();
             
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const textColor = isDarkMode ? '#e2e8f0' : '#666';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
             const contractValues = this.contracts.map(c => c.details.valorGlobal || 0);
             const contractNames = this.contracts.map(c => c.details.numeroContrato || 'Sem Número');
-            
             const statusCounts = this.contracts.reduce((acc, c) => {
                 const status = c.details.situacao || 'indefinido';
                 acc[status] = (acc[status] || 0) + 1;
@@ -948,30 +895,28 @@ export function openContractManager() {
             
             this.charts.financial = new Chart(this.ui.financialChart, {
                 type: 'bar',
-                data: { labels: contractNames, datasets: [{ label: 'Valor do Contrato (R$)', data: contractValues, backgroundColor: 'rgba(54, 162, 235, 0.6)' }] },
-                options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Valor por Contrato' } }, scales: { y: { ticks: { callback: (value) => formatCurrency(value) } } } }
+                data: { labels: contractNames, datasets: [{ label: 'Valor do Contrato (R$)', data: contractValues, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: textColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } } }
             });
             
             this.charts.status = new Chart(this.ui.statusChart, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(statusCounts).map(s => this.getStatusText(s)),
-                    datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c', '#95a5a6', '#3498db', '#9b59b6'] }]
+                    datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c', '#95a5a6', '#3498db', '#9b59b6'], borderWidth: 0 }]
                 },
-                options: { responsive: true, plugins: { title: { display: true, text: 'Distribuição por Status' } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: textColor } } } }
             });
         },
 
         handleContractSave: function(savedData) {
             const index = this.contracts.findIndex(c => c.id === savedData.id);
             if (index > -1) {
-                // Update existing contract
                 this.contracts[index] = savedData;
-                showNotification(`Contrato "${savedData.details.numeroContrato}" atualizado.`, 3000, 'success');
+                showNotification(`Contrato "${savedData.details.numeroContrato}" atualizado.`, 3000, "success");
             } else {
-                // Add new contract
                 this.contracts.push(savedData);
-                showNotification(`Contrato "${savedData.details.numeroContrato}" criado.`, 3000, 'success');
+                showNotification(`Contrato "${savedData.details.numeroContrato}" criado.`, 3000, "success");
             }
             this.renderDashboard();
         },
@@ -980,12 +925,9 @@ export function openContractManager() {
             const newContract = {
                 id: generateId('ctr'),
                 details: {
-                    numeroContrato: `CTR/${new Date().getFullYear()}/NOVO`,
-                    situacao: 'ativo',
-                    contratada: { nome: '', cnpj: ''},
-                    contratante: { nome: '', cnpj: ''},
-                    valorGlobal: 0,
-                    dataAssinatura: new Date().toISOString().split('T')[0],
+                    numeroContrato: `CTR/${new Date().getFullYear()}/NOVO`, situacao: 'ativo',
+                    contratada: { nome: '', cnpj: ''}, contratante: { nome: '', cnpj: ''},
+                    valorGlobal: 0, dataAssinatura: new Date().toISOString().split('T')[0],
                     vigenciaAtual: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
                 },
                 items: [], financial: [], physical: [], amendments: [], invoices: []
@@ -996,7 +938,7 @@ export function openContractManager() {
         editContract: function(contractId) {
             const contractData = this.contracts.find(c => c.id === contractId);
             if (contractData) {
-                openContractDetailEditor(contractData, contractData.fileId, (data) => this.handleContractSave(data));
+                openContractDetailEditor(contractData, null, (data) => this.handleContractSave(data));
             } else {
                 showNotification(`Erro: Contrato com ID ${contractId} não encontrado.`, 4000, 'error');
             }
@@ -1005,6 +947,14 @@ export function openContractManager() {
         refreshDashboard: function() {
             this.renderDashboard();
             showNotification('Dashboard atualizado.', 2000, 'info');
+        },
+
+        cleanup: function() {
+            if (this.themeObserver) {
+                this.themeObserver.disconnect();
+            }
+            if(this.charts.financial) this.charts.financial.destroy();
+            if(this.charts.status) this.charts.status.destroy();
         }
     };
     
@@ -1015,4 +965,3 @@ export function openContractManager() {
 }
 // ===================================================================================
 // #endregion
-// ===================================================================================
