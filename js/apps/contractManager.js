@@ -342,17 +342,28 @@ export function openContractManager() {
         init: function() { 
             setupAppToolbarActions(this);
             
-            // Setup tabs
+            // Configuração das abas
             this.ui.tabButtons.forEach(button => {
                 button.onclick = () => {
+                    // Remove a classe 'active' de todos os botões
                     this.ui.tabButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Esconde todos os conteúdos das abas
                     this.ui.tabContents.forEach(content => content.style.display = 'none');
+                    
+                    // Adiciona a classe 'active' ao botão clicado
                     button.classList.add('active');
-                    winData.element.querySelector(`#${button.dataset.tab}`).style.display = 'block';
+                    
+                    // Mostra o conteúdo da aba correspondente
+                    const tabId = button.dataset.tab;
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.style.display = 'block';
+                    }
                 };
             });
             
-            // Setup entry buttons
+            // Configuração dos botões de adição
             this.ui.addFinancialBtn.onclick = () => this.addEntry('financial', {
                 id: generateId('fin'), 
                 date: new Date().toISOString().split('T')[0], 
@@ -369,7 +380,7 @@ export function openContractManager() {
                 unit: 'Un', 
                 date_planned: '', 
                 date_done: null, 
-                percent_complete:0, 
+                percent_complete: 0, 
                 status: 'pendente',
                 measurement: ''
             }); 
@@ -381,8 +392,8 @@ export function openContractManager() {
                 date: new Date().toISOString().split('T')[0], 
                 object_change: '', 
                 value_change: 0, 
-                new_total: this.data.details.totalValue,
-                new_end_date: this.data.details.endDate
+                new_total: this.data.details.totalValue || 0,
+                new_end_date: this.data.details.endDate || ''
             }); 
             
             this.ui.addInvoiceBtn.onclick = () => this.addEntry('invoices', {
@@ -404,14 +415,17 @@ export function openContractManager() {
                 file: null
             }); 
             
-            // Setup table events
+            // Configuração dos eventos das tabelas
             ['financial', 'physical', 'amendments', 'invoices', 'documents'].forEach(type => {
-                this.ui[`${type}TableBody`].addEventListener('click', (e) => this.handleTableAction(e, type));
-                this.ui[`${type}TableBody`].addEventListener('input', (e) => this.handleTableInput(e, type));
-                this.ui[`${type}TableBody`].addEventListener('change', (e) => this.handleTableInput(e, type));
+                const tableBody = this.ui[`${type}TableBody`];
+                if (tableBody) {
+                    tableBody.addEventListener('click', (e) => this.handleTableAction(e, type));
+                    tableBody.addEventListener('input', (e) => this.handleTableInput(e, type));
+                    tableBody.addEventListener('change', (e) => this.handleTableInput(e, type));
+                }
             });
             
-            // Setup form validation
+            // Validação de CNPJ
             this.ui.detailsForm.vendorCNPJ.addEventListener('blur', () => {
                 const cnpj = this.ui.detailsForm.vendorCNPJ.value;
                 if (cnpj && !validateCNPJ(cnpj)) {
@@ -422,17 +436,17 @@ export function openContractManager() {
                 }
             });
             
-            // Setup date validation
+            // Validação de datas
             this.ui.detailsForm.endDate.addEventListener('change', () => {
                 const start = new Date(this.ui.detailsForm.startDate.value);
                 const end = new Date(this.ui.detailsForm.endDate.value);
                 if (start > end) {
                     showNotification("Data de término não pode ser anterior à data de início", 3000);
-                    this.ui.detailsForm.endDate.value = this.data.details.endDate;
+                    this.ui.detailsForm.endDate.value = this.data.details.endDate || '';
                 }
             });
             
-            // Initialize
+            // Atualização de formulário
             Object.values(this.ui.detailsForm).forEach(input => {
                 input.oninput = () => {
                     this.markDirty(); 
@@ -440,6 +454,7 @@ export function openContractManager() {
                 };
             });
             
+            // Renderização inicial
             this.renderAll();
             this.checkAlerts();
         },
@@ -454,111 +469,177 @@ export function openContractManager() {
             this.checkAlerts();
         },
         renderAll: function() {
-            // Render form
+            // Atualiza campos do formulário
             for(const key in this.ui.detailsForm){
                 if(this.data.details[key] !== undefined) {
                     this.ui.detailsForm[key].value = this.data.details[key];
                 }
             }
             
-            // Render tables
-            this.renderTable('financial', (e) => `
-                <td><input type="date" class="app-input" value="${e.date||''}" data-field="date"></td>
-                <td>
-                    <select class="app-select" data-field="type">
-                        <option value="empenho" ${e.type==='empenho'?'selected':''}>Empenho</option>
-                        <option value="liquidacao" ${e.type==='liquidacao'?'selected':''}>Liquidação</option>
-                        <option value="pagamento" ${e.type==='pagamento'?'selected':''}>Pagamento</option>
-                        <option value="anulacao" ${e.type==='anulacao'?'selected':''}>Anulação</option>
-                    </select>
-                </td>
-                <td><input type="text" class="app-input" value="${e.description||''}" data-field="description"></td>
-                <td><input type="number" class="app-input" value="${e.value||0}" step="0.01" data-field="value"></td>
-                <td><input type="text" class="app-input" value="${e.document||''}" data-field="document" placeholder="Nº Doc."></td>
-            `);
+            // Renderiza cada tabela com sua função específica
+            this.renderFinancialTable();
+            this.renderPhysicalTable();
+            this.renderAmendmentsTable();
+            this.renderInvoicesTable();
+            this.renderDocumentsTable();
             
-            this.renderTable('physical', (e) => `
-                <td><input type="text" class="app-input" value="${e.item||''}" data-field="item"></td>
-                <td><input type="number" class="app-input" value="${e.quantity||0}" data-field="quantity"></td>
-                <td><input class="app-input" value="${e.unit||'Un'}" data-field="unit"></td>
-                <td><input type="date" class="app-input" value="${e.date_planned||''}" data-field="date_planned"></td>
-                <td><input type="date" class="app-input" value="${e.date_done||''}" data-field="date_done"></td>
-                <td><input type="number" class="app-input" value="${e.percent_complete||0}" min="0" max="100" data-field="percent_complete"></td>
-                <td>
-                    <select class="app-select" data-field="status">
-                        <option value="pendente" ${e.status==='pendente'?'selected':''}>Pendente</option>
-                        <option value="andamento" ${e.status==='andamento'?'selected':''}>Andamento</option>
-                        <option value="concluido" ${e.status==='concluido'?'selected':''}>Concluído</option>
-                        <option value="atrasado" ${e.status==='atrasado'?'selected':''}>Atrasado</option>
-                    </select>
-                </td>
-                <td><input type="text" class="app-input" value="${e.measurement||''}" data-field="measurement" placeholder="Nº Medição"></td>
-            `);
-            
-            this.renderTable('amendments', (e) => `
-                <td>
-                    <select class="app-select" data-field="type">
-                        <option value="valor" ${e.type==='valor'?'selected':''}>Valor</option>
-                        <option value="prazo" ${e.type==='prazo'?'selected':''}>Prazo</option>
-                        <option value="objeto" ${e.type==='objeto'?'selected':''}>Objeto</option>
-                        <option value="outros" ${e.type==='outros'?'selected':''}>Outros</option>
-                    </select>
-                </td>
-                <td><input type="text" class="app-input" value="${e.number||''}" data-field="number"></td>
-                <td><input type="date" class="app-input" value="${e.date||''}" data-field="date"></td>
-                <td><input type="text" class="app-input" value="${e.object_change||''}" data-field="object_change"></td>
-                <td><input type="number" class="app-input" value="${e.value_change||0}" data-field="value_change"></td>
-                <td><input type="number" class="app-input" value="${e.new_total||0}" data-field="new_total"></td>
-                <td><input type="date" class="app-input" value="${e.new_end_date||''}" data-field="new_end_date"></td>
-            `);
-            
-            this.renderTable('invoices', (e) => `
-                <td><input type="text" class="app-input" value="${e.number||''}" data-field="number"></td>
-                <td><input type="date" class="app-input" value="${e.date_issue||''}" data-field="date_issue"></td>
-                <td><input type="number" class="app-input" value="${e.value||0}" data-field="value"></td>
-                <td><input type="date" class="app-input" value="${e.date_attested||''}" data-field="date_attested"></td>
-                <td><input type="date" class="app-input" value="${e.date_payment||''}" data-field="date_payment"></td>
-                <td>
-                    <select class="app-select" data-field="status">
-                        <option value="pendente" ${e.status==='pendente'?'selected':''}>Pendente</option>
-                        <option value="atestado" ${e.status==='atestado'?'selected':''}>Atestado</option>
-                        <option value="pago" ${e.status==='pago'?'selected':''}>Pago</option>
-                        <option value="cancelado" ${e.status==='cancelado'?'selected':''}>Cancelado</option>
-                    </select>
-                </td>
-            `);
-            
-            this.renderTable('documents', (e) => `
-                <td>
-                    <select class="app-select" data-field="type">
-                        <option value="contrato" ${e.type==='contrato'?'selected':''}>Contrato</option>
-                        <option value="aditivo" ${e.type==='aditivo'?'selected':''}>Aditivo</option>
-                        <option value="ata" ${e.type==='ata'?'selected':''}>Ata</option>
-                        <option value="nota_fiscal" ${e.type==='nota_fiscal'?'selected':''}>Nota Fiscal</option>
-                        <option value="laudo" ${e.type==='laudo'?'selected':''}>Laudo</option>
-                        <option value="outros" ${e.type==='outros'?'selected':''}>Outros</option>
-                    </select>
-                </td>
-                <td><input type="text" class="app-input" value="${e.name||''}" data-field="name"></td>
-                <td><input type="date" class="app-input" value="${e.date||''}" data-field="date"></td>
-                <td><input type="file" class="app-input" data-field="file" accept=".pdf,.doc,.docx,.xls,.xlsx"></td>
-            `);
-            
+            // Atualiza resumo e alertas
             this.renderFinancialSummary();
             this.checkAlerts();
         },
-        renderTable: function(type, rowRenderFn) {
-            const tableBody = this.ui[`${type}TableBody`];
+        renderFinancialTable: function() {
+            const tableBody = this.ui.financialTableBody;
+            if (!tableBody) return;
+            
             tableBody.innerHTML = '';
-            (this.data[type] = this.data[type] || []).forEach((entry) => {
+            (this.data.financial || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
-                row.innerHTML = rowRenderFn(entry) + 
-                    `<td>
+                row.innerHTML = `
+                    <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
+                    <td>
+                        <select class="app-select" data-field="type">
+                            <option value="empenho" ${entry.type === 'empenho' ? 'selected' : ''}>Empenho</option>
+                            <option value="liquidacao" ${entry.type === 'liquidacao' ? 'selected' : ''}>Liquidação</option>
+                            <option value="pagamento" ${entry.type === 'pagamento' ? 'selected' : ''}>Pagamento</option>
+                            <option value="anulacao" ${entry.type === 'anulacao' ? 'selected' : ''}>Anulação</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="app-input" value="${entry.description || ''}" data-field="description"></td>
+                    <td><input type="number" class="app-input" value="${entry.value || 0}" step="0.01" data-field="value"></td>
+                    <td><input type="text" class="app-input" value="${entry.document || ''}" data-field="document" placeholder="Nº Doc."></td>
+                    <td>
                         <button class="app-button danger action-button" data-action="delete" title="Excluir">
                             <i class="fas fa-trash"></i>
                         </button>
-                    </td>`;
+                    </td>
+                `;
+            });
+        },
+        renderPhysicalTable: function() {
+            const tableBody = this.ui.physicalTableBody;
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            (this.data.physical || []).forEach(entry => {
+                const row = tableBody.insertRow();
+                row.dataset.id = entry.id;
+                row.innerHTML = `
+                    <td><input type="text" class="app-input" value="${entry.item || ''}" data-field="item"></td>
+                    <td><input type="number" class="app-input" value="${entry.quantity || 0}" data-field="quantity"></td>
+                    <td><input class="app-input" value="${entry.unit || 'Un'}" data-field="unit"></td>
+                    <td><input type="date" class="app-input" value="${entry.date_planned || ''}" data-field="date_planned"></td>
+                    <td><input type="date" class="app-input" value="${entry.date_done || ''}" data-field="date_done"></td>
+                    <td><input type="number" class="app-input" value="${entry.percent_complete || 0}" min="0" max="100" data-field="percent_complete"></td>
+                    <td>
+                        <select class="app-select" data-field="status">
+                            <option value="pendente" ${entry.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="andamento" ${entry.status === 'andamento' ? 'selected' : ''}>Andamento</option>
+                            <option value="concluido" ${entry.status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                            <option value="atrasado" ${entry.status === 'atrasado' ? 'selected' : ''}>Atrasado</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="app-input" value="${entry.measurement || ''}" data-field="measurement" placeholder="Nº Medição"></td>
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+            });
+        },
+        renderAmendmentsTable: function() {
+            const tableBody = this.ui.amendmentsTableBody;
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            (this.data.amendments || []).forEach(entry => {
+                const row = tableBody.insertRow();
+                row.dataset.id = entry.id;
+                row.innerHTML = `
+                    <td>
+                        <select class="app-select" data-field="type">
+                            <option value="valor" ${entry.type === 'valor' ? 'selected' : ''}>Valor</option>
+                            <option value="prazo" ${entry.type === 'prazo' ? 'selected' : ''}>Prazo</option>
+                            <option value="objeto" ${entry.type === 'objeto' ? 'selected' : ''}>Objeto</option>
+                            <option value="outros" ${entry.type === 'outros' ? 'selected' : ''}>Outros</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="app-input" value="${entry.number || ''}" data-field="number"></td>
+                    <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
+                    <td><input type="text" class="app-input" value="${entry.object_change || ''}" data-field="object_change"></td>
+                    <td><input type="number" class="app-input" value="${entry.value_change || 0}" data-field="value_change"></td>
+                    <td><input type="number" class="app-input" value="${entry.new_total || 0}" data-field="new_total"></td>
+                    <td><input type="date" class="app-input" value="${entry.new_end_date || ''}" data-field="new_end_date"></td>
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+            });
+        },
+        renderInvoicesTable: function() {
+            const tableBody = this.ui.invoicesTableBody;
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            (this.data.invoices || []).forEach(entry => {
+                const row = tableBody.insertRow();
+                row.dataset.id = entry.id;
+                row.innerHTML = `
+                    <td><input type="text" class="app-input" value="${entry.number || ''}" data-field="number"></td>
+                    <td><input type="date" class="app-input" value="${entry.date_issue || ''}" data-field="date_issue"></td>
+                    <td><input type="number" class="app-input" value="${entry.value || 0}" data-field="value"></td>
+                    <td><input type="date" class="app-input" value="${entry.date_attested || ''}" data-field="date_attested"></td>
+                    <td><input type="date" class="app-input" value="${entry.date_payment || ''}" data-field="date_payment"></td>
+                    <td>
+                        <select class="app-select" data-field="status">
+                            <option value="pendente" ${entry.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="atestado" ${entry.status === 'atestado' ? 'selected' : ''}>Atestado</option>
+                            <option value="pago" ${entry.status === 'pago' ? 'selected' : ''}>Pago</option>
+                            <option value="cancelado" ${entry.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+            });
+        },
+        renderDocumentsTable: function() {
+            const tableBody = this.ui.documentsTableBody;
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            (this.data.documents || []).forEach(entry => {
+                const row = tableBody.insertRow();
+                row.dataset.id = entry.id;
+                row.innerHTML = `
+                    <td>
+                        <select class="app-select" data-field="type">
+                            <option value="contrato" ${entry.type === 'contrato' ? 'selected' : ''}>Contrato</option>
+                            <option value="aditivo" ${entry.type === 'aditivo' ? 'selected' : ''}>Aditivo</option>
+                            <option value="ata" ${entry.type === 'ata' ? 'selected' : ''}>Ata</option>
+                            <option value="nota_fiscal" ${entry.type === 'nota_fiscal' ? 'selected' : ''}>Nota Fiscal</option>
+                            <option value="laudo" ${entry.type === 'laudo' ? 'selected' : ''}>Laudo</option>
+                            <option value="outros" ${entry.type === 'outros' ? 'selected' : ''}>Outros</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="app-input" value="${entry.name || ''}" data-field="name"></td>
+                    <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
+                    <td>
+                        <input type="file" class="app-input" data-field="file" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                        ${entry.path ? `<span class="file-info">${entry.path.split('/').pop()}</span>` : ''}
+                    </td>
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderFinancialSummary: function() {
@@ -573,17 +654,11 @@ export function openContractManager() {
                 else if (f.type === 'liquidacao') totalLiquidado += val;
                 else if (f.type === 'pagamento') totalPago += val;
                 else if (f.type === 'anulacao') {
-                    // Simplificação: anulação deduz de todos os estágios anteriores
-                    // Uma lógica mais complexa poderia verificar o saldo de cada um
                     totalEmpenhado -= val;
                     totalLiquidado -= val;
+                    totalPago -= val;
                 }
             });
-            
-            // Garantir que os totais não fiquem negativos
-            totalEmpenhado = Math.max(0, totalEmpenhado);
-            totalLiquidado = Math.max(0, totalLiquidado);
-            totalPago = Math.max(0, totalPago);
             
             this.ui.summary.totalValue.textContent = totalValue.toFixed(2) + " R$";
             this.ui.summary.totalEmpenhado.textContent = totalEmpenhado.toFixed(2) + " R$";
@@ -594,11 +669,21 @@ export function openContractManager() {
             this.ui.summary.saldoPagar.textContent = (totalLiquidado - totalPago).toFixed(2) + " R$";
         },
         addEntry: function(type, template) {
-            (this.data[type] = this.data[type] || []).push({...template});
+            if (!this.data[type]) this.data[type] = [];
+            this.data[type].push({...template});
             this.markDirty();
-            // CORRIGIDO: Chamar renderAll() garante que todas as tabelas
-            // usem a lógica de renderização correta que já está definida
-            this.renderAll(); 
+            
+            // Renderiza apenas a tabela específica
+            switch(type) {
+                case 'financial': this.renderFinancialTable(); break;
+                case 'physical': this.renderPhysicalTable(); break;
+                case 'amendments': this.renderAmendmentsTable(); break;
+                case 'invoices': this.renderInvoicesTable(); break;
+                case 'documents': this.renderDocumentsTable(); break;
+            }
+            
+            if(type === 'financial') this.renderFinancialSummary();
+            this.checkAlerts();
         },
         handleTableAction: function(e, tableType) {
             const button = e.target.closest('button[data-action="delete"]');
@@ -606,9 +691,20 @@ export function openContractManager() {
                 const rowId = button.closest('tr').dataset.id;
                 this.data[tableType] = (this.data[tableType] || []).filter(item => item.id !== rowId);
                 this.markDirty();
-                // CORRIGIDO: Chamar renderAll() aqui também garante que a 
-                // remoção de uma linha atualize toda a UI de forma consistente.
-                this.renderAll();
+                
+                // Renderiza apenas a tabela específica
+                switch(tableType) {
+                    case 'financial': 
+                        this.renderFinancialTable(); 
+                        this.renderFinancialSummary();
+                        break;
+                    case 'physical': this.renderPhysicalTable(); break;
+                    case 'amendments': this.renderAmendmentsTable(); break;
+                    case 'invoices': this.renderInvoicesTable(); break;
+                    case 'documents': this.renderDocumentsTable(); break;
+                }
+                
+                this.checkAlerts();
             }
         },
         handleTableInput: function(e, tableType) {
@@ -619,74 +715,76 @@ export function openContractManager() {
                 const entry = (this.data[tableType] || []).find(item => item.id === rowId);
                 
                 if (entry) {
+                    // Atualiza o valor do campo
                     if (input.type === 'number') {
                         entry[field] = parseFloat(input.value) || 0;
                     } else if (input.type === 'file') {
-                        // O objeto File não deve ser armazenado diretamente no JSON.
-                        // O ideal é ler o arquivo e armazenar como base64 ou um link.
-                        // Por agora, vamos apenas marcar que um arquivo foi selecionado.
-                        entry.fileName = input.files[0] ? input.files[0].name : '';
-                        console.log("Arquivo selecionado (não será salvo no JSON):", entry.fileName);
+                        entry.file = input.files[0];
+                        entry.path = entry.file ? entry.file.name : '';
                     } else {
                         entry[field] = input.value;
                     }
                     
                     this.markDirty();
                     
-                    if(tableType === 'financial') {
+                    // Atualizações específicas
+                    if (tableType === 'financial') {
                         this.renderFinancialSummary();
-                    }
-                    if(tableType === 'amendments' && field === 'value_change') {
+                    } else if (tableType === 'amendments' && field === 'value_change') {
                         entry.new_total = (this.data.details.totalValue || 0) + entry.value_change;
-                        // Atualiza a UI imediatamente para refletir a mudança
                         const newTotalInput = input.closest('tr').querySelector('[data-field="new_total"]');
-                        if (newTotalInput) newTotalInput.value = entry.new_total.toFixed(2);
+                        if (newTotalInput) newTotalInput.value = entry.new_total;
                     }
+                    
                     this.checkAlerts();
                 }
             }
         },
         checkAlerts: function() {
-            const endDate = this.data.details.endDate ? new Date(this.data.details.endDate + "T23:59:59") : null;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            if (endDate) {
-                const diffTime = endDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            // Verificação de vencimento
+            if (this.data.details.endDate) {
+                const endDate = new Date(this.data.details.endDate);
+                const today = new Date();
+                const diffTime = endDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                 
-                if (diffDays >= 0) {
-                    this.ui.alertsUI.endDate.textContent = `${diffDays} dias restantes`;
-                } else {
-                    this.ui.alertsUI.endDate.textContent = `Vencido há ${Math.abs(diffDays)} dias`;
-                }
+                this.ui.alertsUI.endDate.textContent = diffDays > 0 ? 
+                    `${diffDays} dias restantes` : 
+                    `Vencido há ${Math.abs(diffDays)} dias`;
                 
+                // Classes de alerta
                 const endDateElement = this.ui.alertsUI.endDate.parentElement;
                 endDateElement.classList.remove('alert-warning', 'alert-critical');
-                if (diffDays <= 30 && diffDays >= 0) {
-                    endDateElement.classList.add('alert-warning');
-                } else if (diffDays < 0) {
-                     endDateElement.classList.add('alert-critical');
+                if (diffDays <= 30) {
+                    endDateElement.classList.add(diffDays <= 0 ? 'alert-critical' : 'alert-warning');
                 }
-            } else {
-                this.ui.alertsUI.endDate.textContent = "-";
             }
             
-            const pendingDeliveries = (this.data.physical || []).filter(d => d.status !== 'concluido').length;
+            // Entregas pendentes
+            const pendingDeliveries = (this.data.physical || []).filter(
+                d => d.status !== 'concluido'
+            ).length;
             this.ui.alertsUI.deliveries.textContent = pendingDeliveries;
             this.ui.alertsUI.deliveries.parentElement.classList.toggle('alert-warning', pendingDeliveries > 0);
                 
+            // Pagamentos atrasados
+            const today = new Date();
             const lateInvoices = (this.data.invoices || []).filter(i => {
                 if (i.status === 'pago' || !i.date_attested) return false;
-                const attestedDate = new Date(i.date_attested);
-                const paymentDeadline = new Date(attestedDate.setDate(attestedDate.getDate() + 30)); // Exemplo: 30 dias para pagar
-                return paymentDeadline < today && !i.date_payment;
+                if (!i.date_payment) return true;
+                const paymentDate = new Date(i.date_payment);
+                return paymentDate < today;
             }).length;
+            
             this.ui.alertsUI.payments.textContent = lateInvoices;
             this.ui.alertsUI.payments.parentElement.classList.toggle('alert-critical', lateInvoices > 0);
             
-            const pendingAmendments = (this.data.amendments || []).filter(a => !a.date || !a.number).length;
-            this.ui.alertsUI.amendment.textContent = pendingAmendments > 0 ? `${pendingAmendments} pendentes` : 'Nenhum';
+            // Aditivos pendentes
+            const pendingAmendments = (this.data.amendments || []).filter(
+                a => !a.date || !a.number
+            ).length;
+            this.ui.alertsUI.amendment.textContent = pendingAmendments > 0 ? 
+                `${pendingAmendments} pendentes` : 'Nenhum';
         },
         cleanup: () => {}
     };
