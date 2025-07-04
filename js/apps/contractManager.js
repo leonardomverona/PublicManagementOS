@@ -1,7 +1,7 @@
 import { generateId, showNotification } from '../main.js';
 import { getStandardAppToolbarHTML, initializeFileState, setupAppToolbarActions } from './app.js';
 
-// Função de validação de CNPJ local (sem alterações, pois já estava correta)
+// Função de validação de CNPJ local
 function validateCNPJ(cnpj) {
     cnpj = cnpj.replace(/[^\d]+/g, '');
     
@@ -39,6 +39,16 @@ function validateCNPJ(cnpj) {
     return resultado === parseInt(digitos.charAt(1));
 }
 
+// Função para formatar CNPJ
+function formatCNPJ(cnpj) {
+    cnpj = cnpj.replace(/\D/g, '');
+    cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
+    cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+    cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
+    cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
+    return cnpj.substring(0, 18);
+}
+
 export function openContractManager() {
     const uniqueSuffix = generateId('contract');
     const winId = window.windowManager.createWindow('Gestão de Contratos', '', { 
@@ -64,8 +74,14 @@ export function openContractManager() {
                         <option value="encerrado">Encerrado</option>
                         <option value="cancelado">Cancelado</option>
                     </select>
-                    <input type="text" id="contractVendor_${uniqueSuffix}" class="app-input" placeholder="CONTRATADA" required>
-                    <input type="text" id="contractClient_${uniqueSuffix}" class="app-input" placeholder="CONTRATANTE" required>
+                    <div>
+                        <input type="text" id="contractVendor_${uniqueSuffix}" class="app-input" placeholder="CONTRATADA (CNPJ)" required>
+                        <div class="cnpj-format-hint">Formato: 00.000.000/0000-00</div>
+                    </div>
+                    <div>
+                        <input type="text" id="contractClient_${uniqueSuffix}" class="app-input" placeholder="CONTRATANTE (CNPJ)" required>
+                        <div class="cnpj-format-hint">Formato: 00.000.000/0000-00</div>
+                    </div>
                     <select id="contractType_${uniqueSuffix}" class="app-select">
                         <option value="">TIPO DE CONTRATO</option>
                         <option value="servico">Serviço</option>
@@ -113,7 +129,7 @@ export function openContractManager() {
                         <input type="text" id="contractSEI_${uniqueSuffix}" class="app-input" placeholder="Nº SEI">
                         <input type="text" id="contractSEILink_${uniqueSuffix}" class="app-input" placeholder="Link SEI">
                     </div>
-                    <input type="number" id="contractTotalValue_${uniqueSuffix}" class="app-input" placeholder="VALOR INICIAL DO CONTRATO (R$)" step="0.01" min="0" required title="Valor base do contrato, sem aditivos.">
+                    <input type="number" id="contractTotalValue_${uniqueSuffix}" class="app-input" placeholder="VALOR GLOBAL ATUAL (R$)" step="0.01" min="0" required>
                 </div>
             </div>
             
@@ -156,7 +172,7 @@ export function openContractManager() {
             <button class="contract-tab-button" data-tab="alerts_${uniqueSuffix}"><i class="fas fa-bell"></i> Alertas</button>
         </div>
         
-        <div id="financial_${uniqueSuffix}" class="contract-tab-content active" style="display: block;">
+        <div id="financial_${uniqueSuffix}" class="contract-tab-content">
             <div class="tab-section-container">
                 <div class="app-section">
                     <h4>Execução Financeira</h4>
@@ -181,7 +197,7 @@ export function openContractManager() {
                 <div class="app-section">
                     <h4>Resumo Financeiro</h4>
                     <div class="summary-grid">
-                        <div>Valor Contratado Atual:</div>
+                        <div>Valor Contratado:</div>
                         <div><strong id="summaryTotalValue_${uniqueSuffix}">0.00 R$</strong></div>
                         <div>Total Empenhado:</div>
                         <div><strong id="summaryTotalEmpenhado_${uniqueSuffix}">0.00 R$</strong></div>
@@ -208,7 +224,7 @@ export function openContractManager() {
                         <table class="app-table" id="physicalTable_${uniqueSuffix}">
                             <thead>
                                 <tr>
-                                    <th>Item do Contrato</th>
+                                    <th>Item</th>
                                     <th>Qtde</th>
                                     <th>Un.</th>
                                     <th>Previsto</th>
@@ -240,7 +256,8 @@ export function openContractManager() {
                                     <th>Nº Aditivo</th>
                                     <th>Data</th>
                                     <th>Objeto</th>
-                                    <th>Alteração de Valor (R$)</th>
+                                    <th>Valor (R$)</th>
+                                    <th>Novo Total</th>
                                     <th>Novo Término</th>
                                     <th>Nº Doc. SEI</th>
                                     <th>Ações</th>
@@ -319,37 +336,219 @@ export function openContractManager() {
         </div>
     </div>
     <style>
-        .contract-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        .contract-main-form { overflow-y: auto; max-height: 50vh; padding-right: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; }
-        .form-section { margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
-        .form-section h5 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-bottom: 10px; }
-        .contract-items-container { overflow-x: auto; }
-        .contract-tracking-tabs { display: flex; overflow-x: auto; padding-bottom: 5px; margin-bottom: 10px; border-bottom: 1px solid #ddd; flex-wrap: nowrap; }
-        .contract-tab-button { white-space: nowrap; padding: 8px 15px; background: #f0f0f0; border: none; border-radius: 4px 4px 0 0; margin-right: 5px; cursor: pointer; transition: background 0.2s, color 0.2s; }
-        .contract-tab-button:hover { background: #e0e0e0; }
-        .contract-tab-button.active { background: #3498db; color: white; font-weight: bold; }
-        .contract-tab-content { flex: 1; display: none; flex-direction: column; overflow: hidden; padding-top: 10px; }
-        .tab-section-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        .app-section { margin-bottom: 20px; flex-shrink: 0; }
-        .table-container { overflow: auto; max-width: 100%; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; max-height: calc(100vh - 750px); min-height: 150px; }
-        .app-table { width: 100%; border-collapse: collapse; }
-        .app-table th { background: #f5f5f5; position: sticky; top: 0; z-index: 1; padding: 10px; text-align: left; font-weight: bold; border-bottom: 1px solid #ddd; }
-        .app-table td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        .app-table td, .app-table th { min-width: 120px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .app-table .app-input, .app-table .app-select { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .input-sei { display: flex; gap: 5px; }
-        .input-sei input { flex: 1; }
-        .sei-link { color: #1a73e8; text-decoration: none; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; }
-        .sei-link:hover { text-decoration: underline; }
-        .summary-grid { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; font-size: 14px; }
-        .alert-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .alert-summary > div { padding: 10px; border-radius: 4px; background: #f9f9f9; border: 1px solid #eee; }
-        .alert-warning { background: #fff3cd !important; border-color: #ffeeba !important; }
-        .alert-critical { background: #f8d7da !important; border-color: #f5c6cb !important; }
-        .alert-history { list-style: none; padding: 0; margin: 0; max-height: 150px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; }
-        .alert-history li { padding: 8px 12px; border-bottom: 1px solid #eee; }
-        .action-button { padding: 5px 8px; min-width: auto; }
+        .contract-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .contract-main-form {
+            overflow-y: auto;
+            max-height: 50vh;
+            padding-right: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .form-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        
+        .form-section h5 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .contract-items-container {
+            overflow-x: auto;
+        }
+        
+        .contract-tracking-tabs {
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: nowrap;
+        }
+        
+        .contract-tab-button {
+            white-space: nowrap;
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        
+        .contract-tab-button.active {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .contract-tab-content {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .tab-section-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .app-section {
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            max-height: 300px;
+        }
+        
+        .app-table {
+            min-width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+        
+        .app-table th {
+            background: #f5f5f5;
+            position: sticky;
+            top: 0;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .app-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .app-table td, .app-table th {
+            min-width: 100px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .app-table .app-input, .app-table .app-select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .input-sei {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .input-sei input {
+            flex: 1;
+        }
+        
+        .sei-link {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .sei-link:hover {
+            text-decoration: underline;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .alert-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-summary > div {
+            padding: 10px;
+            border-radius: 4px;
+            background: #f9f9f9;
+            border: 1px solid #eee;
+        }
+        
+        .alert-warning {
+            background: #fff3cd !important;
+            border-color: #ffeeba !important;
+        }
+        
+        .alert-critical {
+            background: #f8d7da !important;
+            border-color: #f5c6cb !important;
+        }
+        
+        .alert-history {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .alert-history li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .action-button {
+            padding: 5px 8px;
+            min-width: auto;
+        }
+        
+        /* New styles for CNPJ validation */
+        .invalid-input {
+            border: 1px solid #ff0000 !important;
+            background-color: #fff0f0;
+        }
+        
+        .cnpj-format-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
     </style>`;
     
     const winData = window.windowManager.windows.get(winId); 
@@ -362,15 +561,37 @@ export function openContractManager() {
         appDataType: 'contract-manager',
         data: { 
             details: { 
-                number: '', status: 'ativo', vendor: '', client: '', type: '', area: '',
-                managerName: '', managerMASP: '', managerSector: '', managerEmail: '', managerPhone: '', substituteManager: '',
-                supervisorName: '', substituteSupervisor: '',
-                object: '', modality: '', seiNumber: '', seiLink: '',
-                totalValue: 0, // Treated as the initial value
+                number: '',
+                status: 'ativo',
+                vendor: '',
+                client: '',
+                type: '',
+                area: '',
+                managerName: '',
+                managerMASP: '',
+                managerSector: '',
+                managerEmail: '',
+                managerPhone: '',
+                substituteManager: '',
+                supervisorName: '',
+                substituteSupervisor: '',
+                object: '',
+                modality: '',
+                seiNumber: '',
+                seiLink: '',
+                totalValue: 0,
                 items: [],
-                startDate: '', endDate: '', signatureDate: '', budget: ''
+                startDate: '',
+                endDate: '',
+                signatureDate: '',
+                budget: ''
             },
-            financial: [], physical: [], amendments: [], invoices: [], documents: [], alerts: []
+            financial: [], 
+            physical: [], 
+            amendments: [], 
+            invoices: [], 
+            documents: [],
+            alerts: []
         },
         ui: { 
             detailsForm: {
@@ -429,7 +650,6 @@ export function openContractManager() {
             addInvoiceBtn: winData.element.querySelector(`#addInvoiceEntryBtn_${uniqueSuffix}`),
             addDocumentBtn: winData.element.querySelector(`#addDocumentEntryBtn_${uniqueSuffix}`)
         },
-        _endDateChangeHandler: null, // To store event handler for cleanup
         getData: function() { 
             this.updateDetailsFromUI(); 
             return this.data; 
@@ -454,49 +674,115 @@ export function openContractManager() {
             this.ui.tabButtons.forEach(button => {
                 button.onclick = () => {
                     this.ui.tabButtons.forEach(btn => btn.classList.remove('active'));
-                    this.ui.tabContents.forEach(content => {
-                        content.style.display = 'none';
-                        content.classList.remove('active');
-                    });
+                    this.ui.tabContents.forEach(content => content.style.display = 'none');
                     button.classList.add('active');
                     const tabId = button.dataset.tab;
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.style.display = 'block';
-                        tabContent.classList.add('active');
-                    }
+                    document.getElementById(tabId).style.display = 'block';
                 };
             });
+            
+            // Função de validação de CNPJ
+            const validateCNPJField = (input, fieldName) => {
+                // Format input as user types
+                input.addEventListener('input', () => {
+                    input.value = formatCNPJ(input.value);
+                });
+                
+                // Validate on blur
+                input.addEventListener('blur', () => {
+                    const rawValue = input.value.replace(/\D/g, '');
+                    if (rawValue.length === 14) {
+                        if (!validateCNPJ(rawValue)) {
+                            showNotification(`O ${fieldName} informado é um CNPJ inválido.`, 3000);
+                            input.classList.add('invalid-input');
+                        } else {
+                            input.classList.remove('invalid-input');
+                        }
+                    } else {
+                        input.classList.remove('invalid-input');
+                    }
+                });
+            };
+            
+            // Aplicar validação aos campos de CNPJ
+            validateCNPJField(this.ui.detailsForm.vendor, 'fornecedor');
+            validateCNPJField(this.ui.detailsForm.client, 'contratante');
             
             // Botão para adicionar itens do contrato
             this.ui.addItemBtn.onclick = () => {
                 this.data.details.items.push({
-                    id: generateId('item'), siad: '', description: '', physicalValue: 0, financialValue: 0
+                    id: generateId('item'),
+                    siad: '',
+                    description: '',
+                    physicalValue: 0,
+                    financialValue: 0
                 });
                 this.markDirty();
                 this.renderItemsTable();
-                this.renderPhysicalTable(); // Update physical tab dropdown
             };
             
             // Configuração dos botões de adição das abas
             this.ui.addFinancialBtn.onclick = () => this.addEntry('financial', {
-                id: generateId('fin'), date: new Date().toISOString().split('T')[0], type: 'empenho', description: '', value: 0, document: '', seiNumber: '', seiLink: ''
-            }); 
-            this.ui.addPhysicalBtn.onclick = () => this.addEntry('physical', {
-                id: generateId('phy'), item: '', quantity: 1, unit: 'Un', date_planned: '', date_done: null, percent_complete: 0, status: 'pendente', measurement: '', seiNumber: '', seiLink: ''
-            }); 
-            this.ui.addAmendmentBtn.onclick = () => this.addEntry('amendments', {
-                id: generateId('amd'), type: 'valor', number: '', date: new Date().toISOString().split('T')[0], object_change: '', value_change: 0, new_end_date: '', seiNumber: '', seiLink: ''
-            }); 
-            this.ui.addInvoiceBtn.onclick = () => this.addEntry('invoices', {
-                id: generateId('inv'), number: '', date_issue: new Date().toISOString().split('T')[0], value: 0, date_attested: null, date_payment: null,
-                due_date: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0], status: 'pendente', seiNumber: '', seiLink: ''
-            }); 
-            this.ui.addDocumentBtn.onclick = () => this.addEntry('documents', {
-                id: generateId('doc'), type: 'contrato', name: '', date: new Date().toISOString().split('T')[0], seiNumber: '', seiLink: ''
+                id: generateId('fin'), 
+                date: new Date().toISOString().split('T')[0], 
+                type: 'empenho', 
+                description: '', 
+                value: 0,
+                document: '',
+                seiNumber: '',
+                seiLink: ''
             }); 
             
-            // Eventos para tabela de itens (delegação)
+            this.ui.addPhysicalBtn.onclick = () => this.addEntry('physical', {
+                id: generateId('phy'), 
+                item: '', 
+                quantity: 1, 
+                unit: 'Un', 
+                date_planned: '', 
+                date_done: null, 
+                percent_complete: 0, 
+                status: 'pendente',
+                measurement: '',
+                seiNumber: '',
+                seiLink: ''
+            }); 
+            
+            this.ui.addAmendmentBtn.onclick = () => this.addEntry('amendments', {
+                id: generateId('amd'), 
+                type: 'valor', 
+                number: '', 
+                date: new Date().toISOString().split('T')[0], 
+                object_change: '', 
+                value_change: 0, 
+                new_total: this.data.details.totalValue || 0,
+                new_end_date: this.data.details.endDate || '',
+                seiNumber: '',
+                seiLink: ''
+            }); 
+            
+            this.ui.addInvoiceBtn.onclick = () => this.addEntry('invoices', {
+                id: generateId('inv'), 
+                number: '', 
+                date_issue: new Date().toISOString().split('T')[0], 
+                value: 0, 
+                date_attested: null, 
+                date_payment: null,
+                due_date: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+                status: 'pendente',
+                seiNumber: '',
+                seiLink: ''
+            }); 
+            
+            this.ui.addDocumentBtn.onclick = () => this.addEntry('documents', {
+                id: generateId('doc'), 
+                type: 'contrato', 
+                name: '', 
+                date: new Date().toISOString().split('T')[0], 
+                seiNumber: '',
+                seiLink: ''
+            }); 
+            
+            // Eventos para tabela de itens
             if (this.ui.itemsTableBody) {
                 this.ui.itemsTableBody.addEventListener('click', (e) => {
                     const button = e.target.closest('button[data-action="delete"]');
@@ -505,9 +791,9 @@ export function openContractManager() {
                         this.data.details.items = this.data.details.items.filter(item => item.id !== rowId);
                         this.markDirty();
                         this.renderItemsTable();
-                        this.renderPhysicalTable(); // Update physical tab dropdown
                     }
                 });
+                
                 this.ui.itemsTableBody.addEventListener('input', (e) => {
                     const input = e.target.closest('input');
                     if (input) {
@@ -515,11 +801,10 @@ export function openContractManager() {
                         const field = input.dataset.field;
                         const item = this.data.details.items.find(i => i.id === rowId);
                         if (item) {
-                            item[field] = input.type === 'number' ? parseFloat(input.value) || 0 : input.value;
+                            item[field] = input.type === 'number' ? 
+                                parseFloat(input.value) || 0 : 
+                                input.value;
                             this.markDirty();
-                            if (field === 'description') {
-                                this.renderPhysicalTable(); // Re-render to update dropdowns
-                            }
                         }
                     }
                 });
@@ -535,11 +820,10 @@ export function openContractManager() {
                 }
             });
             
-            // Eventos para campos do formulário principal
+            // Eventos para campos do formulário
             Object.values(this.ui.detailsForm).forEach(input => {
                 if (input) {
-                    const eventType = input.tagName.toLowerCase() === 'select' ? 'onchange' : 'oninput';
-                    input[eventType] = () => {
+                    input.oninput = () => {
                         this.markDirty(); 
                         this.updateDetailsFromUI();
                     };
@@ -547,16 +831,14 @@ export function openContractManager() {
             });
             
             // Validação de datas
-            this._endDateChangeHandler = () => {
-                if (!this.ui.detailsForm.startDate.value || !this.ui.detailsForm.endDate.value) return;
+            this.ui.detailsForm.endDate.addEventListener('change', () => {
                 const start = new Date(this.ui.detailsForm.startDate.value);
                 const end = new Date(this.ui.detailsForm.endDate.value);
                 if (start > end) {
-                    showNotification("Data de término não pode ser anterior à data de início", 3000, "error");
+                    showNotification("Data de término não pode ser anterior à data de início", 3000);
                     this.ui.detailsForm.endDate.value = this.data.details.endDate || '';
                 }
-            };
-            this.ui.detailsForm.endDate.addEventListener('change', this._endDateChangeHandler);
+            });
             
             // Renderização inicial
             this.renderAll();
@@ -566,38 +848,40 @@ export function openContractManager() {
             for(const key in this.ui.detailsForm){
                 const input = this.ui.detailsForm[key];
                 if (input) {
-                    this.data.details[key] = input.type === 'number' ? parseFloat(input.value) || 0 : input.value;
+                    this.data.details[key] = input.type === 'number' ? 
+                        parseFloat(input.value) || 0 : 
+                        input.value;
                 }
             }
             this.renderFinancialSummary();
             this.checkAlerts();
         },
         renderAll: function() {
+            // Atualiza campos do formulário
             for(const key in this.ui.detailsForm){
                 if(this.ui.detailsForm[key] && this.data.details[key] !== undefined) {
                     this.ui.detailsForm[key].value = this.data.details[key];
                 }
             }
+            
+            // Renderiza tabela de itens
             this.renderItemsTable();
+            
+            // Renderiza tabelas das abas
             this.renderFinancialTable();
             this.renderPhysicalTable();
             this.renderAmendmentsTable();
             this.renderInvoicesTable();
             this.renderDocumentsTable();
+            
+            // Atualiza resumo e alertas
             this.renderFinancialSummary();
             this.checkAlerts();
-        },
-        getSeiCellHTML: function(entry) {
-            const seiNumber = entry.seiNumber || '';
-            const seiLink = entry.seiLink || '';
-            if (seiNumber && seiLink) {
-                return `<td><a href="${seiLink}" target="_blank" class="sei-link" title="${seiLink}">${seiNumber}</a><input type="hidden" value="${seiNumber}" data-field="seiNumber"><input type="hidden" value="${seiLink}" data-field="seiLink"></td>`;
-            }
-            return `<td><div class="input-sei"><input type="text" class="app-input" value="${seiNumber}" placeholder="Nº SEI" data-field="seiNumber"><input type="text" class="app-input" value="${seiLink}" placeholder="Link" data-field="seiLink"></div></td>`;
         },
         renderItemsTable: function() {
             const tableBody = this.ui.itemsTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
             (this.data.details.items || []).forEach(item => {
                 const row = tableBody.insertRow();
@@ -605,18 +889,41 @@ export function openContractManager() {
                 row.innerHTML = `
                     <td><input type="text" class="app-input" value="${item.siad || ''}" data-field="siad"></td>
                     <td><input type="text" class="app-input" value="${item.description || ''}" data-field="description"></td>
-                    <td><input type="number" class="app-input" value="${item.physicalValue || 0}" step="any" data-field="physicalValue"></td>
+                    <td><input type="number" class="app-input" value="${item.physicalValue || 0}" step="0.01" data-field="physicalValue"></td>
                     <td><input type="number" class="app-input" value="${item.financialValue || 0}" step="0.01" data-field="financialValue"></td>
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderFinancialTable: function() {
             const tableBody = this.ui.financialTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
             (this.data.financial || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
+                
+                // Renderização especial para SEI (hyperlink)
+                const seiCell = entry.seiNumber && entry.seiLink ? 
+                    `<td>
+                        <a href="${entry.seiLink}" target="_blank" class="sei-link">${entry.seiNumber}</a>
+                        <input type="hidden" value="${entry.seiNumber}" data-field="seiNumber">
+                        <input type="hidden" value="${entry.seiLink}" data-field="seiLink">
+                    </td>` :
+                    `<td>
+                        <div class="input-sei">
+                            <input type="text" class="app-input" value="${entry.seiNumber || ''}" 
+                                placeholder="Nº SEI" data-field="seiNumber">
+                            <input type="text" class="app-input" value="${entry.seiLink || ''}" 
+                                placeholder="Link" data-field="seiLink">
+                        </div>
+                    </td>`;
+                
                 row.innerHTML = `
                     <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
                     <td>
@@ -630,23 +937,42 @@ export function openContractManager() {
                     <td><input type="text" class="app-input" value="${entry.description || ''}" data-field="description"></td>
                     <td><input type="number" class="app-input" value="${entry.value || 0}" step="0.01" data-field="value"></td>
                     <td><input type="text" class="app-input" value="${entry.document || ''}" data-field="document" placeholder="Nº Doc."></td>
-                    ${this.getSeiCellHTML(entry)}
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
+                    ${seiCell}
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderPhysicalTable: function() {
             const tableBody = this.ui.physicalTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
-            const itemOptions = (this.data.details.items || [])
-                .map(item => `<option value="${item.description || ''}">${item.description || '(Item sem descrição)'}</option>`)
-                .join('');
-
             (this.data.physical || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
+                
+                // Renderização especial para SEI (hyperlink)
+                const seiCell = entry.seiNumber && entry.seiLink ? 
+                    `<td>
+                        <a href="${entry.seiLink}" target="_blank" class="sei-link">${entry.seiNumber}</a>
+                        <input type="hidden" value="${entry.seiNumber}" data-field="seiNumber">
+                        <input type="hidden" value="${entry.seiLink}" data-field="seiLink">
+                    </td>` :
+                    `<td>
+                        <div class="input-sei">
+                            <input type="text" class="app-input" value="${entry.seiNumber || ''}" 
+                                placeholder="Nº SEI" data-field="seiNumber">
+                            <input type="text" class="app-input" value="${entry.seiLink || ''}" 
+                                placeholder="Link" data-field="seiLink">
+                        </div>
+                    </td>`;
+                
                 row.innerHTML = `
-                    <td><select class="app-select" data-field="item"><option value="">Selecione...</option>${itemOptions}</select></td>
+                    <td><input type="text" class="app-input" value="${entry.item || ''}" data-field="item"></td>
                     <td><input type="number" class="app-input" value="${entry.quantity || 0}" data-field="quantity"></td>
                     <td><input class="app-input" value="${entry.unit || 'Un'}" data-field="unit"></td>
                     <td><input type="date" class="app-input" value="${entry.date_planned || ''}" data-field="date_planned"></td>
@@ -661,18 +987,40 @@ export function openContractManager() {
                         </select>
                     </td>
                     <td><input type="text" class="app-input" value="${entry.measurement || ''}" data-field="measurement" placeholder="Nº Medição"></td>
-                    ${this.getSeiCellHTML(entry)}
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
-                row.querySelector('[data-field="item"]').value = entry.item || ''; // Set selected value for dropdown
+                    ${seiCell}
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderAmendmentsTable: function() {
             const tableBody = this.ui.amendmentsTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
             (this.data.amendments || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
+                
+                // Renderização especial para SEI (hyperlink)
+                const seiCell = entry.seiNumber && entry.seiLink ? 
+                    `<td>
+                        <a href="${entry.seiLink}" target="_blank" class="sei-link">${entry.seiNumber}</a>
+                        <input type="hidden" value="${entry.seiNumber}" data-field="seiNumber">
+                        <input type="hidden" value="${entry.seiLink}" data-field="seiLink">
+                    </td>` :
+                    `<td>
+                        <div class="input-sei">
+                            <input type="text" class="app-input" value="${entry.seiNumber || ''}" 
+                                placeholder="Nº SEI" data-field="seiNumber">
+                            <input type="text" class="app-input" value="${entry.seiLink || ''}" 
+                                placeholder="Link" data-field="seiLink">
+                        </div>
+                    </td>`;
+                
                 row.innerHTML = `
                     <td>
                         <select class="app-select" data-field="type">
@@ -685,23 +1033,47 @@ export function openContractManager() {
                     <td><input type="text" class="app-input" value="${entry.number || ''}" data-field="number"></td>
                     <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
                     <td><input type="text" class="app-input" value="${entry.object_change || ''}" data-field="object_change"></td>
-                    <td><input type="number" class="app-input" value="${entry.value_change || 0}" step="0.01" data-field="value_change"></td>
+                    <td><input type="number" class="app-input" value="${entry.value_change || 0}" data-field="value_change"></td>
+                    <td><input type="number" class="app-input" value="${entry.new_total || 0}" data-field="new_total"></td>
                     <td><input type="date" class="app-input" value="${entry.new_end_date || ''}" data-field="new_end_date"></td>
-                    ${this.getSeiCellHTML(entry)}
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
+                    ${seiCell}
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderInvoicesTable: function() {
             const tableBody = this.ui.invoicesTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
             (this.data.invoices || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
+                
+                // Renderização especial para SEI (hyperlink)
+                const seiCell = entry.seiNumber && entry.seiLink ? 
+                    `<td>
+                        <a href="${entry.seiLink}" target="_blank" class="sei-link">${entry.seiNumber}</a>
+                        <input type="hidden" value="${entry.seiNumber}" data-field="seiNumber">
+                        <input type="hidden" value="${entry.seiLink}" data-field="seiLink">
+                    </td>` :
+                    `<td>
+                        <div class="input-sei">
+                            <input type="text" class="app-input" value="${entry.seiNumber || ''}" 
+                                placeholder="Nº SEI" data-field="seiNumber">
+                            <input type="text" class="app-input" value="${entry.seiLink || ''}" 
+                                placeholder="Link" data-field="seiLink">
+                        </div>
+                    </td>`;
+                
                 row.innerHTML = `
                     <td><input type="text" class="app-input" value="${entry.number || ''}" data-field="number"></td>
                     <td><input type="date" class="app-input" value="${entry.date_issue || ''}" data-field="date_issue"></td>
-                    <td><input type="number" class="app-input" value="${entry.value || 0}" step="0.01" data-field="value"></td>
+                    <td><input type="number" class="app-input" value="${entry.value || 0}" data-field="value"></td>
                     <td><input type="date" class="app-input" value="${entry.date_attested || ''}" data-field="date_attested"></td>
                     <td><input type="date" class="app-input" value="${entry.date_payment || ''}" data-field="date_payment"></td>
                     <td><input type="date" class="app-input" value="${entry.due_date || ''}" data-field="due_date"></td>
@@ -713,17 +1085,40 @@ export function openContractManager() {
                             <option value="cancelado" ${entry.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                         </select>
                     </td>
-                    ${this.getSeiCellHTML(entry)}
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
+                    ${seiCell}
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderDocumentsTable: function() {
             const tableBody = this.ui.documentsTableBody;
             if (!tableBody) return;
+            
             tableBody.innerHTML = '';
             (this.data.documents || []).forEach(entry => {
                 const row = tableBody.insertRow();
                 row.dataset.id = entry.id;
+                
+                // Renderização especial para SEI (hyperlink)
+                const seiCell = entry.seiNumber && entry.seiLink ? 
+                    `<td>
+                        <a href="${entry.seiLink}" target="_blank" class="sei-link">${entry.seiNumber}</a>
+                        <input type="hidden" value="${entry.seiNumber}" data-field="seiNumber">
+                        <input type="hidden" value="${entry.seiLink}" data-field="seiLink">
+                    </td>` :
+                    `<td>
+                        <div class="input-sei">
+                            <input type="text" class="app-input" value="${entry.seiNumber || ''}" 
+                                placeholder="Nº SEI" data-field="seiNumber">
+                            <input type="text" class="app-input" value="${entry.seiLink || ''}" 
+                                placeholder="Link" data-field="seiLink">
+                        </div>
+                    </td>`;
+                
                 row.innerHTML = `
                     <td>
                         <select class="app-select" data-field="type">
@@ -737,25 +1132,30 @@ export function openContractManager() {
                     </td>
                     <td><input type="text" class="app-input" value="${entry.name || ''}" data-field="name"></td>
                     <td><input type="date" class="app-input" value="${entry.date || ''}" data-field="date"></td>
-                    ${this.getSeiCellHTML(entry)}
-                    <td><button class="app-button danger action-button" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
+                    ${seiCell}
+                    <td>
+                        <button class="app-button danger action-button" data-action="delete" title="Excluir">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
             });
         },
         renderFinancialSummary: function() {
-            const initialValue = this.data.details.totalValue || 0;
-            const amendmentsValue = (this.data.amendments || []).reduce((sum, a) => sum + (a.value_change || 0), 0);
-            const totalValue = initialValue + amendmentsValue;
+            const totalValue = this.data.details.totalValue || 0;
+            let totalEmpenhado = 0;
+            let totalLiquidado = 0;
+            let totalPago = 0;
             
-            let totalEmpenhado = 0, totalLiquidado = 0, totalPago = 0;
             (this.data.financial || []).forEach(f => {
                 const val = f.value || 0;
                 if (f.type === 'empenho') totalEmpenhado += val;
                 else if (f.type === 'liquidacao') totalLiquidado += val;
                 else if (f.type === 'pagamento') totalPago += val;
                 else if (f.type === 'anulacao') {
-                    // Assuming an 'anulacao' reverses an empenho/liquidado/pago amount.
-                    // This logic may need refinement based on business rules.
                     totalEmpenhado -= val;
+                    totalLiquidado -= val;
+                    totalPago -= val;
                 }
             });
             
@@ -772,16 +1172,16 @@ export function openContractManager() {
             this.data[type].push({...template});
             this.markDirty();
             
-            const renderMap = {
-                financial: this.renderFinancialTable,
-                physical: this.renderPhysicalTable,
-                amendments: this.renderAmendmentsTable,
-                invoices: this.renderInvoicesTable,
-                documents: this.renderDocumentsTable
-            };
-            renderMap[type].call(this);
+            // Renderiza apenas a tabela específica
+            switch(type) {
+                case 'financial': this.renderFinancialTable(); break;
+                case 'physical': this.renderPhysicalTable(); break;
+                case 'amendments': this.renderAmendmentsTable(); break;
+                case 'invoices': this.renderInvoicesTable(); break;
+                case 'documents': this.renderDocumentsTable(); break;
+            }
             
-            if(['financial', 'amendments'].includes(type)) this.renderFinancialSummary();
+            if(type === 'financial') this.renderFinancialSummary();
             this.checkAlerts();
         },
         handleTableAction: function(e, tableType) {
@@ -791,14 +1191,18 @@ export function openContractManager() {
                 this.data[tableType] = (this.data[tableType] || []).filter(item => item.id !== rowId);
                 this.markDirty();
                 
-                const renderMap = {
-                    financial: this.renderFinancialTable, physical: this.renderPhysicalTable,
-                    amendments: this.renderAmendmentsTable, invoices: this.renderInvoicesTable,
-                    documents: this.renderDocumentsTable
-                };
-                renderMap[tableType].call(this);
+                // Renderiza apenas a tabela específica
+                switch(tableType) {
+                    case 'financial': 
+                        this.renderFinancialTable(); 
+                        this.renderFinancialSummary();
+                        break;
+                    case 'physical': this.renderPhysicalTable(); break;
+                    case 'amendments': this.renderAmendmentsTable(); break;
+                    case 'invoices': this.renderInvoicesTable(); break;
+                    case 'documents': this.renderDocumentsTable(); break;
+                }
                 
-                if(['financial', 'amendments'].includes(tableType)) this.renderFinancialSummary();
                 this.checkAlerts();
             }
         },
@@ -810,68 +1214,95 @@ export function openContractManager() {
                 const entry = (this.data[tableType] || []).find(item => item.id === rowId);
                 
                 if (entry) {
-                    entry[field] = input.type === 'number' ? (parseFloat(input.value) || 0) : input.value;
+                    // Atualiza o valor do campo
+                    if (input.type === 'number') {
+                        entry[field] = parseFloat(input.value) || 0;
+                    } else {
+                        entry[field] = input.value;
+                    }
                     
+                    // Atualiza o hiperlink SEI se necessário
                     if (field === 'seiNumber' || field === 'seiLink') {
-                        if (entry.seiNumber && entry.seiLink) {
+                        const seiNumber = entry.seiNumber || '';
+                        const seiLink = entry.seiLink || '';
+                        
+                        // Atualiza a célula SEI se ambos estiverem preenchidos
+                        if (seiNumber && seiLink) {
                             const seiCell = input.closest('td');
-                            if (seiCell) seiCell.outerHTML = this.getSeiCellHTML(entry);
+                            if (seiCell) {
+                                seiCell.innerHTML = `
+                                    <a href="${seiLink}" target="_blank" class="sei-link">${seiNumber}</a>
+                                    <input type="hidden" value="${seiNumber}" data-field="seiNumber">
+                                    <input type="hidden" value="${seiLink}" data-field="seiLink">
+                                `;
+                            }
                         }
                     }
+                    
                     this.markDirty();
-                    if (['financial', 'amendments'].includes(tableType)) this.renderFinancialSummary();
+                    
+                    // Atualizações específicas
+                    if (tableType === 'financial') {
+                        this.renderFinancialSummary();
+                    } else if (tableType === 'amendments' && field === 'value_change') {
+                        entry.new_total = (this.data.details.totalValue || 0) + entry.value_change;
+                        const newTotalInput = input.closest('tr').querySelector('[data-field="new_total"]');
+                        if (newTotalInput) newTotalInput.value = entry.new_total;
+                    }
+                    
                     this.checkAlerts();
                 }
             }
         },
         checkAlerts: function() {
+            // Verificação de vencimento do contrato
             if (this.data.details.endDate) {
-                const endDate = new Date(this.data.details.endDate + 'T23:59:59'); // Consider end of day
+                const endDate = new Date(this.data.details.endDate);
                 const today = new Date();
                 const diffTime = endDate - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                 
-                this.ui.alertsUI.endDate.textContent = diffDays >= 0 ? 
-                    `${diffDays} dia(s) restante(s)` : `Vencido há ${Math.abs(diffDays)} dia(s)`;
+                this.ui.alertsUI.endDate.textContent = diffDays > 0 ? 
+                    `${diffDays} dias restantes` : 
+                    `Vencido há ${Math.abs(diffDays)} dias`;
                 
+                // Classes de alerta
                 const endDateElement = this.ui.alertsUI.endDate.parentElement;
                 endDateElement.classList.remove('alert-warning', 'alert-critical');
-                if (diffDays <= 60) { // 60 days warning
+                if (diffDays <= 30) {
                     endDateElement.classList.add(diffDays <= 0 ? 'alert-critical' : 'alert-warning');
                 }
             }
             
-            const pendingDeliveries = (this.data.physical || []).filter(d => d.status !== 'concluido').length;
+            // Entregas pendentes
+            const pendingDeliveries = (this.data.physical || []).filter(
+                d => d.status !== 'concluido'
+            ).length;
             this.ui.alertsUI.deliveries.textContent = pendingDeliveries;
             this.ui.alertsUI.deliveries.parentElement.classList.toggle('alert-warning', pendingDeliveries > 0);
                 
+            // Notas fiscais atrasadas
             const today = new Date();
-            today.setHours(0,0,0,0);
-            const lateInvoices = (this.data.invoices || []).filter(i => 
-                i.status !== 'pago' && i.status !== 'cancelado' && i.due_date && new Date(i.due_date) < today
-            ).length;
+            const lateInvoices = (this.data.invoices || []).filter(i => {
+                if (i.status === 'pago') return false;
+                if (i.due_date) {
+                    const dueDate = new Date(i.due_date);
+                    return dueDate < today;
+                }
+                return false;
+            }).length;
+            
             this.ui.alertsUI.invoices.textContent = lateInvoices;
             this.ui.alertsUI.invoices.parentElement.classList.toggle('alert-critical', lateInvoices > 0);
             
-            const pendingAmendments = (this.data.amendments || []).filter(a => !a.date || !a.number).length;
-            this.ui.alertsUI.amendment.textContent = pendingAmendments > 0 ? `${pendingAmendments} pendente(s)` : 'Nenhum';
-            this.ui.alertsUI.amendment.parentElement.classList.toggle('alert-warning', pendingAmendments > 0);
+            // Aditivos pendentes
+            const pendingAmendments = (this.data.amendments || []).filter(
+                a => !a.date || !a.number
+            ).length;
+            this.ui.alertsUI.amendment.textContent = pendingAmendments > 0 ? 
+                `${pendingAmendments} pendentes` : 'Nenhum';
         },
-        cleanup: function() {
-            // Remove event listeners to prevent memory leaks
-            this.ui.addItemBtn.onclick = null;
-            this.ui.addFinancialBtn.onclick = null;
-            this.ui.addPhysicalBtn.onclick = null;
-            this.ui.addAmendmentBtn.onclick = null;
-            this.ui.addInvoiceBtn.onclick = null;
-            this.ui.addDocumentBtn.onclick = null;
-
-            this.ui.tabButtons.forEach(button => { button.onclick = null; });
-            
-            if (this.ui.detailsForm.endDate && this._endDateChangeHandler) {
-                this.ui.detailsForm.endDate.removeEventListener('change', this._endDateChangeHandler);
-            }
-        }
+        cleanup: () => {}
     };
     
     initializeFileState(appState, 'Novo Contrato', 'contrato.contract', 'contract-manager');
