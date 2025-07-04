@@ -2,13 +2,14 @@
  * @module ContractManagerCombined
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
+ * The application starts with no pre-loaded sample data.
  *
- * @version 5.1 - Fixes dark mode reactivity, critical TypeError on save, and chart loading.
+ * @version 5.2 - Removed all sample data for a clean start.
  */
 
 import { generateId, showNotification } from '../main.js';
 import { getStandardAppToolbarHTML, initializeFileState, setupAppToolbarActions } from './app.js';
-// The import for Chart.js is removed. It must be loaded via a <script> tag in index.html
+// NOTE: Chart.js must be loaded via a <script> tag in the main index.html file for charts to work.
 // e.g., <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
 // ===================================================================================
@@ -175,7 +176,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     Object.keys(tabContentMap).forEach(key => { windowContent.querySelector(`[data-tab-content="${key}"]`).innerHTML = tabContentMap[key]; });
     
     const appState = {
-        winId, appDataType: 'contract-editor_v5.1',
+        winId, appDataType: 'contract-editor_v5.2',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
@@ -223,14 +224,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         getData: function() { this.updateDetailsFromUI(); return this.data; },
         loadData: function(data) { 
-            this.data = JSON.parse(JSON.stringify(data)); // Deep copy
+            this.data = JSON.parse(JSON.stringify(data));
             this.renderAll(); 
         },
 
         init: function() {
-            // REFACTORED SAVE LOGIC: This editor doesn't use the standard file system.
-            // It has its own save method that triggers a callback.
-            // We wire the toolbar buttons to our custom methods.
             const toolbar = winData.element.querySelector('.app-toolbar');
             const saveBtn = toolbar.querySelector('.save-file-btn');
             if(saveBtn) saveBtn.onclick = () => this.saveChanges();
@@ -240,20 +238,16 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.loadData(initialData);
         },
 
-        // NEW METHOD: Save changes and notify the parent window via callback.
         saveChanges: function() {
             if (this.onSaveCallback) {
                 this.updateDetailsFromUI();
                 this.onSaveCallback(this.data);
                 showNotification("Alterações salvas e dashboard atualizado!", 3000, "success");
-                // Optionally, close the editor after saving
-                // window.windowManager.closeWindow(this.winId);
             } else {
                 showNotification("Nenhuma ação de salvamento configurada.", 4000, "error");
             }
         },
         
-        // DARK MODE FIX: Observe body for class changes to reactively apply dark mode.
         setupThemeObserver: function() {
             const appContainer = this.ui.container;
             const applyTheme = () => {
@@ -273,16 +267,14 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             });
 
             this.themeObserver.observe(document.body, { attributes: true });
-            applyTheme(); // Apply theme on init
+            applyTheme();
         },
         
         _registerEventListeners: function() {
             this.eventHandlers.formInput = (e) => {
                 const field = e.target.dataset.field;
                 if (field) {
-                    if(field.endsWith('.cnpj')) {
-                        e.target.value = formatCNPJ(e.target.value);
-                    }
+                    if(field.endsWith('.cnpj')) { e.target.value = formatCNPJ(e.target.value); }
                     this.updateDetailsFromUI();
                 }
             };
@@ -293,13 +285,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     if (e.target.value && !validateCNPJ(e.target.value)) {
                         showNotification(`CNPJ "${e.target.placeholder}" inválido.`, 3000, 'error');
                         e.target.classList.add('invalid-input');
-                    } else {
-                        e.target.classList.remove('invalid-input');
-                    }
+                    } else { e.target.classList.remove('invalid-input'); }
                 }
             };
             this.ui.form.addEventListener('blur', this.eventHandlers.cnpjBlur, true);
-
 
             this.eventHandlers.tabClick = (e) => {
                 const tabName = e.currentTarget.dataset.tab;
@@ -318,9 +307,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.ui.buttons.addInvoice.addEventListener('click', () => this.openModal('add', 'invoices'));
             
             this.eventHandlers.tableClick = (e, type) => this.handleTableAction(e, type);
-            Object.keys(this.ui.tables).forEach(type => {
-                this.ui.tables[type].addEventListener('click', (e) => this.eventHandlers.tableClick(e, type));
-            });
+            Object.keys(this.ui.tables).forEach(type => { this.ui.tables[type].addEventListener('click', (e) => this.eventHandlers.tableClick(e, type)); });
 
             this.eventHandlers.closeModal = () => this.closeModal();
             this.eventHandlers.saveModal = () => this.handleModalSave();
@@ -353,15 +340,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         renderAll: function() {
             this.renderMainForm();
             this.recalculateTotals();
-
             const formatDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
-
             this._renderTable('items', this.ui.tables.items, [{ h: 'Nº SIAD', k: 'numeroSiad' }, { h: 'Descrição', k: 'descricao' }, { h: 'Valor (R$)', k: 'valorFinanceiro', f: formatCurrency }]);
             this._renderTable('financial', this.ui.tables.financial, [{ h: 'Data', k: 'date', f: formatDate }, { h: 'Tipo', k: 'type' }, { h: 'Valor', k: 'value', f: formatCurrency }]);
             this._renderTable('physical', this.ui.tables.physical, [{ h: 'Item', k: 'item' }, { h: 'Previsto', k: 'date_planned', f: formatDate }, { h: 'Realizado', k: 'date_done', f: formatDate }, { h: 'Status', k: 'status' }]);
             this._renderTable('amendments', this.ui.tables.amendments, [{ h: 'Nº', k: 'number' }, { h: 'Tipo', k: 'type' }, { h: 'Variação Valor', k: 'value_change', f: formatCurrency }, { h: 'Nova Vigência', k: 'new_end_date', f: formatDate }]);
             this._renderTable('invoices', this.ui.tables.invoices, [{ h: 'Nº', k: 'number' }, { h: 'Valor', k: 'value', f: formatCurrency }, { h: 'Vencimento', k: 'date_due', f: formatDate }, { h: 'Status', k: 'status' }]);
-
             this.renderDashboard();
         },
 
@@ -369,11 +353,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.ui.form.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
                 let value = keys.reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : '', this.data.details);
-                
-                if (input.dataset.field.endsWith('.cnpj')) {
-                    value = formatCNPJ(value);
-                }
-                
+                if (input.dataset.field.endsWith('.cnpj')) { value = formatCNPJ(value); }
                 input.value = value;
             });
             this.renderMainSei();
@@ -384,11 +364,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             let html = '';
             if (numeroSei) {
                 html = `<b>Processo SEI:</b> `;
-                if (linkSei) {
-                    html += `<a href="${linkSei}" target="_blank" title="Abrir processo no SEI">${numeroSei}</a>`;
-                } else {
-                    html += numeroSei;
-                }
+                if (linkSei) { html += `<a href="${linkSei}" target="_blank" title="Abrir processo no SEI">${numeroSei}</a>`; } 
+                else { html += numeroSei; }
             }
             this.ui.mainSeiContainer.innerHTML = html;
         },
@@ -399,20 +376,9 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             (dataArray || []).forEach(item => {
                 const row = tableBody.insertRow();
                 row.dataset.id = item.id;
-                
-                let cellsHTML = columns.map(col => {
-                    const value = item[col.k] || '';
-                    return `<td>${col.f ? col.f(value) : value}</td>`;
-                }).join('');
-                
-                if (item.hasOwnProperty('sei_number') || item.hasOwnProperty('sei_link')) {
-                    cellsHTML += `<td>${this._getSeiLinkHTML(item)}</td>`;
-                }
-                
-                cellsHTML += `<td>
-                    <button class="app-button secondary small" data-action="edit" title="Editar"><i class="fas fa-edit"></i></button> 
-                    <button class="app-button danger small" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button>
-                </td>`;
+                let cellsHTML = columns.map(col => `<td>${col.f ? col.f(item[col.k] || '') : (item[col.k] || '')}</td>`).join('');
+                if (item.hasOwnProperty('sei_number') || item.hasOwnProperty('sei_link')) { cellsHTML += `<td>${this._getSeiLinkHTML(item)}</td>`; }
+                cellsHTML += `<td><button class="app-button secondary small" data-action="edit" title="Editar"><i class="fas fa-edit"></i></button> <button class="app-button danger small" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
                 row.innerHTML = cellsHTML;
             });
         },
@@ -436,11 +402,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             let entry = {};
             const titleMap = {items:'Item', financial:'Lançamento Financeiro', physical:'Marco Físico', amendments:'Aditivo', invoices:'Nota Fiscal'};
             modal.title.textContent = (mode === 'edit' ? 'Editar ' : 'Adicionar ') + titleMap[type];
-
-            if (mode === 'edit') {
-                const dataArray = this.data[type];
-                entry = { ...(dataArray.find(e => e.id === id) || {}) };
-            }
+            if (mode === 'edit') { entry = { ...(this.data[type].find(e => e.id === id) || {}) }; }
             modal.body.innerHTML = this._getModalFormHTML(type, entry);
             modal.overlay.style.display = 'flex';
         },
@@ -525,7 +487,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
             if(details.vigenciaAtual){
                 const end=new Date(details.vigenciaAtual + "T23:59:59"), days=Math.ceil((end - today)/864e5);
-                dashboard.kpiDaysLeft.textContent = days;
+                dashboard.kpiDaysLeft.textContent = days >= 0 ? days : 0;
                 dashboard.kpiDaysLeft.className = 'kpi-value';
                 if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger');
                 else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn');
@@ -592,7 +554,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         cleanup: function() {
-            // DARK MODE FIX: Disconnect the observer when the window is closed to prevent memory leaks.
             if (this.themeObserver) {
                 this.themeObserver.disconnect();
             }
@@ -612,7 +573,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
 export function openContractManager() {
     const uniqueSuffix = generateId('contract_manager');
-    const winId = window.windowManager.createWindow('Gestão de Contratos 5.1', '', { 
+    const winId = window.windowManager.createWindow('Gestão de Contratos 5.2', '', { 
         width: '1400px', 
         height: '900px', 
         appType: 'contract-manager' 
@@ -724,8 +685,8 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v5.1',
-        contracts: [],
+        appDataType: 'contract-manager_v5.2',
+        contracts: [], // **SAMPLE DATA REMOVED** - Starts as an empty array
         charts: {},
         themeObserver: null,
         ui: {
@@ -745,13 +706,13 @@ export function openContractManager() {
         init: function() {
             setupAppToolbarActions(this);
             this.setupThemeObserver();
-            this.loadSampleData();
+            // **REMOVED** this.loadSampleData();
             
             this.ui.addContractBtn.onclick = () => this.createNewContract();
             this.ui.refreshBtn.onclick = () => this.refreshDashboard();
             this.ui.timeFilter.onchange = () => this.renderContractsTable();
             
-            this.renderDashboard();
+            this.renderDashboard(); // Will now render an empty state
         },
         
         setupThemeObserver: function() {
@@ -762,7 +723,6 @@ export function openContractManager() {
                 } else {
                     appContainer.classList.remove('dark-mode');
                 }
-                 // Re-render charts for theme change if they exist
                 if (this.charts.financial) this.renderCharts();
             };
 
@@ -793,19 +753,6 @@ export function openContractManager() {
         },
 
         getData: function() { return this.contracts; },
-
-        loadSampleData: function() {
-            this.contracts = [
-                {
-                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: '2025-01-14' },
-                    items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
-                },
-                {
-                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
-                    items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }], financial: [], physical: [], amendments: [], invoices: []
-                }
-            ];
-        },
         
         renderDashboard: function() {
             this.markDirty();
@@ -831,7 +778,7 @@ export function openContractManager() {
         
         getFilteredContracts: function() {
             const filter = this.ui.timeFilter.value;
-            if (filter === 'all') return this.contracts;
+            if (filter === 'all' || this.contracts.length === 0) return this.contracts;
             const days = parseInt(filter, 10);
             const today = new Date();
             const limitDate = new Date();
@@ -849,6 +796,11 @@ export function openContractManager() {
             tbody.innerHTML = '';
             const filteredContracts = this.getFilteredContracts();
             
+            if (filteredContracts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Nenhum contrato para exibir. Crie um novo ou abra um arquivo.</td></tr>';
+                return;
+            }
+
             filteredContracts.forEach(contract => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -874,7 +826,6 @@ export function openContractManager() {
         
         renderCharts: function() {
             if (typeof Chart === 'undefined') {
-                console.error("Chart.js is not loaded. Please include it via a <script> tag for charts to appear.");
                 return;
             }
 
