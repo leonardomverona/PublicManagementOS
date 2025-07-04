@@ -2,12 +2,15 @@
  * @module ContractManagerCombined
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
+ * The application starts with no pre-loaded sample data.
  *
- * @version 5.2 - Added search/filter, pagination, export, responsive design, and enhanced validation.
+ * @version 5.2 - Removed all sample data for a clean start.
  */
 
 import { generateId, showNotification } from '../main.js';
 import { getStandardAppToolbarHTML, initializeFileState, setupAppToolbarActions } from './app.js';
+// NOTE: Chart.js must be loaded via a <script> tag in the main index.html file for charts to work.
+// e.g., <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 
 // ===================================================================================
 // #region SHARED UTILITY FUNCTIONS
@@ -22,26 +25,15 @@ function formatCNPJ(cnpj) {
 function validateCNPJ(cnpj) {
     if (!cnpj) return false;
     cnpj = cnpj.replace(/[^\d]+/g, '');
-    
-    // Verificação de tamanho e dígitos repetidos
-    if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
-    
-    // Cálculo dos dígitos verificadores
-    const calcDigit = (slice, factor) => {
-        let sum = 0;
-        for (let i = 0; i < slice.length; i++) {
-            sum += parseInt(slice[i]) * (factor-- > 2 ? factor : 9);
-        }
-        const result = 11 - (sum % 11);
-        return result > 9 ? 0 : result;
-    };
-
-    const digits = cnpj.substring(12);
-    const digit1 = calcDigit(cnpj.substring(0, 12), 5);
-    if (parseInt(digits[0]) !== digit1) return false;
-
-    const digit2 = calcDigit(cnpj.substring(0, 13), 6);
-    return parseInt(digits[1]) === digit2;
+    if (cnpj === '' || cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+    let size = cnpj.length - 2, numbers = cnpj.substring(0, size), digits = cnpj.substring(size), sum = 0, pos = size - 7;
+    for (let i = size; i >= 1; i--) { sum += parseInt(numbers.charAt(size - i), 10) * pos--; if (pos < 2) pos = 9; }
+    let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    if (result !== parseInt(digits.charAt(0), 10)) return false;
+    size = size + 1; numbers = cnpj.substring(0, size); sum = 0; pos = size - 7;
+    for (let i = size; i >= 1; i--) { sum += parseInt(numbers.charAt(size - i), 10) * pos--; if (pos < 2) pos = 9; }
+    result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+    return result === parseInt(digits.charAt(1), 10);
 }
 
 function formatCurrency(value) {
@@ -110,43 +102,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .chart-legend .legend-label { display: flex; align-items: center; }
         .chart-legend .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .doughnut-center-text { fill: var(--text-color); font-size: 1.5em; font-weight: 700; }
-        
-        /* Responsive styles */
-        @media (max-width: 1200px) {
-            .main-content-v4 {
-                flex-direction: column;
-            }
-            .main-form-column {
-                width: 100%;
-                min-width: 100%;
-                border-right: none;
-                border-bottom: 1px solid var(--separator-color);
-            }
-        }
-        @media (max-width: 768px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr 1fr;
-            }
-            .contract-tracking-tabs-v4 {
-                flex-wrap: wrap;
-            }
-            .contract-tab-button {
-                flex: 1 0 33%;
-                font-size: 0.9em;
-                padding: 8px 5px;
-            }
-            .chart-wrapper {
-                width: 100%;
-            }
-        }
-        @media (max-width: 480px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-            .contract-tab-button {
-                flex: 1 0 50%;
-            }
-        }
     </style>
     <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
     <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
@@ -269,7 +224,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         getData: function() { this.updateDetailsFromUI(); return this.data; },
         loadData: function(data) { 
-            this.data = JSON.parse(JSON.stringify(data)); // Deep copy
+            this.data = JSON.parse(JSON.stringify(data));
             this.renderAll(); 
         },
 
@@ -284,17 +239,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         saveChanges: function() {
-            try {
-                if (this.onSaveCallback) {
-                    this.updateDetailsFromUI();
-                    this.onSaveCallback(this.data);
-                    showNotification("Alterações salvas com sucesso!", 3000, "success");
-                } else {
-                    showNotification("Nenhuma ação de salvamento configurada.", 4000, "error");
-                }
-            } catch (error) {
-                console.error("Erro ao salvar contrato:", error);
-                showNotification(`Falha ao salvar: ${error.message}`, 5000, "error");
+            if (this.onSaveCallback) {
+                this.updateDetailsFromUI();
+                this.onSaveCallback(this.data);
+                showNotification("Alterações salvas e dashboard atualizado!", 3000, "success");
+            } else {
+                showNotification("Nenhuma ação de salvamento configurada.", 4000, "error");
             }
         },
         
@@ -324,9 +274,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.eventHandlers.formInput = (e) => {
                 const field = e.target.dataset.field;
                 if (field) {
-                    if(field.endsWith('.cnpj')) {
-                        e.target.value = formatCNPJ(e.target.value);
-                    }
+                    if(field.endsWith('.cnpj')) { e.target.value = formatCNPJ(e.target.value); }
                     this.updateDetailsFromUI();
                 }
             };
@@ -337,9 +285,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     if (e.target.value && !validateCNPJ(e.target.value)) {
                         showNotification(`CNPJ "${e.target.placeholder}" inválido.`, 3000, 'error');
                         e.target.classList.add('invalid-input');
-                    } else {
-                        e.target.classList.remove('invalid-input');
-                    }
+                    } else { e.target.classList.remove('invalid-input'); }
                 }
             };
             this.ui.form.addEventListener('blur', this.eventHandlers.cnpjBlur, true);
@@ -361,9 +307,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.ui.buttons.addInvoice.addEventListener('click', () => this.openModal('add', 'invoices'));
             
             this.eventHandlers.tableClick = (e, type) => this.handleTableAction(e, type);
-            Object.keys(this.ui.tables).forEach(type => {
-                this.ui.tables[type].addEventListener('click', (e) => this.eventHandlers.tableClick(e, type));
-            });
+            Object.keys(this.ui.tables).forEach(type => { this.ui.tables[type].addEventListener('click', (e) => this.eventHandlers.tableClick(e, type)); });
 
             this.eventHandlers.closeModal = () => this.closeModal();
             this.eventHandlers.saveModal = () => this.handleModalSave();
@@ -396,15 +340,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         renderAll: function() {
             this.renderMainForm();
             this.recalculateTotals();
-
             const formatDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
-
             this._renderTable('items', this.ui.tables.items, [{ h: 'Nº SIAD', k: 'numeroSiad' }, { h: 'Descrição', k: 'descricao' }, { h: 'Valor (R$)', k: 'valorFinanceiro', f: formatCurrency }]);
             this._renderTable('financial', this.ui.tables.financial, [{ h: 'Data', k: 'date', f: formatDate }, { h: 'Tipo', k: 'type' }, { h: 'Valor', k: 'value', f: formatCurrency }]);
             this._renderTable('physical', this.ui.tables.physical, [{ h: 'Item', k: 'item' }, { h: 'Previsto', k: 'date_planned', f: formatDate }, { h: 'Realizado', k: 'date_done', f: formatDate }, { h: 'Status', k: 'status' }]);
             this._renderTable('amendments', this.ui.tables.amendments, [{ h: 'Nº', k: 'number' }, { h: 'Tipo', k: 'type' }, { h: 'Variação Valor', k: 'value_change', f: formatCurrency }, { h: 'Nova Vigência', k: 'new_end_date', f: formatDate }]);
             this._renderTable('invoices', this.ui.tables.invoices, [{ h: 'Nº', k: 'number' }, { h: 'Valor', k: 'value', f: formatCurrency }, { h: 'Vencimento', k: 'date_due', f: formatDate }, { h: 'Status', k: 'status' }]);
-
             this.renderDashboard();
         },
 
@@ -412,11 +353,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.ui.form.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
                 let value = keys.reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : '', this.data.details);
-                
-                if (input.dataset.field.endsWith('.cnpj')) {
-                    value = formatCNPJ(value);
-                }
-                
+                if (input.dataset.field.endsWith('.cnpj')) { value = formatCNPJ(value); }
                 input.value = value;
             });
             this.renderMainSei();
@@ -427,11 +364,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             let html = '';
             if (numeroSei) {
                 html = `<b>Processo SEI:</b> `;
-                if (linkSei) {
-                    html += `<a href="${linkSei}" target="_blank" title="Abrir processo no SEI">${numeroSei}</a>`;
-                } else {
-                    html += numeroSei;
-                }
+                if (linkSei) { html += `<a href="${linkSei}" target="_blank" title="Abrir processo no SEI">${numeroSei}</a>`; } 
+                else { html += numeroSei; }
             }
             this.ui.mainSeiContainer.innerHTML = html;
         },
@@ -442,20 +376,9 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             (dataArray || []).forEach(item => {
                 const row = tableBody.insertRow();
                 row.dataset.id = item.id;
-                
-                let cellsHTML = columns.map(col => {
-                    const value = item[col.k] || '';
-                    return `<td>${col.f ? col.f(value) : value}</td>`;
-                }).join('');
-                
-                if (item.hasOwnProperty('sei_number') || item.hasOwnProperty('sei_link')) {
-                    cellsHTML += `<td>${this._getSeiLinkHTML(item)}</td>`;
-                }
-                
-                cellsHTML += `<td>
-                    <button class="app-button secondary small" data-action="edit" title="Editar"><i class="fas fa-edit"></i></button> 
-                    <button class="app-button danger small" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button>
-                </td>`;
+                let cellsHTML = columns.map(col => `<td>${col.f ? col.f(item[col.k] || '') : (item[col.k] || '')}</td>`).join('');
+                if (item.hasOwnProperty('sei_number') || item.hasOwnProperty('sei_link')) { cellsHTML += `<td>${this._getSeiLinkHTML(item)}</td>`; }
+                cellsHTML += `<td><button class="app-button secondary small" data-action="edit" title="Editar"><i class="fas fa-edit"></i></button> <button class="app-button danger small" data-action="delete" title="Excluir"><i class="fas fa-trash"></i></button></td>`;
                 row.innerHTML = cellsHTML;
             });
         },
@@ -479,11 +402,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             let entry = {};
             const titleMap = {items:'Item', financial:'Lançamento Financeiro', physical:'Marco Físico', amendments:'Aditivo', invoices:'Nota Fiscal'};
             modal.title.textContent = (mode === 'edit' ? 'Editar ' : 'Adicionar ') + titleMap[type];
-
-            if (mode === 'edit') {
-                const dataArray = this.data[type];
-                entry = { ...(dataArray.find(e => e.id === id) || {}) };
-            }
+            if (mode === 'edit') { entry = { ...(this.data[type].find(e => e.id === id) || {}) }; }
             modal.body.innerHTML = this._getModalFormHTML(type, entry);
             modal.overlay.style.display = 'flex';
         },
@@ -541,23 +460,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
             if(editBtn) this.openModal('edit', tableType, row.dataset.id);
             if(deleteBtn) {
-                const itemType = this.getItemTypeName(tableType);
-                if (confirm(`Tem certeza que deseja excluir este ${itemType}?`)) {
+                if (confirm(`Tem certeza que deseja excluir este item?`)) {
                     this.data[tableType] = this.data[tableType].filter(item => item.id !== row.dataset.id);
                     this.renderAll();
                 }
             }
-        },
-        
-        getItemTypeName: function(type) {
-            const names = {
-                items: 'item',
-                financial: 'lançamento financeiro',
-                physical: 'marco físico',
-                amendments: 'aditivo',
-                invoices: 'nota fiscal'
-            };
-            return names[type] || 'item';
         },
 
         calculateFinancials: function() {
@@ -580,7 +487,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
             if(details.vigenciaAtual){
                 const end=new Date(details.vigenciaAtual + "T23:59:59"), days=Math.ceil((end - today)/864e5);
-                dashboard.kpiDaysLeft.textContent = days;
+                dashboard.kpiDaysLeft.textContent = days >= 0 ? days : 0;
                 dashboard.kpiDaysLeft.className = 'kpi-value';
                 if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger');
                 else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn');
@@ -673,7 +580,7 @@ export function openContractManager() {
     });
     
     const content = `
-    <div class="app-toolbar">${getStandardAppToolbarHTML({ export: true })}</div>
+    <div class="app-toolbar">${getStandardAppToolbarHTML()}</div>
     <div class="contract-manager-container" id="managerContainer_${uniqueSuffix}">
         <div class="contract-dashboard">
             <div class="dashboard-header">
@@ -687,21 +594,6 @@ export function openContractManager() {
                     </select>
                     <button id="refreshDashboard_${uniqueSuffix}" class="app-button" title="Atualizar Dashboard"><i class="fas fa-sync-alt"></i></button>
                 </div>
-            </div>
-            
-            <div class="dashboard-controls">
-                <div class="search-box">
-                    <input type="text" id="searchContracts_${uniqueSuffix}" placeholder="Buscar contratos...">
-                    <i class="fas fa-search"></i>
-                </div>
-                <select id="statusFilter_${uniqueSuffix}" class="app-select">
-                    <option value="all">Todos status</option>
-                    <option value="ativo">Ativos</option>
-                    <option value="suspenso">Suspensos</option>
-                    <option value="concluido">Concluídos</option>
-                    <option value="encerrado">Encerrados</option>
-                    <option value="cancelado">Cancelados</option>
-                </select>
             </div>
             
             <div class="dashboard-cards">
@@ -760,16 +652,6 @@ export function openContractManager() {
                         <tbody></tbody>
                     </table>
                 </div>
-                
-                <div class="pagination-controls">
-                    <button id="prevPage_${uniqueSuffix}" class="app-button secondary" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span id="pageInfo_${uniqueSuffix}">Página 1 de 1</span>
-                    <button id="nextPage_${uniqueSuffix}" class="app-button secondary" disabled>
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -779,10 +661,6 @@ export function openContractManager() {
         .contract-dashboard { display: flex; flex-direction: column; gap: 20px; }
         .dashboard-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
         .dashboard-filters { display: flex; gap: 10px; }
-        .dashboard-controls { display: flex; gap: 15px; margin-bottom: 20px; }
-        .search-box { position: relative; flex: 1; }
-        .search-box input { padding-left: 35px; width: 100%; }
-        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #718096; }
         .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
         .dashboard-card { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; border-left: 4px solid #3498db; }
         .dashboard-card:nth-child(2) { border-left-color: #2ecc71; }
@@ -798,38 +676,6 @@ export function openContractManager() {
         .chart-wrapper-main h4 { margin-top: 0; margin-bottom: 15px; text-align: center; }
         .contracts-list { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-        
-        /* Responsive styles */
-        @media (max-width: 1200px) {
-            .dashboard-charts {
-                grid-template-columns: 1fr;
-            }
-        }
-        @media (max-width: 768px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr 1fr;
-            }
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            .dashboard-controls {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-        @media (max-width: 480px) {
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-            .list-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-        }
     </style>`;
     
     const winData = window.windowManager.windows.get(winId);
@@ -840,11 +686,9 @@ export function openContractManager() {
     const appState = {
         winId,
         appDataType: 'contract-manager_v5.2',
-        contracts: [],
+        contracts: [], // **SAMPLE DATA REMOVED** - Starts as an empty array
         charts: {},
         themeObserver: null,
-        currentPage: 0,
-        pageSize: 10,
         ui: {
             container: document.getElementById(`managerContainer_${uniqueSuffix}`),
             totalValue: document.getElementById(`totalValue_${uniqueSuffix}`),
@@ -856,28 +700,19 @@ export function openContractManager() {
             contractsTable: document.getElementById(`contractsTable_${uniqueSuffix}`).querySelector('tbody'),
             addContractBtn: document.getElementById(`addContractBtn_${uniqueSuffix}`),
             refreshBtn: document.getElementById(`refreshDashboard_${uniqueSuffix}`),
-            timeFilter: document.getElementById(`timeFilter_${uniqueSuffix}`),
-            searchInput: document.getElementById(`searchContracts_${uniqueSuffix}`),
-            statusFilter: document.getElementById(`statusFilter_${uniqueSuffix}`),
-            prevPageBtn: document.getElementById(`prevPage_${uniqueSuffix}`),
-            nextPageBtn: document.getElementById(`nextPage_${uniqueSuffix}`),
-            pageInfo: document.getElementById(`pageInfo_${uniqueSuffix}`)
+            timeFilter: document.getElementById(`timeFilter_${uniqueSuffix}`)
         },
         
         init: function() {
             setupAppToolbarActions(this);
             this.setupThemeObserver();
-            this.loadSampleData();
+            // **REMOVED** this.loadSampleData();
             
             this.ui.addContractBtn.onclick = () => this.createNewContract();
             this.ui.refreshBtn.onclick = () => this.refreshDashboard();
             this.ui.timeFilter.onchange = () => this.renderContractsTable();
-            this.ui.searchInput.oninput = () => this.renderContractsTable();
-            this.ui.statusFilter.onchange = () => this.renderContractsTable();
-            this.ui.prevPageBtn.onclick = () => this.changePage(-1);
-            this.ui.nextPageBtn.onclick = () => this.changePage(1);
             
-            this.renderDashboard();
+            this.renderDashboard(); // Will now render an empty state
         },
         
         setupThemeObserver: function() {
@@ -918,76 +753,6 @@ export function openContractManager() {
         },
 
         getData: function() { return this.contracts; },
-
-        exportData: function() {
-            const dataStr = JSON.stringify(this.contracts, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `contratos-${new Date().toISOString().slice(0, 10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            showNotification("Dados exportados com sucesso!", 3000, "success");
-        },
-
-        loadSampleData: function() {
-            this.contracts = [
-                {
-                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: '2025-01-14' },
-                    items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
-                },
-                {
-                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
-                    items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }], financial: [], physical: [], amendments: [], invoices: []
-                }
-            ];
-        },
-        
-        getFilteredContracts: function() {
-            const filter = this.ui.timeFilter.value;
-            const statusFilter = this.ui.statusFilter.value;
-            const searchTerm = this.ui.searchInput.value.toLowerCase();
-            const today = new Date();
-            
-            let filtered = this.contracts;
-            
-            // Filter by expiration
-            if (filter !== 'all') {
-                const days = parseInt(filter, 10);
-                const limitDate = new Date();
-                limitDate.setDate(today.getDate() + days);
-                filtered = filtered.filter(c => {
-                    if (!c.details.vigenciaAtual) return false;
-                    const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
-                    return endDate > today && endDate <= limitDate;
-                });
-            }
-            
-            // Filter by status
-            if (statusFilter !== 'all') {
-                filtered = filtered.filter(c => c.details.situacao === statusFilter);
-            }
-            
-            // Filter by search term
-            if (searchTerm) {
-                filtered = filtered.filter(c => 
-                    (c.details.numeroContrato?.toLowerCase().includes(searchTerm) ||
-                    (c.details.contratada.nome?.toLowerCase().includes(searchTerm)) ||
-                    (c.details.contratante.nome?.toLowerCase().includes(searchTerm)));
-            }
-            
-            return filtered;
-        },
-        
-        changePage: function(delta) {
-            this.currentPage += delta;
-            this.renderContractsTable();
-        },
         
         renderDashboard: function() {
             this.markDirty();
@@ -1008,37 +773,35 @@ export function openContractManager() {
             this.ui.totalContracts.textContent = this.contracts.length;
             
             this.renderContractsTable();
-            
-            // Only render charts if Chart.js is available
-            if (typeof Chart !== 'undefined') {
-                this.renderCharts();
-            } else {
-                console.warn("Chart.js não está carregado. Os gráficos não serão renderizados.");
-            }
+            this.renderCharts();
         },
         
+        getFilteredContracts: function() {
+            const filter = this.ui.timeFilter.value;
+            if (filter === 'all' || this.contracts.length === 0) return this.contracts;
+            const days = parseInt(filter, 10);
+            const today = new Date();
+            const limitDate = new Date();
+            limitDate.setDate(today.getDate() + days);
+
+            return this.contracts.filter(c => {
+                if (!c.details.vigenciaAtual) return false;
+                const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
+                return endDate > today && endDate <= limitDate;
+            });
+        },
+
         renderContractsTable: function() {
             const tbody = this.ui.contractsTable;
             tbody.innerHTML = '';
             const filteredContracts = this.getFilteredContracts();
-            const totalPages = Math.ceil(filteredContracts.length / this.pageSize);
             
-            // Adjust current page if out of bounds
-            if (this.currentPage >= totalPages && totalPages > 0) {
-                this.currentPage = totalPages - 1;
+            if (filteredContracts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Nenhum contrato para exibir. Crie um novo ou abra um arquivo.</td></tr>';
+                return;
             }
-            
-            const startIdx = this.currentPage * this.pageSize;
-            const pageContracts = filteredContracts.slice(startIdx, startIdx + this.pageSize);
-            
-            // Update pagination controls
-            this.ui.prevPageBtn.disabled = this.currentPage === 0;
-            this.ui.nextPageBtn.disabled = this.currentPage >= totalPages - 1 || totalPages === 0;
-            this.ui.pageInfo.textContent = totalPages > 0 
-                ? `Página ${this.currentPage + 1} de ${totalPages}` 
-                : 'Nenhum contrato encontrado';
-            
-            pageContracts.forEach(contract => {
+
+            filteredContracts.forEach(contract => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${contract.details.numeroContrato || '-'}</td>
@@ -1062,15 +825,16 @@ export function openContractManager() {
         },
         
         renderCharts: function() {
-            if (typeof Chart === 'undefined') return;
-            
+            if (typeof Chart === 'undefined') {
+                return;
+            }
+
             if (this.charts.financial) this.charts.financial.destroy();
             if (this.charts.status) this.charts.status.destroy();
             
             const isDarkMode = document.body.classList.contains('dark-mode');
             const textColor = isDarkMode ? '#e2e8f0' : '#666';
             const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-            const bgColor = isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
 
             const contractValues = this.contracts.map(c => c.details.valorGlobal || 0);
             const contractNames = this.contracts.map(c => c.details.numeroContrato || 'Sem Número');
@@ -1082,117 +846,39 @@ export function openContractManager() {
             
             this.charts.financial = new Chart(this.ui.financialChart, {
                 type: 'bar',
-                data: { 
-                    labels: contractNames, 
-                    datasets: [{ 
-                        label: 'Valor do Contrato (R$)', 
-                        data: contractValues, 
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)', 
-                        borderColor: 'rgba(54, 162, 235, 1)', 
-                        borderWidth: 1 
-                    }] 
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return formatCurrency(context.raw);
-                                }
-                            }
-                        }
-                    }, 
-                    scales: { 
-                        y: { 
-                            ticks: { 
-                                color: textColor, 
-                                callback: (value) => formatCurrency(value) 
-                            }, 
-                            grid: { color: gridColor },
-                            beginAtZero: true
-                        }, 
-                        x: { 
-                            ticks: { 
-                                color: textColor,
-                                maxRotation: 45,
-                                minRotation: 45
-                            }, 
-                            grid: { 
-                                color: gridColor,
-                                display: false
-                            } 
-                        } 
-                    } 
-                }
+                data: { labels: contractNames, datasets: [{ label: 'Valor do Contrato (R$)', data: contractValues, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: textColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } } }
             });
             
             this.charts.status = new Chart(this.ui.statusChart, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(statusCounts).map(s => this.getStatusText(s)),
-                    datasets: [{ 
-                        data: Object.values(statusCounts), 
-                        backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c', '#95a5a6', '#3498db', '#9b59b6'], 
-                        borderWidth: 0,
-                        hoverOffset: 15
-                    }]
+                    datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c', '#95a5a6', '#3498db', '#9b59b6'], borderWidth: 0 }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { 
-                            position: 'top', 
-                            labels: { 
-                                color: textColor,
-                                font: {
-                                    size: 12
-                                }
-                            } 
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.label}: ${context.raw} contrato(s)`;
-                                }
-                            }
-                        }
-                    },
-                    cutout: '60%'
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: textColor } } } }
             });
         },
 
         handleContractSave: function(savedData) {
-            try {
-                const index = this.contracts.findIndex(c => c.id === savedData.id);
-                if (index > -1) {
-                    this.contracts[index] = savedData;
-                    showNotification(`Contrato "${savedData.details.numeroContrato}" atualizado.`, 3000, "success");
-                } else {
-                    this.contracts.push(savedData);
-                    showNotification(`Contrato "${savedData.details.numeroContrato}" criado.`, 3000, "success");
-                }
-                this.renderDashboard();
-            } catch (error) {
-                console.error("Erro ao salvar contrato:", error);
-                showNotification(`Falha ao salvar contrato: ${error.message}`, 5000, "error");
+            const index = this.contracts.findIndex(c => c.id === savedData.id);
+            if (index > -1) {
+                this.contracts[index] = savedData;
+                showNotification(`Contrato "${savedData.details.numeroContrato}" atualizado.`, 3000, "success");
+            } else {
+                this.contracts.push(savedData);
+                showNotification(`Contrato "${savedData.details.numeroContrato}" criado.`, 3000, "success");
             }
+            this.renderDashboard();
         },
 
         createNewContract: function() {
             const newContract = {
                 id: generateId('ctr'),
                 details: {
-                    numeroContrato: `CTR/${new Date().getFullYear()}/NOVO`, 
-                    situacao: 'ativo',
-                    contratada: { nome: '', cnpj: ''}, 
-                    contratante: { nome: '', cnpj: ''},
-                    valorGlobal: 0, 
-                    dataAssinatura: new Date().toISOString().split('T')[0],
+                    numeroContrato: `CTR/${new Date().getFullYear()}/NOVO`, situacao: 'ativo',
+                    contratada: { nome: '', cnpj: ''}, contratante: { nome: '', cnpj: ''},
+                    valorGlobal: 0, dataAssinatura: new Date().toISOString().split('T')[0],
                     vigenciaAtual: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]
                 },
                 items: [], financial: [], physical: [], amendments: [], invoices: []
