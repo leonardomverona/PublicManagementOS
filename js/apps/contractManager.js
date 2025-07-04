@@ -1,10 +1,9 @@
 /**
  * @module ContractManagerCombined
- * @description A comprehensive contract management application for a virtual OS.
+ * @description A comprehensive, mobile-responsive contract management application.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
- * The application starts with no pre-loaded sample data.
  *
- * @version 5.2 - Removed all sample data for a clean start.
+ * @version 5.3 - Added extensive mobile-responsive CSS for improved usability on small screens.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -64,11 +63,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             --input-bg: #2d3748; --input-border: #4a5568;
         }
         .contract-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; background-color: var(--window-bg); color: var(--text-color); }
-        .main-content-v4 { display: flex; flex: 1; overflow: hidden; }
+        .main-content-v4 { display: flex; flex: 1; overflow-y: auto; } /* Allow vertical scroll on mobile */
         .main-form-column { width: 480px; min-width: 480px; border-right: 1px solid var(--separator-color); padding: 10px; overflow-y: auto; }
         .tabs-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .contract-tracking-tabs-v4 { display: flex; flex-shrink: 0; border-bottom: 1px solid var(--separator-color); background-color: var(--toolbar-bg); }
-        .contract-tab-button { background: transparent; border: none; padding: 10px 15px; cursor: pointer; color: var(--text-color); border-bottom: 3px solid transparent; margin-bottom: -1px; }
+        .contract-tracking-tabs-v4 { display: flex; flex-shrink: 0; border-bottom: 1px solid var(--separator-color); background-color: var(--toolbar-bg); overflow-x: auto; } /* Allow horizontal scroll for many tabs */
+        .contract-tab-button { background: transparent; border: none; padding: 10px 15px; cursor: pointer; color: var(--text-color); border-bottom: 3px solid transparent; margin-bottom: -1px; white-space: nowrap; }
         .contract-tab-button:hover { background-color: var(--separator-color); }
         .contract-tab-button.active { font-weight: bold; border-bottom-color: #3498db; }
         .contract-tab-content-v4 { flex: 1; padding: 15px; overflow-y: auto; }
@@ -86,22 +85,42 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
         .modal-title { font-size: 1.3em; font-weight: 700; }
         .modal-close { background: none; border: 0; font-size: 1.8em; cursor: pointer; line-height: 1; color: var(--text-color); }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .modal-footer { text-align: right; margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--separator-color); }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .kpi-card { background: var(--toolbar-bg); padding: 15px; border-radius: 8px; text-align: center; }
         .kpi-title { font-size: 0.9em; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; }
         .kpi-value { font-size: 2em; font-weight: 700; }
         .kpi-subtext { font-size: 0.8em; opacity: 0.7; }
         .kpi-value.kpi-good { color: var(--kpi-good); } .kpi-value.kpi-warn { color: var(--kpi-warn); } .kpi-value.kpi-danger { color: var(--kpi-danger); }
-        .chart-container { display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap; }
-        .chart-wrapper { display: flex; flex-direction: column; align-items: center; background-color: var(--toolbar-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 48%; min-width: 300px; }
+        .chart-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-around; }
+        .chart-wrapper { display: flex; flex-direction: column; align-items: center; background-color: var(--toolbar-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; min-width: 280px; } /* Full width on mobile */
         .chart-title { font-weight: bold; margin-bottom: 10px; }
         .chart-legend { list-style: none; padding: 0; margin-top: 15px; width: 100%; }
         .chart-legend li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: .9em; }
         .chart-legend .legend-label { display: flex; align-items: center; }
         .chart-legend .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .doughnut-center-text { fill: var(--text-color); font-size: 1.5em; font-weight: 700; }
+
+        /* MOBILE ENHANCEMENTS for Detail Editor */
+        @media (max-width: 860px) {
+            .main-content-v4 {
+                flex-direction: column; /* Stack columns vertically */
+            }
+            .main-form-column {
+                width: 100%; /* Take full width */
+                min-width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--separator-color);
+                overflow-y: visible; /* Let the parent scroll */
+            }
+            .tabs-column {
+                overflow: visible;
+            }
+            .form-section-content {
+                grid-template-columns: 1fr; /* Single column for form fields */
+            }
+        }
     </style>
     <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
     <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
@@ -127,14 +146,13 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     <div class="form-grid-full"><h3>Valor Global Atual: <span id="valorGlobalDisplay_${uniqueSuffix}">R$ 0,00</span></h3></div>
                 </div></details>
                 <details class="form-section" open><summary>Itens do Contrato</summary><div class="form-section-content form-grid-full">
-                    <table class="app-table" id="itemsTable_${uniqueSuffix}"><thead><tr><th>Nº SIAD</th><th>Descrição</th><th>Valor (R$)</th><th>Ações</th></tr></thead><tbody></tbody></table>
+                    <div class="table-container"><table class="app-table" id="itemsTable_${uniqueSuffix}"><thead><tr><th>Nº SIAD</th><th>Descrição</th><th>Valor (R$)</th><th>Ações</th></tr></thead><tbody></tbody></table></div>
                     <button id="addItemBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Adicionar Item</button>
                 </div></details>
                 <details class="form-section"><summary>Prazos e Vigência</summary><div class="form-section-content">
-                    <label>Assinatura</label><label>Vigência Inicial</label>
-                    <input type="date" data-field="dataAssinatura" class="app-input" title="Data Assinatura"><input type="date" data-field="vigenciaInicial" class="app-input" title="Vigência Inicial">
-                    <label class="form-grid-full">Vigência Atual</label>
-                    <input type="date" data-field="vigenciaAtual" class="app-input form-grid-full" title="Vigência Atual">
+                    <label>Assinatura</label><input type="date" data-field="dataAssinatura" class="app-input" title="Data Assinatura">
+                    <label>Vigência Inicial</label><input type="date" data-field="vigenciaInicial" class="app-input" title="Vigência Inicial">
+                    <label class="form-grid-full">Vigência Atual</label><input type="date" data-field="vigenciaAtual" class="app-input form-grid-full" title="Vigência Atual">
                 </div></details>
             </div>
             <div class="tabs-column">
@@ -162,10 +180,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     </div>
     `;
     const dashboardHTML = `<div class="dashboard-grid"><div class="kpi-card"><div class="kpi-title">Vigência</div><div class="kpi-value" id="kpiDaysLeft_${uniqueSuffix}">-</div><div class="kpi-subtext">Dias Restantes</div></div><div class="kpi-card"><div class="kpi-title">Entregas</div><div class="kpi-value" id="kpiPendingDeliveries_${uniqueSuffix}">0</div><div class="kpi-subtext">Pendentes</div></div><div class="kpi-card"><div class="kpi-title">Pagamentos</div><div class="kpi-value" id="kpiOverduePayments_${uniqueSuffix}">0</div><div class="kpi-subtext">Atrasados</div></div></div><div class="chart-container"><div class="chart-wrapper"><div class="chart-title">Execução Financeira</div><div id="financialChart_${uniqueSuffix}"></div><ul class="chart-legend" id="financialChartLegend_${uniqueSuffix}"></ul></div><div class="chart-wrapper"><div class="chart-title">Acompanhamento Físico</div><div id="physicalChart_${uniqueSuffix}"></div><ul class="chart-legend" id="physicalChartLegend_${uniqueSuffix}"></ul></div></div>`;
-    const financialHTML = `<button id="addFinancialBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Lançamento</button><div class="app-section"><h4>Lançamentos Financeiros</h4><table class="app-table"><thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="financialTableBody_${uniqueSuffix}"></tbody></table></div>`;
-    const physicalHTML = `<button id="addPhysicalBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Marco</button><div class="app-section"><h4>Marcos de Entrega</h4><table class="app-table"><thead><tr><th>Item</th><th>Previsto</th><th>Realizado</th><th>Status</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="physicalTableBody_${uniqueSuffix}"></tbody></table></div>`;
-    const amendmentsHTML = `<button id="addAmendmentBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Aditivo</button><div class="app-section"><h4>Termos Aditivos</h4><table class="app-table"><thead><tr><th>Nº</th><th>Tipo</th><th>Variação Valor</th><th>Nova Vigência</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="amendmentsTableBody_${uniqueSuffix}"></tbody></table></div>`;
-    const invoicesHTML = `<button id="addInvoiceBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Nova NF</button><div class="app-section"><h4>Notas Fiscais</h4><table class="app-table"><thead><tr><th>Nº</th><th>Valor</th><th>Emissão</th><th>Vencimento</th><th>Status</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="invoicesTableBody_${uniqueSuffix}"></tbody></table></div>`;
+    const financialHTML = `<button id="addFinancialBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Lançamento</button><div class="table-container"><h4>Lançamentos Financeiros</h4><table class="app-table"><thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="financialTableBody_${uniqueSuffix}"></tbody></table></div>`;
+    const physicalHTML = `<button id="addPhysicalBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Marco</button><div class="table-container"><h4>Marcos de Entrega</h4><table class="app-table"><thead><tr><th>Item</th><th>Previsto</th><th>Realizado</th><th>Status</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="physicalTableBody_${uniqueSuffix}"></tbody></table></div>`;
+    const amendmentsHTML = `<button id="addAmendmentBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Aditivo</button><div class="table-container"><h4>Termos Aditivos</h4><table class="app-table"><thead><tr><th>Nº</th><th>Tipo</th><th>Variação Valor</th><th>Nova Vigência</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="amendmentsTableBody_${uniqueSuffix}"></tbody></table></div>`;
+    const invoicesHTML = `<button id="addInvoiceBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Nova NF</button><div class="table-container"><h4>Notas Fiscais</h4><table class="app-table"><thead><tr><th>Nº</th><th>Valor</th><th>Emissão</th><th>Vencimento</th><th>Status</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="invoicesTableBody_${uniqueSuffix}"></tbody></table></div>`;
 
     const winData = window.windowManager.windows.get(winId); 
     if (!winData) return winId; 
@@ -176,10 +194,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     Object.keys(tabContentMap).forEach(key => { windowContent.querySelector(`[data-tab-content="${key}"]`).innerHTML = tabContentMap[key]; });
     
     const appState = {
-        winId, appDataType: 'contract-editor_v5.2',
-        data: {},
-        onSaveCallback: onSaveCallback,
-        themeObserver: null,
+        winId, appDataType: 'contract-editor_v5.3',
+        data: {}, onSaveCallback: onSaveCallback, themeObserver: null,
         ui: {
             container: windowContent.querySelector(`#editorContainer_${uniqueSuffix}`),
             form: windowContent.querySelector(`#mainFormContainer_${uniqueSuffix}`),
@@ -219,57 +235,33 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 cancelBtn: windowContent.querySelector(`#modalCancelBtn_${uniqueSuffix}`),
             }
         },
-        eventHandlers: {},
-        currentModal: { mode: null, type: null, id: null },
-
+        eventHandlers: {}, currentModal: { mode: null, type: null, id: null },
         getData: function() { this.updateDetailsFromUI(); return this.data; },
-        loadData: function(data) { 
-            this.data = JSON.parse(JSON.stringify(data));
-            this.renderAll(); 
-        },
-
+        loadData: function(data) { this.data = JSON.parse(JSON.stringify(data)); this.renderAll(); },
         init: function() {
             const toolbar = winData.element.querySelector('.app-toolbar');
             const saveBtn = toolbar.querySelector('.save-file-btn');
             if(saveBtn) saveBtn.onclick = () => this.saveChanges();
-            
             this.setupThemeObserver();
             this._registerEventListeners();
             this.loadData(initialData);
         },
-
         saveChanges: function() {
             if (this.onSaveCallback) {
                 this.updateDetailsFromUI();
                 this.onSaveCallback(this.data);
                 showNotification("Alterações salvas e dashboard atualizado!", 3000, "success");
-            } else {
-                showNotification("Nenhuma ação de salvamento configurada.", 4000, "error");
-            }
+            } else { showNotification("Nenhuma ação de salvamento configurada.", 4000, "error"); }
         },
-        
         setupThemeObserver: function() {
             const appContainer = this.ui.container;
-            const applyTheme = () => {
-                if(document.body.classList.contains('dark-mode')) {
-                    appContainer.classList.add('dark-mode');
-                } else {
-                    appContainer.classList.remove('dark-mode');
-                }
-            };
-
+            const applyTheme = () => { appContainer.classList.toggle('dark-mode', document.body.classList.contains('dark-mode')); };
             this.themeObserver = new MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    if (mutation.attributeName === 'class') {
-                        applyTheme();
-                    }
-                });
+                mutations.forEach(mutation => { if (mutation.attributeName === 'class') { applyTheme(); } });
             });
-
             this.themeObserver.observe(document.body, { attributes: true });
             applyTheme();
         },
-        
         _registerEventListeners: function() {
             this.eventHandlers.formInput = (e) => {
                 const field = e.target.dataset.field;
@@ -279,7 +271,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 }
             };
             this.ui.form.addEventListener('input', this.eventHandlers.formInput);
-
             this.eventHandlers.cnpjBlur = (e) => {
                 if (e.target.dataset.field && e.target.dataset.field.endsWith('.cnpj')) {
                     if (e.target.value && !validateCNPJ(e.target.value)) {
@@ -289,7 +280,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 }
             };
             this.ui.form.addEventListener('blur', this.eventHandlers.cnpjBlur, true);
-
             this.eventHandlers.tabClick = (e) => {
                 const tabName = e.currentTarget.dataset.tab;
                 this.ui.tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -299,26 +289,21 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 if(tabName === 'dashboard') this.renderDashboard();
             };
             this.ui.tabButtons.forEach(button => button.addEventListener('click', this.eventHandlers.tabClick));
-            
             this.ui.buttons.addItem.addEventListener('click', () => this.openModal('add', 'items'));
             this.ui.buttons.addFinancial.addEventListener('click', () => this.openModal('add', 'financial'));
             this.ui.buttons.addPhysical.addEventListener('click', () => this.openModal('add', 'physical'));
             this.ui.buttons.addAmendment.addEventListener('click', () => this.openModal('add', 'amendments'));
             this.ui.buttons.addInvoice.addEventListener('click', () => this.openModal('add', 'invoices'));
-            
             this.eventHandlers.tableClick = (e, type) => this.handleTableAction(e, type);
             Object.keys(this.ui.tables).forEach(type => { this.ui.tables[type].addEventListener('click', (e) => this.eventHandlers.tableClick(e, type)); });
-
             this.eventHandlers.closeModal = () => this.closeModal();
             this.eventHandlers.saveModal = () => this.handleModalSave();
             this.eventHandlers.overlayClick = (e) => { if (e.target === this.ui.modal.overlay) this.closeModal(); };
-            
             this.ui.modal.closeBtn.addEventListener('click', this.eventHandlers.closeModal);
             this.ui.modal.cancelBtn.addEventListener('click', this.eventHandlers.closeModal);
             this.ui.modal.saveBtn.addEventListener('click', this.eventHandlers.saveModal);
             this.ui.modal.overlay.addEventListener('click', this.eventHandlers.overlayClick);
         },
-
         updateDetailsFromUI: function() {
             this.ui.form.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
@@ -336,7 +321,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.recalculateTotals();
             this.renderMainSei();
         },
-        
         renderAll: function() {
             this.renderMainForm();
             this.recalculateTotals();
@@ -348,7 +332,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this._renderTable('invoices', this.ui.tables.invoices, [{ h: 'Nº', k: 'number' }, { h: 'Valor', k: 'value', f: formatCurrency }, { h: 'Vencimento', k: 'date_due', f: formatDate }, { h: 'Status', k: 'status' }]);
             this.renderDashboard();
         },
-
         renderMainForm: function() {
             this.ui.form.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
@@ -358,7 +341,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             });
             this.renderMainSei();
         },
-        
         renderMainSei: function() {
             const { numeroSei, linkSei } = this.data.details;
             let html = '';
@@ -369,7 +351,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             }
             this.ui.mainSeiContainer.innerHTML = html;
         },
-
         _renderTable: function(type, tableBody, columns) {
             tableBody.innerHTML = '';
             const dataArray = this.data[type];
@@ -382,12 +363,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 row.innerHTML = cellsHTML;
             });
         },
-        
         _getSeiLinkHTML: function(item) {
             if (item.sei_link && item.sei_number) return `<a href="${item.sei_link}" target="_blank" title="${item.sei_link}">${item.sei_number}</a>`;
             return item.sei_number || '-';
         },
-        
         recalculateTotals: function() {
             const itemsTotal = (this.data.items || []).reduce((sum, item) => sum + (parseFloat(item.valorFinanceiro) || 0), 0);
             const amendmentsTotal = (this.data.amendments || []).reduce((sum, item) => sum + (parseFloat(item.value_change) || 0), 0);
@@ -395,25 +374,20 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             this.data.details.valorGlobal = globalTotal;
             this.ui.valorGlobalDisplay.textContent = formatCurrency(globalTotal);
         },
-        
         openModal: function(mode, type, id = null) {
             this.currentModal = { mode, type, id };
             const { modal } = this.ui;
-            let entry = {};
             const titleMap = {items:'Item', financial:'Lançamento Financeiro', physical:'Marco Físico', amendments:'Aditivo', invoices:'Nota Fiscal'};
             modal.title.textContent = (mode === 'edit' ? 'Editar ' : 'Adicionar ') + titleMap[type];
-            if (mode === 'edit') { entry = { ...(this.data[type].find(e => e.id === id) || {}) }; }
+            const entry = (mode === 'edit') ? { ...(this.data[type].find(e => e.id === id) || {}) } : {};
             modal.body.innerHTML = this._getModalFormHTML(type, entry);
             modal.overlay.style.display = 'flex';
         },
-
         closeModal: function() { this.ui.modal.overlay.style.display = 'none'; this.ui.modal.body.innerHTML = ''; },
-
         _getModalFormHTML: function(type, entry = {}) {
             const today = new Date().toISOString().split('T')[0];
             const seiFields = `<input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">`;
             const getItemOptions = (selectedId) => (this.data.items || []).map(i => `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`).join('');
-
             switch(type) {
                 case 'items': return `<div class="modal-form-grid"><input id="f_numeroSiad" class="app-input" placeholder="Nº SIAD" value="${entry.numeroSiad || ''}"><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="Valor Financeiro (R$)" value="${entry.valorFinanceiro || ''}"><textarea id="f_descricao" class="app-textarea form-grid-full" placeholder="Descrição">${entry.descricao || ''}</textarea></div>`;
                 case 'financial': return `<div class="modal-form-grid"><input type="date" id="f_date" class="app-input" value="${entry.date || today}"><select id="f_type" class="app-select"><option value="empenho" ${entry.type === 'empenho'?'selected':''}>Empenho</option><option value="liquidacao" ${entry.type === 'liquidacao'?'selected':''}>Liquidação</option><option value="pagamento" ${entry.type === 'pagamento'?'selected':''}>Pagamento</option><option value="anulacao" ${entry.type === 'anulacao'?'selected':''}>Anulação</option></select><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value || ''}"><input id="f_description" class="app-input form-grid-full" placeholder="Descrição" value="${entry.description || ''}">${seiFields}</div>`;
@@ -423,20 +397,16 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 default: return `Formulário não encontrado para o tipo: ${type}.`;
             }
         },
-
         handleModalSave: function() {
             const { mode, type, id } = this.currentModal;
             const dataArrayName = type;
             if (!this.data[dataArrayName]) this.data[dataArrayName] = [];
-            
             let entry = (mode === 'edit') ? this.data[dataArrayName].find(e => e.id === id) : { id: generateId(type) };
             if (!entry) { showNotification("Erro: item não encontrado para edição.", 4000, 'error'); return; }
-
             const form = this.ui.modal.body;
             const getVal = (fieldId) => form.querySelector(`#f_${fieldId}`)?.value;
             const getFloat = (fieldId) => parseFloat(getVal(fieldId)) || 0;
             const seiData = { sei_number: getVal('sei_number'), sei_link: getVal('sei_link') };
-
             switch(type) {
                 case 'items': Object.assign(entry, { numeroSiad: getVal('numeroSiad'), descricao: getVal('descricao'), valorFinanceiro: getFloat('valorFinanceiro') }); break;
                 case 'financial': Object.assign(entry, { date: getVal('date'), type: getVal('type'), value: getFloat('value'), description: getVal('description'), ...seiData }); break;
@@ -444,120 +414,67 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 case 'amendments': const newEndDate = getVal('new_end_date'); Object.assign(entry, { number: getVal('number'), type: getVal('type'), date: getVal('date'), value_change: getFloat('value_change'), new_end_date: newEndDate, object: getVal('object'), ...seiData }); if (newEndDate) { this.data.details.vigenciaAtual = newEndDate; }; break;
                 case 'invoices': const attested = getVal('date_attested'), payment = getVal('date_payment'); let status = getVal('status'); if(payment) status='pago'; else if(attested) status='atestado'; Object.assign(entry, { number:getVal('number'), value:getFloat('value'), date_issue:getVal('date_issue'), date_attested:attested, date_due:getVal('date_due'), date_payment:payment, status, ...seiData }); break;
             }
-
             if (mode === 'add') this.data[dataArrayName].push(entry);
-            
             this.renderAll();
             this.closeModal();
         },
-
         handleTableAction: function(e, tableType) {
-            const row = e.target.closest('tr');
-            if (!row) return;
-
+            const row = e.target.closest('tr'); if (!row) return;
             const editBtn = e.target.closest('button[data-action="edit"]');
             const deleteBtn = e.target.closest('button[data-action="delete"]');
-
             if(editBtn) this.openModal('edit', tableType, row.dataset.id);
-            if(deleteBtn) {
-                if (confirm(`Tem certeza que deseja excluir este item?`)) {
-                    this.data[tableType] = this.data[tableType].filter(item => item.id !== row.dataset.id);
-                    this.renderAll();
-                }
-            }
+            if(deleteBtn) { if (confirm(`Tem certeza que deseja excluir este item?`)) { this.data[tableType] = this.data[tableType].filter(item => item.id !== row.dataset.id); this.renderAll(); } }
         },
-
         calculateFinancials: function() {
             let empenhado=0, liquidado=0, pago=0;
             (this.data.financial || []).forEach(f => {
                 const v = f.value || 0;
-                if(f.type==='empenho') empenhado += v;
-                else if(f.type==='liquidacao') liquidado += v;
-                else if(f.type==='pagamento') pago += v;
-                else if(f.type==='anulacao') empenhado -= v;
+                if(f.type==='empenho') empenhado += v; else if(f.type==='liquidacao') liquidado += v; else if(f.type==='pagamento') pago += v; else if(f.type==='anulacao') empenhado -= v;
             });
             return { totalValue: this.data.details.valorGlobal || 0, empenhado, liquidado, pago };
         },
-
         renderDashboard: function() {
-            const { dashboard } = this.ui;
-            const { details, physical, invoices } = this.data;
-            const today = new Date();
-            today.setHours(0,0,0,0);
-
+            const { dashboard } = this.ui; const { details, physical, invoices } = this.data; const today = new Date(); today.setHours(0,0,0,0);
             if(details.vigenciaAtual){
                 const end=new Date(details.vigenciaAtual + "T23:59:59"), days=Math.ceil((end - today)/864e5);
                 dashboard.kpiDaysLeft.textContent = days >= 0 ? days : 0;
                 dashboard.kpiDaysLeft.className = 'kpi-value';
-                if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger');
-                else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn');
-                else dashboard.kpiDaysLeft.classList.add('kpi-good');
-            } else {
-                dashboard.kpiDaysLeft.textContent = '-';
-            }
-
+                if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger'); else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn'); else dashboard.kpiDaysLeft.classList.add('kpi-good');
+            } else { dashboard.kpiDaysLeft.textContent = '-'; }
             const pending = (physical || []).filter(p => p.status !== 'concluido').length;
-            dashboard.kpiPendingDeliveries.textContent = pending;
-            dashboard.kpiPendingDeliveries.className = 'kpi-value ' + (pending > 0 ? 'kpi-warn' : 'kpi-good');
-
+            dashboard.kpiPendingDeliveries.textContent = pending; dashboard.kpiPendingDeliveries.className = 'kpi-value ' + (pending > 0 ? 'kpi-warn' : 'kpi-good');
             const late = (invoices || []).filter(i => i.status !== 'pago' && i.date_due && (new Date(i.date_due + "T23:59:59") < today)).length;
-            dashboard.kpiOverduePayments.textContent = late;
-            dashboard.kpiOverduePayments.className = 'kpi-value ' + (late > 0 ? 'kpi-danger' : 'kpi-good');
-
+            dashboard.kpiOverduePayments.textContent = late; dashboard.kpiOverduePayments.className = 'kpi-value ' + (late > 0 ? 'kpi-danger' : 'kpi-good');
             const fin = this.calculateFinancials();
             const finData=[{l:'Pago',v:fin.pago,c:'#28a745'}, {l:'A Pagar',v:fin.liquidado-fin.pago,c:'#ffc107'}, {l:'A Liquidar',v:fin.empenhado-fin.liquidado,c:'#17a2b8'}, {l:'Saldo a Empenhar',v:fin.totalValue-fin.empenhado,c:'#6c757d'}].filter(d=>d.v>0.005);
             this._createDoughnutChart(dashboard.financialChart, dashboard.financialChartLegend, finData, formatCurrency(fin.totalValue));
-
             const physStatus=(physical||[]).reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{});
             const physData=[{l:'Concluído',v:physStatus.concluido||0,c:'#28a745'},{l:'Andamento',v:physStatus.andamento||0,c:'#17a2b8'},{l:'Pendente',v:physStatus.pendente||0,c:'#ffc107'},{l:'Atrasado',v:physStatus.atrasado||0,c:'#dc3545'}].filter(d=>d.v>0);
             this._createDoughnutChart(dashboard.physicalChart, dashboard.physicalChartLegend, physData, `${(physical||[]).length} Itens`);
         },
-
         _createDoughnutChart: function(svgContainer, legendContainer, data, centerLabel) {
-            svgContainer.innerHTML=''; legendContainer.innerHTML='';
-            const total = data.reduce((s, item) => s + item.v, 0);
+            svgContainer.innerHTML=''; legendContainer.innerHTML=''; const total = data.reduce((s, item) => s + item.v, 0);
             if(total === 0){ svgContainer.innerHTML = '<p style="text-align:center; margin-top:50px;">Sem dados para exibir.</p>'; return; }
-
-            const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-            svg.setAttribute("viewBox", "0 0 100 100");
+            const svg = document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("viewBox", "0 0 100 100");
             const r=45, ir=28; let startAngle = -Math.PI/2;
-
             data.forEach(item => {
-                const angle = (item.v / total) * 2 * Math.PI;
-                const endAngle = startAngle + angle;
-                if(angle === 0) return;
-                
-                const [x1,y1] = [50 + r * Math.cos(startAngle), 50 + r * Math.sin(startAngle)];
-                const [x2,y2] = [50 + r * Math.cos(endAngle),   50 + r * Math.sin(endAngle)];
-                const [ix1,iy1] = [50 + ir * Math.cos(startAngle), 50 + ir * Math.sin(startAngle)];
-                const [ix2,iy2] = [50 + ir * Math.cos(endAngle),   50 + ir * Math.sin(endAngle)];
+                const angle = (item.v / total) * 2 * Math.PI; const endAngle = startAngle + angle; if(angle === 0) return;
+                const [x1,y1] = [50 + r * Math.cos(startAngle), 50 + r * Math.sin(startAngle)]; const [x2,y2] = [50 + r * Math.cos(endAngle), 50 + r * Math.sin(endAngle)];
+                const [ix1,iy1] = [50 + ir * Math.cos(startAngle), 50 + ir * Math.sin(startAngle)]; const [ix2,iy2] = [50 + ir * Math.cos(endAngle), 50 + ir * Math.sin(endAngle)];
                 const largeArcFlag = angle > Math.PI ? 1 : 0;
-                
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 path.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${largeArcFlag} 0 ${ix1} ${iy1} Z`);
-                path.setAttribute("fill", item.c);
-                svg.appendChild(path);
-                
+                path.setAttribute("fill", item.c); svg.appendChild(path);
                 const isCurrency = item.l.includes('Pago') || item.l.includes('Pagar') || item.l.includes('Liquidar') || item.l.includes('Saldo');
                 const valueDisplay = isCurrency ? formatCurrency(item.v) : item.v;
-
                 legendContainer.innerHTML += `<li><span class="legend-label"><span class="legend-color" style="background-color:${item.c};"></span>${item.l}</span><span class="legend-value">${valueDisplay}</span></li>`;
                 startAngle = endAngle;
             });
-            
             const text = document.createElementNS("http://www.w3.org/2000/svg","text");
             text.setAttribute("x","50"); text.setAttribute("y","50"); text.setAttribute("text-anchor","middle"); text.setAttribute("dominant-baseline","middle");
-            text.classList.add('doughnut-center-text'); text.textContent = centerLabel;
-            svg.appendChild(text);
-
-            svgContainer.appendChild(svg);
+            text.classList.add('doughnut-center-text'); text.textContent = centerLabel; svg.appendChild(text); svgContainer.appendChild(svg);
         },
-
-        cleanup: function() {
-            if (this.themeObserver) {
-                this.themeObserver.disconnect();
-            }
-        }
+        cleanup: function() { if (this.themeObserver) { this.themeObserver.disconnect(); } }
     };
     
     winData.currentAppInstance = appState;
@@ -573,7 +490,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
 export function openContractManager() {
     const uniqueSuffix = generateId('contract_manager');
-    const winId = window.windowManager.createWindow('Gestão de Contratos 5.2', '', { 
+    const winId = window.windowManager.createWindow('Gestão de Contratos 5.3', '', { 
         width: '1400px', 
         height: '900px', 
         appType: 'contract-manager' 
@@ -641,12 +558,12 @@ export function openContractManager() {
                     <table class="app-table" id="contractsTable_${uniqueSuffix}">
                         <thead>
                             <tr>
-                                <th>Número</th>
-                                <th>Contratada</th>
-                                <th>Valor Global</th>
-                                <th>Status</th>
-                                <th>Vencimento</th>
-                                <th>Ações</th>
+                                <th class="col-number">Número</th>
+                                <th class="col-vendor">Contratada</th>
+                                <th class="col-value">Valor Global</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-due">Vencimento</th>
+                                <th class="col-actions">Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -659,9 +576,9 @@ export function openContractManager() {
     <style>
         .contract-manager-container { display: flex; flex-direction: column; height: 100%; padding: 15px; background: var(--window-bg); color: var(--text-color); }
         .contract-dashboard { display: flex; flex-direction: column; gap: 20px; }
-        .dashboard-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
-        .dashboard-filters { display: flex; gap: 10px; }
-        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--separator-color); }
+        .dashboard-filters { display: flex; gap: 10px; flex-grow: 1; justify-content: flex-end; }
+        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
         .dashboard-card { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; border-left: 4px solid #3498db; }
         .dashboard-card:nth-child(2) { border-left-color: #2ecc71; }
         .dashboard-card:nth-child(3) { border-left-color: #f39c12; }
@@ -675,7 +592,54 @@ export function openContractManager() {
         .chart-wrapper-main { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .chart-wrapper-main h4 { margin-top: 0; margin-bottom: 15px; text-align: center; }
         .contracts-list { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+        .table-container { overflow-x: auto; } /* Allow horizontal scroll for table on mobile */
+
+        /* MOBILE ENHANCEMENTS for Main Dashboard */
+        @media (max-width: 768px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr; /* Stack charts vertically */
+            }
+            .dashboard-header, .list-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .dashboard-filters {
+                justify-content: stretch;
+                width: 100%;
+            }
+            .dashboard-filters .app-select {
+                flex-grow: 1;
+            }
+            .contracts-list .app-table {
+                display: block;
+                width: 100%;
+            }
+            .contracts-list thead { display: none; } /* Hide headers, use data-labels instead */
+            .contracts-list tr {
+                display: block;
+                border-bottom: 2px solid var(--separator-color);
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+            }
+            .contracts-list td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px dotted var(--separator-color);
+                padding: 8px 4px;
+                text-align: right;
+            }
+            .contracts-list td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                margin-right: 10px;
+                text-align: left;
+            }
+             .contracts-list td:last-child {
+                border-bottom: none;
+            }
+        }
     </style>`;
     
     const winData = window.windowManager.windows.get(winId);
@@ -684,11 +648,8 @@ export function openContractManager() {
     winData.element.querySelector('.window-content').innerHTML = content;
     
     const appState = {
-        winId,
-        appDataType: 'contract-manager_v5.2',
-        contracts: [], // **SAMPLE DATA REMOVED** - Starts as an empty array
-        charts: {},
-        themeObserver: null,
+        winId, appDataType: 'contract-manager_v5.3',
+        contracts: [], charts: {}, themeObserver: null,
         ui: {
             container: document.getElementById(`managerContainer_${uniqueSuffix}`),
             totalValue: document.getElementById(`totalValue_${uniqueSuffix}`),
@@ -702,58 +663,39 @@ export function openContractManager() {
             refreshBtn: document.getElementById(`refreshDashboard_${uniqueSuffix}`),
             timeFilter: document.getElementById(`timeFilter_${uniqueSuffix}`)
         },
-        
         init: function() {
             setupAppToolbarActions(this);
             this.setupThemeObserver();
-            // **REMOVED** this.loadSampleData();
-            
             this.ui.addContractBtn.onclick = () => this.createNewContract();
             this.ui.refreshBtn.onclick = () => this.refreshDashboard();
             this.ui.timeFilter.onchange = () => this.renderContractsTable();
-            
-            this.renderDashboard(); // Will now render an empty state
+            this.renderDashboard();
         },
-        
         setupThemeObserver: function() {
             const appContainer = this.ui.container;
             const applyTheme = () => {
-                if(document.body.classList.contains('dark-mode')) {
-                    appContainer.classList.add('dark-mode');
-                } else {
-                    appContainer.classList.remove('dark-mode');
-                }
+                appContainer.classList.toggle('dark-mode', document.body.classList.contains('dark-mode'));
                 if (this.charts.financial) this.renderCharts();
             };
-
             this.themeObserver = new MutationObserver((mutations) => {
-                mutations.forEach(mutation => {
-                    if (mutation.attributeName === 'class') {
-                        applyTheme();
-                    }
-                });
+                mutations.forEach(mutation => { if (mutation.attributeName === 'class') { applyTheme(); } });
             });
-
             this.themeObserver.observe(document.body, { attributes: true });
             applyTheme();
         },
-
         loadData: function(dataString, fileMeta) {
             try {
                 const parsedData = JSON.parse(dataString);
                 if (Array.isArray(parsedData)) {
                     this.contracts = parsedData;
-                    this.fileId = fileMeta.id;
-                    this.markClean();
+                    this.fileId = fileMeta.id; this.markClean();
                     window.windowManager.updateWindowTitle(this.winId, fileMeta.name);
                     this.renderDashboard();
                     showNotification("Lista de contratos carregada com sucesso.", 3000, "success");
                 } else { throw new Error("O arquivo não contém uma lista de contratos válida."); }
             } catch (e) { showNotification(`Erro ao carregar arquivo: ${e.message}`, 5000, "error"); }
         },
-
         getData: function() { return this.contracts; },
-        
         renderDashboard: function() {
             this.markDirty();
             const totalValue = this.contracts.reduce((sum, c) => sum + (c.details.valorGlobal || 0), 0);
@@ -766,76 +708,60 @@ export function openContractManager() {
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 return diffDays <= 30 && diffDays > 0;
             }).length;
-            
             this.ui.totalValue.textContent = formatCurrency(totalValue);
             this.ui.activeContracts.textContent = activeContracts;
             this.ui.expiringSoon.textContent = expiringSoon;
             this.ui.totalContracts.textContent = this.contracts.length;
-            
             this.renderContractsTable();
             this.renderCharts();
         },
-        
         getFilteredContracts: function() {
             const filter = this.ui.timeFilter.value;
             if (filter === 'all' || this.contracts.length === 0) return this.contracts;
             const days = parseInt(filter, 10);
-            const today = new Date();
-            const limitDate = new Date();
+            const today = new Date(); const limitDate = new Date();
             limitDate.setDate(today.getDate() + days);
-
             return this.contracts.filter(c => {
                 if (!c.details.vigenciaAtual) return false;
                 const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
                 return endDate > today && endDate <= limitDate;
             });
         },
-
         renderContractsTable: function() {
             const tbody = this.ui.contractsTable;
             tbody.innerHTML = '';
             const filteredContracts = this.getFilteredContracts();
-            
             if (filteredContracts.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">Nenhum contrato para exibir. Crie um novo ou abra um arquivo.</td></tr>';
                 return;
             }
-
             filteredContracts.forEach(contract => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${contract.details.numeroContrato || '-'}</td>
-                    <td>${contract.details.contratada.nome || '-'}</td>
-                    <td>${formatCurrency(contract.details.valorGlobal)}</td>
-                    <td><span class="status-badge ${contract.details.situacao}">${this.getStatusText(contract.details.situacao)}</span></td>
-                    <td>${contract.details.vigenciaAtual ? new Date(contract.details.vigenciaAtual + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
-                    <td><button class="app-button small" data-action="edit" data-id="${contract.id}" title="Editar Contrato"><i class="fas fa-edit"></i></button></td>
+                    <td data-label="Número">${contract.details.numeroContrato || '-'}</td>
+                    <td data-label="Contratada">${contract.details.contratada.nome || '-'}</td>
+                    <td data-label="Valor">${formatCurrency(contract.details.valorGlobal)}</td>
+                    <td data-label="Status"><span class="status-badge ${contract.details.situacao}">${this.getStatusText(contract.details.situacao)}</span></td>
+                    <td data-label="Vencimento">${contract.details.vigenciaAtual ? new Date(contract.details.vigenciaAtual + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+                    <td data-label="Ações"><button class="app-button small" data-action="edit" data-id="${contract.id}" title="Editar Contrato"><i class="fas fa-edit"></i></button></td>
                 `;
                 tbody.appendChild(row);
             });
-            
             tbody.querySelectorAll('button[data-action="edit"]').forEach(btn => {
                 btn.onclick = () => this.editContract(btn.dataset.id);
             });
         },
-        
         getStatusText: function(status) {
             const statusMap = { 'ativo': 'Ativo', 'suspenso': 'Suspenso', 'concluido': 'Concluído', 'encerrado': 'Encerrado', 'cancelado': 'Cancelado' };
             return statusMap[status] || status;
         },
-        
         renderCharts: function() {
-            if (typeof Chart === 'undefined') {
-                return;
-            }
-
+            if (typeof Chart === 'undefined') { return; }
             if (this.charts.financial) this.charts.financial.destroy();
             if (this.charts.status) this.charts.status.destroy();
-            
             const isDarkMode = document.body.classList.contains('dark-mode');
             const textColor = isDarkMode ? '#e2e8f0' : '#666';
             const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-
             const contractValues = this.contracts.map(c => c.details.valorGlobal || 0);
             const contractNames = this.contracts.map(c => c.details.numeroContrato || 'Sem Número');
             const statusCounts = this.contracts.reduce((acc, c) => {
@@ -843,13 +769,11 @@ export function openContractManager() {
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
             }, {});
-            
             this.charts.financial = new Chart(this.ui.financialChart, {
                 type: 'bar',
                 data: { labels: contractNames, datasets: [{ label: 'Valor do Contrato (R$)', data: contractValues, backgroundColor: 'rgba(54, 162, 235, 0.7)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: textColor, callback: (value) => formatCurrency(value) }, grid: { color: gridColor } }, x: { ticks: { color: textColor }, grid: { color: gridColor } } } }
             });
-            
             this.charts.status = new Chart(this.ui.statusChart, {
                 type: 'doughnut',
                 data: {
@@ -859,7 +783,6 @@ export function openContractManager() {
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: textColor } } } }
             });
         },
-
         handleContractSave: function(savedData) {
             const index = this.contracts.findIndex(c => c.id === savedData.id);
             if (index > -1) {
@@ -871,7 +794,6 @@ export function openContractManager() {
             }
             this.renderDashboard();
         },
-
         createNewContract: function() {
             const newContract = {
                 id: generateId('ctr'),
@@ -885,25 +807,14 @@ export function openContractManager() {
             };
             openContractDetailEditor(newContract, null, (data) => this.handleContractSave(data));
         },
-
         editContract: function(contractId) {
             const contractData = this.contracts.find(c => c.id === contractId);
-            if (contractData) {
-                openContractDetailEditor(contractData, null, (data) => this.handleContractSave(data));
-            } else {
-                showNotification(`Erro: Contrato com ID ${contractId} não encontrado.`, 4000, 'error');
-            }
+            if (contractData) { openContractDetailEditor(contractData, null, (data) => this.handleContractSave(data));
+            } else { showNotification(`Erro: Contrato com ID ${contractId} não encontrado.`, 4000, 'error'); }
         },
-        
-        refreshDashboard: function() {
-            this.renderDashboard();
-            showNotification('Dashboard atualizado.', 2000, 'info');
-        },
-
+        refreshDashboard: function() { this.renderDashboard(); showNotification('Dashboard atualizado.', 2000, 'info'); },
         cleanup: function() {
-            if (this.themeObserver) {
-                this.themeObserver.disconnect();
-            }
+            if (this.themeObserver) { this.themeObserver.disconnect(); }
             if(this.charts.financial) this.charts.financial.destroy();
             if(this.charts.status) this.charts.status.destroy();
         }
