@@ -3,9 +3,10 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * @version 6.4 - "Modal Layout Refinement". Fixed an issue where field labels in modals
- * were being cut off by their input fields. Corrected the HTML structure by wrapping
- * label/input pairs, ensuring proper layout within the CSS grid.
+ * @version 7.0 - "Catalina Clean" (Major UI/UX Overhaul). Redesigned the contract
+ * editor with a modern, single-pane layout for improved simplicity and usability.
+ * Replaced collapsible sections with clear, open sections and introduced a cleaner,
+ * integrated tab navigation style.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -48,250 +49,206 @@ function formatCurrency(value) {
 // ===================================================================================
 // #endregion
 // ===================================================================================
-// #region CONTRACT DETAIL EDITOR (Sonoma Glass Redesign)
+// #region CONTRACT DETAIL EDITOR (Catalina Clean Redesign)
 // ===================================================================================
 
 export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     const uniqueSuffix = generateId('contract_detail');
     const windowTitle = `Editor de Contrato - ${initialData.details.numeroContrato || 'Novo Contrato'}`;
-    const winId = window.windowManager.createWindow(windowTitle, '', { width: '1350px', height: '900px', appType: 'contract-editor' });
+    const winId = window.windowManager.createWindow(windowTitle, '', { width: '1200px', height: '900px', appType: 'contract-editor' });
 
     const content = `
     <style>
-        /* Sonoma Glass Theme Variables */
+        /* Catalina Clean Theme Variables */
         :root {
-            --radius-large: 16px; --radius-medium: 12px; --radius-small: 8px;
+            --radius-large: 12px; --radius-medium: 8px; --radius-small: 6px;
             --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             
             /* Light Mode */
-            --accent-primary-light: #007aff; --accent-secondary-light: #e9e9eb;
-            --text-primary-light: #1d1d1f; --text-secondary-light: #6e6e73;
-            --bg-window-light: #f5f5f7; --input-bg-light: #fff;
-            --glass-bg-light: rgba(240, 240, 245, 0.6); --glass-border-light: rgba(255, 255, 255, 0.4);
-            --shadow-color-light: rgba(0, 0, 0, 0.1);
-            --kpi-good: #34c759; --kpi-warn: #ff9500; --kpi-danger: #ff3b30;
+            --accent-primary-light: #007aff; --accent-secondary-light: #e9e9eb; --divider-light: #e5e5ea;
+            --text-primary-light: #1d1d1f; --text-secondary-light: #6e6e73; --text-tertiary-light: #8e8e93;
+            --bg-window-light: #f5f5f7; --bg-content-light: #ffffff;
+            --glass-bg-light: rgba(248, 248, 250, 0.8); --glass-border-light: rgba(230, 230, 235, 0.9);
+            --shadow-color-light: rgba(0, 0, 0, 0.05);
         }
         .dark-mode {
              /* Dark Mode */
-            --accent-primary-dark: #0a84ff; --accent-secondary-dark: #3a3a3c;
-            --text-primary-dark: #f5f5f7; --text-secondary-dark: #8e8e93;
-            --bg-window-dark: #1c1c1e; --input-bg-dark: #2c2c2e;
-            --glass-bg-dark: rgba(40, 40, 42, 0.7); --glass-border-dark: rgba(60, 60, 60, 0.5);
-            --shadow-color-dark: rgba(0, 0, 0, 0.3);
+            --accent-primary-dark: #0a84ff; --accent-secondary-dark: #3a3a3c; --divider-dark: #444446;
+            --text-primary-dark: #f5f5f7; --text-secondary-dark: #8e8e93; --text-tertiary-dark: #636366;
+            --bg-window-dark: #1c1c1e; --bg-content-dark: #2c2c2e;
+            --glass-bg-dark: rgba(40, 40, 42, 0.7); --glass-border-dark: rgba(60, 60, 60, 0.8);
+            --shadow-color-dark: rgba(0, 0, 0, 0.2);
         }
         
-        /* Base Container */
-        .contract-editor-container {
-            display: flex; flex-direction: column; height: 100%; overflow: hidden;
+        /* Main Container */
+        .contract-editor-v7 {
+            display: flex; flex-direction: column; height: 100%; overflow-y: auto;
             background-color: var(--bg-window-light); font-family: var(--font-main);
-            color: var(--text-primary-light);
-            position: relative; /* Needed for modal positioning */
+            color: var(--text-primary-light); padding: 0 25px;
+            position: relative;
         }
-        .dark-mode .contract-editor-container { background-color: var(--bg-window-dark); color: var(--text-primary-dark); }
+        .dark-mode .contract-editor-v7 { background-color: var(--bg-window-dark); color: var(--text-primary-dark); }
+
+        /* Header */
+        .editor-header-v7 {
+            padding: 20px 0; display: flex; align-items: center; gap: 20px;
+            border-bottom: 1px solid var(--divider-light);
+        }
+        .dark-mode .editor-header-v7 { border-bottom: 1px solid var(--divider-dark); }
+        .editor-header-v7 h1 { font-size: 1.8em; margin: 0; flex-grow: 1; }
+        .editor-header-v7 .app-select { width: 150px; font-weight: 500; }
+
+        /* Sections */
+        .editor-section-v7 { padding: 25px 0; border-bottom: 1px solid var(--divider-light); }
+        .dark-mode .editor-section-v7 { border-bottom: 1px solid var(--divider-dark); }
+        .editor-section-v7:last-of-type { border-bottom: none; }
+        .section-title-v7 {
+            font-size: 1.3em; font-weight: 600; margin: 0 0 20px 0;
+            color: var(--text-primary-light);
+        }
+        .dark-mode .section-title-v7 { color: var(--text-primary-dark); }
         
-        /* Glassmorphism Effect */
-        .glass-effect {
+        .form-grid-v7 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px 25px;
+        }
+        .form-grid-v7 .form-grid-full { grid-column: 1 / -1; }
+        .form-grid-v7 label {
+            display: block; font-size: 0.9em; font-weight: 500;
+            color: var(--text-secondary-light); margin-bottom: 8px;
+        }
+        .dark-mode .form-grid-v7 label { color: var(--text-secondary-dark); }
+
+        /* Tabs */
+        .contract-tabs-v7 {
+            display: flex; gap: 25px;
+            border-bottom: 1px solid var(--divider-light);
+        }
+        .dark-mode .contract-tabs-v7 { border-bottom: 1px solid var(--divider-dark); }
+        .tab-button-v7 {
+            background: none; border: none; cursor: pointer;
+            padding: 15px 5px; font-size: 1em; font-weight: 500;
+            color: var(--text-secondary-light);
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .dark-mode .tab-button-v7 { color: var(--text-secondary-dark); }
+        .tab-button-v7:hover { color: var(--text-primary-light); }
+        .dark-mode .tab-button-v7:hover { color: var(--text-primary-dark); }
+        .tab-button-v7.active {
+            color: var(--accent-primary-light);
+            border-bottom-color: var(--accent-primary-light);
+        }
+        .dark-mode .tab-button-v7.active {
+            color: var(--accent-primary-dark);
+            border-bottom-color: var(--accent-primary-dark);
+        }
+        .tab-button-v7 i { margin-right: 8px; }
+
+        .tab-content-v7 {
+            padding: 25px;
+            margin-top: -1px; /* Overlap the border */
             background: var(--glass-bg-light);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border-light);
-            box-shadow: 0 4px 20px 0 var(--shadow-color-light);
+            border-top: none;
+            border-radius: 0 0 var(--radius-large) var(--radius-large);
         }
-        .dark-mode .glass-effect {
-            background: var(--glass-bg-dark);
-            border: 1px solid var(--glass-border-dark);
-            box-shadow: 0 4px 20px 0 var(--shadow-color-dark);
+        .dark-mode .tab-content-v7 {
+             background: var(--glass-bg-dark);
+             border: 1px solid var(--glass-border-dark);
+             border-top: none;
         }
 
-        /* Layout */
-        .main-content-v6 { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
-        .main-form-column, .tabs-column {
-            flex: 1; display: flex; flex-direction: column;
-            overflow-y: auto;
-            border-radius: var(--radius-large);
-            padding: 15px;
-        }
-        .main-form-column { flex-basis: 480px; flex-grow: 0; flex-shrink: 0; }
-        
-        /* Form Sections */
-        .form-section { border: none; margin-bottom: 15px; }
-        .form-section summary {
-            font-weight: 600; padding: 12px 15px; cursor: pointer; list-style: none;
-            border-radius: var(--radius-medium); position: relative;
-            background-color: var(--accent-secondary-light);
-        }
-        .dark-mode .form-section summary { background-color: var(--accent-secondary-dark); }
-        .form-section[open] > summary { border-radius: var(--radius-medium) var(--radius-medium) 0 0; }
-        .form-section summary::-webkit-details-marker { display: none; }
-        .form-section summary::after { content: '›'; position: absolute; right: 15px; font-size: 1.5em; line-height: 1; transition: transform .2s; transform: rotate(90deg); }
-        .form-section:not([open]) summary::after { transform: rotate(0deg); }
-        .form-section-content {
-            padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px;
-            background-color: rgba(0,0,0,0.02);
-            border-radius: 0 0 var(--radius-medium) var(--radius-medium);
-        }
-        .dark-mode .form-section-content { background-color: rgba(255,255,255,0.03); }
-        .form-grid-full { grid-column: 1 / -1; }
-
-        /* Tabs */
-        .contract-tracking-tabs-v6 { display: flex; flex-shrink: 0; padding: 5px; margin-bottom: 15px; background-color: var(--accent-secondary-light); border-radius: var(--radius-medium); }
-        .dark-mode .contract-tracking-tabs-v6 { background-color: var(--accent-secondary-dark); }
-        .contract-tab-button {
-            flex: 1; background: transparent; border: none; padding: 8px 10px; cursor: pointer;
-            color: var(--text-secondary-light); font-weight: 500; border-radius: var(--radius-small);
-            transition: all 0.3s ease;
-        }
-        .dark-mode .contract-tab-button { color: var(--text-secondary-dark); }
-        .contract-tab-button.active {
-            font-weight: 600;
-            background: var(--bg-window-light); color: var(--text-primary-light);
-            box-shadow: 0 1px 5px var(--shadow-color-light);
-        }
-        .dark-mode .contract-tab-button.active { background: var(--bg-window-dark); color: var(--text-primary-dark); }
-        
-        /* Tab Content */
-        .contract-tab-content-v6 { flex: 1; overflow-y: auto; }
-
-        /* Dashboard & Charts */
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
-        .kpi-card { padding: 15px; border-radius: var(--radius-medium); text-align: center; }
-        .kpi-title { font-size: 0.9em; font-weight: 500; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; color: var(--text-secondary-light); }
-        .dark-mode .kpi-title { color: var(--text-secondary-dark); }
-        .kpi-value { font-size: 2em; font-weight: 700; }
-        .kpi-subtext { font-size: 0.8em; opacity: 0.7; }
-        .kpi-value.kpi-good { color: var(--kpi-good); } .kpi-value.kpi-warn { color: var(--kpi-warn); } .kpi-value.kpi-danger { color: var(--kpi-danger); }
-        .chart-container { display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap; margin-top: 20px; }
-        .chart-wrapper { display: flex; flex-direction: column; align-items: center; padding: 20px; border-radius: var(--radius-medium); width: 48%; min-width: 300px; }
-        .chart-title { font-weight: 600; margin-bottom: 15px; }
-        .chart-legend { list-style: none; padding: 0; margin-top: 15px; width: 100%; }
-        .chart-legend li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: .9em; }
-        .chart-legend .legend-label { display: flex; align-items: center; }
-        .chart-legend .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
-        .doughnut-center-text { fill: var(--text-primary-light); font-size: 1.5em; font-weight: 700; }
-        .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
-
-        /* === MODAL REDESIGN V6.4 === */
-        @keyframes modal-pop-in {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; align-items: center; justify-content: center;
-            z-index: 2000;
-            -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
-            background: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            animation: modal-pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            max-width: 750px; width: 95%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .dark-mode .modal-content { box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--glass-border-light); display:flex; justify-content:space-between; align-items:center; }
-        .dark-mode .modal-header { border-bottom: 1px solid var(--glass-border-dark); }
-        .modal-title { font-size: 1.2em; margin: 0; }
-        .modal-close { background:none; border:none; font-size:1.5em; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition: background-color .2s; color: var(--text-secondary-light); }
-        .dark-mode .modal-close { color: var(--text-secondary-dark); }
-        .modal-close:hover { background-color: var(--accent-secondary-light); }
-        .dark-mode .modal-close:hover { background-color: var(--accent-secondary-dark); }
-
+        /* Modal Styles from v6.4, they are already good */
+        @keyframes modal-pop-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; align-items: center; justify-content: center; z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0,0,0,0.5); }
+        .modal-content { animation: modal-pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); max-width: 750px; width: 95%; background-color: var(--bg-content-light); border-radius: var(--radius-large); box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .dark-mode .modal-content { background-color: var(--bg-content-dark); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--divider-light); display:flex; justify-content:space-between; align-items:center; }
+        .dark-mode .modal-header { border-bottom: 1px solid var(--divider-dark); }
         .modal-body { padding: 25px 20px; }
         .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .modal-form-grid label {
-            display: block;
-            font-size: 0.85em;
-            font-weight: 500;
-            color: var(--text-secondary-light);
-            margin-bottom: 6px;
-        }
+        .modal-form-grid label { display: block; font-size: 0.85em; font-weight: 500; color: var(--text-secondary-light); margin-bottom: 6px; }
         .dark-mode .modal-form-grid label { color: var(--text-secondary-dark); }
-        
-        .modal-body .app-input, .modal-body .app-select, .modal-body .app-textarea {
-            background-color: var(--input-bg-light);
-            border: 1px solid var(--accent-secondary-light);
-            transition: border-color 0.2s, box-shadow 0.2s;
-            padding: 12px;
-            width: 100%; /* Ensure inputs fill their container */
-        }
-        .dark-mode .modal-body .app-input, .dark-mode .modal-body .app-select, .dark-mode .modal-body .app-textarea {
-            background-color: var(--input-bg-dark);
-            border: 1px solid var(--accent-secondary-dark);
-        }
-        .modal-body .app-input:focus, .modal-body .app-select:focus, .modal-body .app-textarea:focus {
-            border-color: var(--accent-primary-light);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
-        }
-        .dark-mode .modal-body .app-input:focus, .dark-mode .modal-body .app-select:focus, .dark-mode .modal-body .app-textarea:focus {
-            border-color: var(--accent-primary-dark);
-            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
-        }
-
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid var(--glass-border-light);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-        .dark-mode .modal-footer { border-top: 1px solid var(--glass-border-dark); }
-        .modal-footer .app-button { padding: 10px 20px; font-weight: 600; }
-        /* === END MODAL REDESIGN === */
-        
-        @media (max-width: 1200px) { .main-content-v6 { flex-direction: column; } .main-form-column { flex-basis: auto; } }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--divider-light); display: flex; justify-content: flex-end; gap: 12px; }
+        .dark-mode .modal-footer { border-top: 1px solid var(--divider-dark); }
     </style>
     <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
-    <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
-        <div class="main-content-v6">
-            <div class="main-form-column glass-effect" id="mainFormContainer_${uniqueSuffix}">
-                <details class="form-section" open><summary>Identificação do Contrato</summary><div class="form-section-content">
-                    <input type="text" data-field="numeroContrato" class="app-input" placeholder="Contrato Nº"><select data-field="situacao" class="app-select"><option value="ativo">Ativo</option><option value="suspenso">Suspenso</option><option value="concluido">Concluído</option><option value="encerrado">Encerrado</option><option value="cancelado">Cancelado</option></select>
-                    <input type="text" data-field="tipo" class="app-input form-grid-full" placeholder="Tipo de Contrato (Ex: Prestação de Serviço)">
-                    <input type="text" data-field="contratante.nome" class="app-input form-grid-full" placeholder="Contratante (Nome)"><input type="text" data-field="contratante.cnpj" class="app-input form-grid-full" placeholder="Contratante (CNPJ)">
-                    <input type="text" data-field="contratada.nome" class="app-input form-grid-full" placeholder="Contratada (Nome)"><input type="text" data-field="contratada.cnpj" class="app-input form-grid-full" placeholder="Contratada (CNPJ)">
-                </div></details>
-                <details class="form-section"><summary>Partes e Responsáveis</summary><div class="form-section-content">
-                    <b class="form-grid-full">GESTOR</b>
-                    <input type="text" data-field="gestor.nome" class="app-input form-grid-full" placeholder="Nome do Gestor">
-                    <input type="text" data-field="gestor.masp" class="app-input" placeholder="MASP"><input type="text" data-field="gestor.setor" class="app-input" placeholder="Setor">
-                    <b class="form-grid-full">FISCAL</b>
-                    <input type="text" data-field="fiscal.nome" class="app-input form-grid-full" placeholder="Nome do Fiscal">
-                </div></details>
-                <details class="form-section" open><summary>Objeto e Valores</summary><div class="form-section-content">
-                    <textarea data-field="objeto" class="app-textarea form-grid-full" placeholder="Objeto do Contrato"></textarea>
-                    <input type="text" data-field="modalidade" class="app-input" placeholder="Modalidade Licitação"><input type="text" data-field="dotacao" class="app-input" placeholder="Dotação Orçamentária">
+    <div class="contract-editor-v7" id="editorContainer_${uniqueSuffix}">
+        
+        <header class="editor-header-v7">
+            <h1 id="contractTitle_${uniqueSuffix}">Carregando...</h1>
+            <select data-field="situacao" class="app-select">
+                <option value="ativo">Ativo</option><option value="suspenso">Suspenso</option>
+                <option value="concluido">Concluído</option><option value="encerrado">Encerrado</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+        </header>
+
+        <main class="editor-main-content-v7">
+            <section class="editor-section-v7">
+                <h2 class="section-title-v7">Detalhes do Contrato</h2>
+                <div class="form-grid-v7">
+                    <div><label for="f_numeroContrato">Número do Contrato</label><input id="f_numeroContrato" type="text" data-field="numeroContrato" class="app-input" placeholder="Contrato Nº"></div>
+                    <div class="form-grid-full"><label for="f_tipo">Tipo de Contrato</label><input id="f_tipo" type="text" data-field="tipo" class="app-input" placeholder="Ex: Prestação de Serviço"></div>
+                    <div class="form-grid-full"><label for="f_objeto">Objeto</label><textarea id="f_objeto" data-field="objeto" class="app-textarea" placeholder="Objeto do Contrato"></textarea></div>
+                    <div><label for="f_modalidade">Modalidade Licitação</label><input id="f_modalidade" type="text" data-field="modalidade" class="app-input" placeholder="Modalidade"></div>
+                    <div><label for="f_dotacao">Dotação Orçamentária</label><input id="f_dotacao" type="text" data-field="dotacao" class="app-input" placeholder="Dotação"></div>
+                    <div><label for="f_dataAssinatura">Data de Assinatura</label><input id="f_dataAssinatura" type="date" data-field="dataAssinatura" class="app-input"></div>
+                    <div><label for="f_vigenciaInicial">Vigência Inicial</label><input id="f_vigenciaInicial" type="date" data-field="vigenciaInicial" class="app-input"></div>
+                    <div><label for="f_vigenciaAtual">Vigência Atual</label><input id="f_vigenciaAtual" type="date" data-field="vigenciaAtual" class="app-input"></div>
                     <div id="mainSeiContainer_${uniqueSuffix}" class="form-grid-full"></div>
-                    <div class="form-grid-full"><h3>Valor Global Atual: <span id="valorGlobalDisplay_${uniqueSuffix}">R$ 0,00</span></h3></div>
-                </div></details>
-                <details class="form-section" open><summary>Itens do Contrato</summary><div class="form-section-content form-grid-full">
-                    <table class="app-table" id="itemsTable_${uniqueSuffix}"><thead><tr><th>Nº SIAD</th><th>Descrição</th><th>Valor (R$)</th><th>Ações</th></tr></thead><tbody></tbody></table>
-                    <button id="addItemBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Adicionar Item</button>
-                </div></details>
-                <details class="form-section"><summary>Prazos e Vigência</summary><div class="form-section-content">
-                    <div class="form-grid-full"><label>Assinatura</label><input type="date" data-field="dataAssinatura" class="app-input" title="Data Assinatura"></div>
-                    <div class="form-grid-full"><label>Vigência Inicial</label><input type="date" data-field="vigenciaInicial" class="app-input" title="Vigência Inicial"></div>
-                    <div class="form-grid-full"><label>Vigência Atual</label><input type="date" data-field="vigenciaAtual" class="app-input" title="Vigência Atual"></div>
-                </div></details>
-            </div>
-            <div class="tabs-column glass-effect">
-                <div class="contract-tracking-tabs-v6">
-                    <button class="contract-tab-button active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
-                    <button class="contract-tab-button" data-tab="financial"><i class="fas fa-coins"></i> Financeiro</button>
-                    <button class="contract-tab-button" data-tab="physical"><i class="fas fa-tasks"></i> Físico</button>
-                    <button class="contract-tab-button" data-tab="amendments"><i class="fas fa-file-medical"></i> Aditivos</button>
-                    <button class="contract-tab-button" data-tab="invoices"><i class="fas fa-receipt"></i> Notas Fiscais</button>
                 </div>
-                <div class="contract-tab-content-v6" data-tab-content="dashboard"></div>
-                <div class="contract-tab-content-v6" data-tab-content="financial" style="display:none;"></div>
-                <div class="contract-tab-content-v6" data-tab-content="physical" style="display:none;"></div>
-                <div class="contract-tab-content-v6" data-tab-content="amendments" style="display:none;"></div>
-                <div class="contract-tab-content-v6" data-tab-content="invoices" style="display:none;"></div>
-            </div>
-        </div>
+            </section>
+
+            <section class="editor-section-v7">
+                <h2 class="section-title-v7">Partes Envolvidas</h2>
+                <div class="form-grid-v7">
+                    <div class="form-grid-full"><b>Contratante</b></div>
+                    <div><label>Nome</label><input type="text" data-field="contratante.nome" class="app-input" placeholder="Nome da Contratante"></div>
+                    <div><label>CNPJ</label><input type="text" data-field="contratante.cnpj" class="app-input" placeholder="CNPJ da Contratante"></div>
+                    <div class="form-grid-full"><b>Contratada</b></div>
+                    <div><label>Nome</label><input type="text" data-field="contratada.nome" class="app-input" placeholder="Nome da Contratada"></div>
+                    <div><label>CNPJ</label><input type="text" data-field="contratada.cnpj" class="app-input" placeholder="CNPJ da Contratada"></div>
+                </div>
+            </section>
+
+            <section class="editor-section-v7">
+                <h2 class="section-title-v7">Responsáveis</h2>
+                <div class="form-grid-v7">
+                     <div class="form-grid-full"><b>Gestor do Contrato</b></div>
+                     <div><label>Nome do Gestor</label><input type="text" data-field="gestor.nome" class="app-input" placeholder="Nome Completo"></div>
+                     <div><label>MASP</label><input type="text" data-field="gestor.masp" class="app-input" placeholder="MASP"></div>
+                     <div><label>Setor</label><input type="text" data-field="gestor.setor" class="app-input" placeholder="Setor de Lotação"></div>
+                     <div class="form-grid-full"><b>Fiscal do Contrato</b></div>
+                     <div class="form-grid-full"><label>Nome do Fiscal</label><input type="text" data-field="fiscal.nome" class="app-input" placeholder="Nome Completo"></div>
+                </div>
+            </section>
+
+             <section class="editor-section-v7">
+                <h2 class="section-title-v7">Execução Contratual</h2>
+                <nav class="contract-tabs-v7">
+                    <button class="tab-button-v7 active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</button>
+                    <button class="tab-button-v7" data-tab="items"><i class="fas fa-list-ol"></i> Itens e Valores</button>
+                    <button class="tab-button-v7" data-tab="financial"><i class="fas fa-coins"></i> Financeiro</button>
+                    <button class="tab-button-v7" data-tab="physical"><i class="fas fa-tasks"></i> Físico</button>
+                    <button class="tab-button-v7" data-tab="amendments"><i class="fas fa-file-medical"></i> Aditivos</button>
+                    <button class="tab-button-v7" data-tab="invoices"><i class="fas fa-receipt"></i> Notas Fiscais</button>
+                </nav>
+                <div class="tab-content-v7" data-tab-content="dashboard"></div>
+                <div class="tab-content-v7" data-tab-content="items" style="display:none;"></div>
+                <div class="tab-content-v7" data-tab-content="financial" style="display:none;"></div>
+                <div class="tab-content-v7" data-tab-content="physical" style="display:none;"></div>
+                <div class="tab-content-v7" data-tab-content="amendments" style="display:none;"></div>
+                <div class="tab-content-v7" data-tab-content="invoices" style="display:none;"></div>
+            </section>
+        </main>
     </div>
     <div class="modal-overlay" id="modalOverlay_${uniqueSuffix}">
-        <div class="modal-content glass-effect">
+        <div class="modal-content">
             <div class="modal-header"><h3 class="modal-title" id="modalTitle_${uniqueSuffix}"></h3><button class="modal-close" id="modalClose_${uniqueSuffix}">×</button></div>
             <div class="modal-body" id="modalBody_${uniqueSuffix}"></div>
             <div class="modal-footer"><button class="app-button secondary" id="modalCancelBtn_${uniqueSuffix}">Cancelar</button> <button class="app-button primary" id="modalSaveBtn_${uniqueSuffix}">Salvar</button></div>
@@ -299,13 +256,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     </div>
     `;
     const dashboardHTML = `<div class="dashboard-grid">
-        <div class="kpi-card glass-effect"><div class="kpi-title">Vigência</div><div class="kpi-value" id="kpiDaysLeft_${uniqueSuffix}">-</div><div class="kpi-subtext">Dias Restantes</div></div>
-        <div class="kpi-card glass-effect"><div class="kpi-title">Entregas</div><div class="kpi-value" id="kpiPendingDeliveries_${uniqueSuffix}">0</div><div class="kpi-subtext">Pendentes</div></div>
-        <div class="kpi-card glass-effect"><div class="kpi-title">Pagamentos</div><div class="kpi-value" id="kpiOverduePayments_${uniqueSuffix}">0</div><div class="kpi-subtext">Atrasados</div></div>
-    </div><div class="chart-container">
-        <div class="chart-wrapper glass-effect"><div class="chart-title">Execução Financeira</div><div id="financialChart_${uniqueSuffix}"></div><ul class="chart-legend" id="financialChartLegend_${uniqueSuffix}"></ul></div>
-        <div class="chart-wrapper glass-effect"><div class="chart-title">Acompanhamento Físico</div><div id="physicalChart_${uniqueSuffix}"></div><ul class="chart-legend" id="physicalChartLegend_${uniqueSuffix}"></ul></div>
+        <div class="kpi-card"><div class="kpi-title">Vigência</div><div class="kpi-value kpi-good" id="kpiDaysLeft_${uniqueSuffix}">-</div><div class="kpi-subtext">Dias Restantes</div></div>
+        <div class="kpi-card"><div class="kpi-title">Entregas</div><div class="kpi-value kpi-good" id="kpiPendingDeliveries_${uniqueSuffix}">0</div><div class="kpi-subtext">Pendentes</div></div>
+        <div class="kpi-card"><div class="kpi-title">Pagamentos</div><div class="kpi-value kpi-good" id="kpiOverduePayments_${uniqueSuffix}">0</div><div class="kpi-subtext">Atrasados</div></div>
     </div>`;
+    const itemsHTML = `<h3>Valor Global Atual: <span id="valorGlobalDisplay_${uniqueSuffix}">R$ 0,00</span></h3><button id="addItemBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Adicionar Item</button><div class="app-section"><h4>Itens do Contrato</h4><table class="app-table"><thead><tr><th>Nº SIAD</th><th>Descrição</th><th>Valor (R$)</th><th>Ações</th></tr></thead><tbody id="itemsTableBody_${uniqueSuffix}"></tbody></table></div>`;
     const financialHTML = `<button id="addFinancialBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Lançamento</button><div class="app-section"><h4>Lançamentos Financeiros</h4><table class="app-table"><thead><tr><th>Data</th><th>Tipo</th><th>Valor</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="financialTableBody_${uniqueSuffix}"></tbody></table></div>`;
     const physicalHTML = `<button id="addPhysicalBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Marco</button><div class="app-section"><h4>Marcos de Entrega</h4><table class="app-table"><thead><tr><th>Item</th><th>Previsto</th><th>Realizado</th><th>Status</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="physicalTableBody_${uniqueSuffix}"></tbody></table></div>`;
     const amendmentsHTML = `<button id="addAmendmentBtn_${uniqueSuffix}" class="app-button secondary" style="margin-bottom:15px;"><i class="fas fa-plus"></i> Novo Aditivo</button><div class="app-section"><h4>Termos Aditivos</h4><table class="app-table"><thead><tr><th>Nº</th><th>Tipo</th><th>Variação Valor</th><th>Nova Vigência</th><th>Nº SEI</th><th>Ações</th></tr></thead><tbody id="amendmentsTableBody_${uniqueSuffix}"></tbody></table></div>`;
@@ -316,22 +271,22 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     const windowContent = winData.element.querySelector('.window-content');
     windowContent.innerHTML = content;
     
-    const tabContentMap = { dashboard: dashboardHTML, financial: financialHTML, physical: physicalHTML, amendments: amendmentsHTML, invoices: invoicesHTML };
+    const tabContentMap = { dashboard: dashboardHTML, items: itemsHTML, financial: financialHTML, physical: physicalHTML, amendments: amendmentsHTML, invoices: invoicesHTML };
     Object.keys(tabContentMap).forEach(key => { windowContent.querySelector(`[data-tab-content="${key}"]`).innerHTML = tabContentMap[key]; });
     
     const appState = {
         winId,
-        appDataType: 'contract-editor_v6.4',
+        appDataType: 'contract-editor_v7.0',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
         ui: {
             container: windowContent.querySelector(`#editorContainer_${uniqueSuffix}`),
-            form: windowContent.querySelector(`#mainFormContainer_${uniqueSuffix}`),
+            contractTitle: windowContent.querySelector(`#contractTitle_${uniqueSuffix}`),
             valorGlobalDisplay: windowContent.querySelector(`#valorGlobalDisplay_${uniqueSuffix}`),
             mainSeiContainer: windowContent.querySelector(`#mainSeiContainer_${uniqueSuffix}`),
-            tabButtons: windowContent.querySelectorAll('.contract-tracking-tabs-v6 .contract-tab-button'),
-            tabContents: windowContent.querySelectorAll('.contract-tab-content-v6'),
+            tabButtons: windowContent.querySelectorAll('.tab-button-v7'),
+            tabContents: windowContent.querySelectorAll('.tab-content-v7'),
             buttons: {
                 addItem: windowContent.querySelector(`#addItemBtn_${uniqueSuffix}`),
                 addFinancial: windowContent.querySelector(`#addFinancialBtn_${uniqueSuffix}`),
@@ -340,7 +295,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 addInvoice: windowContent.querySelector(`#addInvoiceBtn_${uniqueSuffix}`),
             },
             tables: {
-                items: windowContent.querySelector(`#itemsTable_${uniqueSuffix} tbody`),
+                items: windowContent.querySelector(`#itemsTableBody_${uniqueSuffix}`),
                 financial: windowContent.querySelector(`#financialTableBody_${uniqueSuffix}`),
                 physical: windowContent.querySelector(`#physicalTableBody_${uniqueSuffix}`),
                 amendments: windowContent.querySelector(`#amendmentsTableBody_${uniqueSuffix}`),
@@ -350,13 +305,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 kpiDaysLeft: windowContent.querySelector(`#kpiDaysLeft_${uniqueSuffix}`),
                 kpiPendingDeliveries: windowContent.querySelector(`#kpiPendingDeliveries_${uniqueSuffix}`),
                 kpiOverduePayments: windowContent.querySelector(`#kpiOverduePayments_${uniqueSuffix}`),
-                financialChart: windowContent.querySelector(`#financialChart_${uniqueSuffix}`),
-                financialChartLegend: windowContent.querySelector(`#financialChartLegend_${uniqueSuffix}`),
-                physicalChart: windowContent.querySelector(`#physicalChart_${uniqueSuffix}`),
-                physicalChartLegend: windowContent.querySelector(`#physicalChartLegend_${uniqueSuffix}`),
             },
             modal: {
                 overlay: windowContent.querySelector(`#modalOverlay_${uniqueSuffix}`),
+                content: windowContent.querySelector('.modal-content'),
                 title: windowContent.querySelector(`#modalTitle_${uniqueSuffix}`),
                 body: windowContent.querySelector(`#modalBody_${uniqueSuffix}`),
                 saveBtn: windowContent.querySelector(`#modalSaveBtn_${uniqueSuffix}`),
@@ -370,7 +322,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         getData: function() { this.updateDetailsFromUI(); return this.data; },
         
         loadData: function(data) { 
-            this.data = JSON.parse(JSON.stringify(data)); // Deep copy
+            this.data = JSON.parse(JSON.stringify(data));
             this.renderAll(); 
         },
 
@@ -400,13 +352,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
         
         setupThemeObserver: function() {
-            const appContainer = this.ui.container;
             const applyTheme = () => {
                 const isDark = document.body.classList.contains('dark-mode');
-                appContainer.classList.toggle('dark-mode', isDark);
-                if (this.ui.tabButtons[0].classList.contains('active')) {
-                    this.renderDashboard();
-                }
+                this.ui.container.classList.toggle('dark-mode', isDark);
+                this.ui.modal.content.classList.toggle('dark-mode', isDark);
             };
 
             this.themeObserver = new MutationObserver((mutations) => {
@@ -423,16 +372,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         
         _registerEventListeners: function() {
             this.eventHandlers.formInput = (e) => {
-                const field = e.target.dataset.field;
-                if (field) {
-                    if(field.endsWith('.cnpj')) {
-                        e.target.value = formatCNPJ(e.target.value);
-                    }
-                    // No need to call updateDetailsFromUI() on every input, 
-                    // it's now called when saving. This can be a performance improvement.
+                if (e.target.dataset.field && e.target.dataset.field.endsWith('.cnpj')) {
+                    e.target.value = formatCNPJ(e.target.value);
                 }
             };
-            this.ui.form.addEventListener('input', this.eventHandlers.formInput);
+            this.ui.container.addEventListener('input', this.eventHandlers.formInput);
 
             this.eventHandlers.cnpjBlur = (e) => {
                 if (e.target.dataset.field && e.target.dataset.field.endsWith('.cnpj')) {
@@ -444,23 +388,25 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     }
                 }
             };
-            this.ui.form.addEventListener('blur', this.eventHandlers.cnpjBlur, true);
+            this.ui.container.addEventListener('blur', this.eventHandlers.cnpjBlur, true);
 
             this.eventHandlers.tabClick = (e) => {
-                const tabName = e.currentTarget.dataset.tab;
+                const tabButton = e.target.closest('.tab-button-v7');
+                if (!tabButton) return;
+                const tabName = tabButton.dataset.tab;
                 this.ui.tabButtons.forEach(btn => btn.classList.remove('active'));
                 this.ui.tabContents.forEach(content => content.style.display = 'none');
-                e.currentTarget.classList.add('active');
+                tabButton.classList.add('active');
                 this.ui.container.querySelector(`[data-tab-content="${tabName}"]`).style.display = 'block';
-                if(tabName === 'dashboard') this.renderDashboard();
             };
-            this.ui.tabButtons.forEach(button => button.addEventListener('click', this.eventHandlers.tabClick));
+            this.ui.container.querySelector('.contract-tabs-v7').addEventListener('click', this.eventHandlers.tabClick);
             
-            this.ui.buttons.addItem.addEventListener('click', () => this.openModal('add', 'items'));
-            this.ui.buttons.addFinancial.addEventListener('click', () => this.openModal('add', 'financial'));
-            this.ui.buttons.addPhysical.addEventListener('click', () => this.openModal('add', 'physical'));
-            this.ui.buttons.addAmendment.addEventListener('click', () => this.openModal('add', 'amendments'));
-            this.ui.buttons.addInvoice.addEventListener('click', () => this.openModal('add', 'invoices'));
+            Object.keys(this.ui.buttons).forEach(key => {
+                if (this.ui.buttons[key]) {
+                    const type = key.replace('add', '').replace('Btn', '').toLowerCase();
+                    this.ui.buttons[key].addEventListener('click', () => this.openModal('add', type));
+                }
+            });
             
             this.eventHandlers.tableClick = (e, type) => this.handleTableAction(e, type);
             Object.keys(this.ui.tables).forEach(type => {
@@ -480,7 +426,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         updateDetailsFromUI: function() {
-            this.ui.form.querySelectorAll('[data-field]').forEach(input => {
+            this.ui.container.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
                 let current = this.data.details;
                 keys.forEach((key, index) => {
@@ -492,7 +438,9 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     }
                 });
             });
-            window.windowManager.updateWindowTitle(this.winId, `Editor de Contrato - ${this.data.details.numeroContrato}`);
+            const title = this.data.details.numeroContrato || 'Novo Contrato';
+            window.windowManager.updateWindowTitle(this.winId, `Editor de Contrato - ${title}`);
+            this.ui.contractTitle.textContent = title;
             this.recalculateTotals();
             this.renderMainSei();
         },
@@ -513,16 +461,17 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         renderMainForm: function() {
-            this.ui.form.querySelectorAll('[data-field]').forEach(input => {
+            this.ui.container.querySelectorAll('[data-field]').forEach(input => {
                 const keys = input.dataset.field.split('.');
                 let value = keys.reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : '', this.data.details);
-                
                 if (input.dataset.field.endsWith('.cnpj')) {
                     value = formatCNPJ(value);
                 }
-                
                 input.value = value;
             });
+            const title = this.data.details.numeroContrato || 'Novo Contrato';
+            this.ui.contractTitle.textContent = title;
+            window.windowManager.updateWindowTitle(this.winId, `Editor de Contrato - ${title}`);
             this.renderMainSei();
         },
         
@@ -530,12 +479,13 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const { numeroSei, linkSei } = this.data.details;
             let html = '';
             if (numeroSei) {
-                html = `<b>Processo SEI:</b> `;
+                html = `<div class="form-grid-full" style="margin-top: 20px;"><b>Processo SEI:</b> `;
                 if (linkSei) {
                     html += `<a href="${linkSei}" target="_blank" title="Abrir processo no SEI">${numeroSei}</a>`;
                 } else {
                     html += numeroSei;
                 }
+                html += '</div>';
             }
             this.ui.mainSeiContainer.innerHTML = html;
         },
@@ -575,7 +525,9 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const amendmentsTotal = (this.data.amendments || []).reduce((sum, item) => sum + (parseFloat(item.value_change) || 0), 0);
             const globalTotal = itemsTotal + amendmentsTotal;
             this.data.details.valorGlobal = globalTotal;
-            this.ui.valorGlobalDisplay.textContent = formatCurrency(globalTotal);
+            if (this.ui.valorGlobalDisplay) {
+                this.ui.valorGlobalDisplay.textContent = formatCurrency(globalTotal);
+            }
         },
         
         openModal: function(mode, type, id = null) {
@@ -615,7 +567,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                                 <div><label for="f_valorFinanceiro">Valor Financeiro (R$)</label><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="R$ 0,00" value="${entry.valorFinanceiro || ''}"></div>
                                 <div class="form-grid-full"><label for="f_descricao">Descrição</label><textarea id="f_descricao" class="app-textarea" placeholder="Descrição do item">${entry.descricao || ''}</textarea></div>
                             </div>`;
-
                 case 'financial': 
                     return `<div class="modal-form-grid">
                                 <div><label for="f_date">Data</label><input type="date" id="f_date" class="app-input" value="${entry.date || today}"></div>
@@ -624,7 +575,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                                 <div class="form-grid-full"><label for="f_description">Descrição</label><input id="f_description" class="app-input" placeholder="Descrição Opcional" value="${entry.description || ''}"></div>
                                 ${seiFields}
                             </div>`;
-                            
                 case 'physical': 
                     return `<div class="modal-form-grid">
                                 <div class="form-grid-full"><label for="f_itemId">Item do Contrato</label><select id="f_itemId" class="app-select">${getItemOptions(entry.itemId)}</select></div>
@@ -633,7 +583,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                                 <div class="form-grid-full"><label for="f_status">Status</label><select id="f_status" class="app-select"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="andamento" ${entry.status==='andamento'?'selected':''}>Andamento</option><option value="concluido" ${entry.status==='concluido'?'selected':''}>Concluído</option><option value="atrasado" ${entry.status==='atrasado'?'selected':''}>Atrasado</option></select></div>
                                 ${seiFields}
                             </div>`;
-
                 case 'amendments': 
                     return `<div class="modal-form-grid">
                                 <div><label for="f_number">Nº Aditivo</label><input id="f_number" class="app-input" placeholder="Nº Aditivo" value="${entry.number || ''}"></div>
@@ -644,7 +593,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                                 <div class="form-grid-full"><label for="f_object">Objeto</label><textarea id="f_object" class="app-textarea" placeholder="Objeto do aditivo">${entry.object||''}</textarea></div>
                                 ${seiFields}
                             </div>`;
-                            
                 case 'invoices': 
                     return `<div class="modal-form-grid">
                                 <div><label for="f_number">Nº NF</label><input id="f_number" class="app-input" placeholder="Nº NF" value="${entry.number||''}"></div>
@@ -683,7 +631,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
             if (mode === 'add') this.data[dataArrayName].push(entry);
             
-            this.updateDetailsFromUI(); // Ensure main form data is synced before re-rendering everything
+            this.updateDetailsFromUI();
             this.renderAll();
             this.closeModal();
         },
@@ -716,18 +664,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             return names[type] || 'item';
         },
 
-        calculateFinancials: function() {
-            let empenhado=0, liquidado=0, pago=0;
-            (this.data.financial || []).forEach(f => {
-                const v = f.value || 0;
-                if(f.type==='empenho') empenhado += v;
-                else if(f.type==='liquidacao') liquidado += v;
-                else if(f.type==='pagamento') pago += v;
-                else if(f.type==='anulacao') empenhado -= v;
-            });
-            return { totalValue: this.data.details.valorGlobal || 0, empenhado, liquidado, pago };
-        },
-
         renderDashboard: function() {
             const { dashboard } = this.ui;
             if (!dashboard || !dashboard.kpiDaysLeft) return; 
@@ -740,7 +676,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                 dashboard.kpiDaysLeft.textContent = days;
                 dashboard.kpiDaysLeft.className = 'kpi-value';
                 if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger');
-                else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn');
+                else if(days<=90) dashboard.kpiDaysLeft.classList.add('kpi-warn');
                 else dashboard.kpiDaysLeft.classList.add('kpi-good');
             } else {
                 dashboard.kpiDaysLeft.textContent = '-';
@@ -753,68 +689,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const late = (invoices || []).filter(i => i.status !== 'pago' && i.date_due && (new Date(i.date_due + "T23:59:59") < today)).length;
             dashboard.kpiOverduePayments.textContent = late;
             dashboard.kpiOverduePayments.className = 'kpi-value ' + (late > 0 ? 'kpi-danger' : 'kpi-good');
-
-            const fin = this.calculateFinancials();
-            const finData=[{l:'Pago',v:fin.pago,c:'#34c759'}, {l:'A Pagar',v:fin.liquidado-fin.pago,c:'#ff9500'}, {l:'A Liquidar',v:fin.empenhado-fin.liquidado,c:'#007aff'}, {l:'Saldo a Empenhar',v:fin.totalValue-fin.empenhado,c:'#8e8e93'}].filter(d=>d.v>0.005);
-            this._createDoughnutChart(dashboard.financialChart, dashboard.financialChartLegend, finData, formatCurrency(fin.totalValue));
-
-            const physStatus=(physical||[]).reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{});
-            const physData=[{l:'Concluído',v:physStatus.concluido||0,c:'#34c759'},{l:'Andamento',v:physStatus.andamento||0,c:'#007aff'},{l:'Pendente',v:physStatus.pendente||0,c:'#ff9500'},{l:'Atrasado',v:physStatus.atrasado||0,c:'#ff3b30'}].filter(d=>d.v>0);
-            this._createDoughnutChart(dashboard.physicalChart, dashboard.physicalChartLegend, physData, `${(physical||[]).length} Itens`);
-        },
-
-        _createDoughnutChart: function(svgContainer, legendContainer, data, centerLabel) {
-            if (!svgContainer || !legendContainer) return;
-            svgContainer.innerHTML=''; legendContainer.innerHTML='';
-            const total = data.reduce((s, item) => s + item.v, 0);
-            if(total === 0){ 
-                svgContainer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color: var(--text-secondary-light);"><p>Sem dados para exibir.</p></div>`; 
-                return; 
-            }
-
-            const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-            svg.setAttribute("viewBox", "0 0 100 100");
-            const r=45, ir=32; let startAngle = -Math.PI/2;
-            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-            svg.appendChild(defs);
-
-            data.forEach((item, index) => {
-                const gradId = `grad_${uniqueSuffix}_${index}`;
-                const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-                gradient.setAttribute("id", gradId);
-                gradient.setAttribute("gradientTransform", "rotate(45)");
-                gradient.innerHTML = `<stop offset="0%" stop-color="${item.c}" stop-opacity="1" /><stop offset="100%" stop-color="${item.c}" stop-opacity="0.7" />`;
-                defs.appendChild(gradient);
-
-                const angle = (item.v / total) * 2 * Math.PI;
-                const endAngle = startAngle + angle;
-                if(angle < 0.001) return;
-                
-                const [x1,y1] = [50 + r * Math.cos(startAngle), 50 + r * Math.sin(startAngle)];
-                const [x2,y2] = [50 + r * Math.cos(endAngle),   50 + r * Math.sin(endAngle)];
-                const [ix1,iy1] = [50 + ir * Math.cos(startAngle), 50 + ir * Math.sin(startAngle)];
-                const [ix2,iy2] = [50 + ir * Math.cos(endAngle),   50 + ir * Math.sin(endAngle)];
-                const largeArcFlag = angle > Math.PI ? 1 : 0;
-                
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${largeArcFlag} 0 ${ix1} ${iy1} Z`);
-                path.setAttribute("fill", `url(#${gradId})`);
-                path.innerHTML = `<title>${item.l}: ${item.v}</title>`;
-                svg.appendChild(path);
-                
-                const isCurrency = item.l.includes('Pago') || item.l.includes('Pagar') || item.l.includes('Liquidar') || item.l.includes('Saldo');
-                const valueDisplay = isCurrency ? formatCurrency(item.v) : item.v;
-
-                legendContainer.innerHTML += `<li><span class="legend-label"><span class="legend-color" style="background-color:${item.c};"></span>${item.l}</span><span class="legend-value">${valueDisplay}</span></li>`;
-                startAngle = endAngle;
-            });
-            
-            const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-            text.setAttribute("x","50"); text.setAttribute("y","50"); text.setAttribute("text-anchor","middle"); text.setAttribute("dominant-baseline","middle");
-            text.classList.add('doughnut-center-text'); text.textContent = centerLabel;
-            svg.appendChild(text);
-
-            svgContainer.appendChild(svg);
         },
 
         cleanup: function() {
@@ -832,12 +706,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 // ===================================================================================
 // #endregion
 // ===================================================================================
-// #region MAIN CONTRACT MANAGER / DASHBOARD (Sonoma Glass Redesign)
+// #region MAIN CONTRACT MANAGER / DASHBOARD (REMAINS LARGELY UNCHANGED)
 // ===================================================================================
 
 export function openContractManager() {
     const uniqueSuffix = generateId('contract_manager');
-    const winId = window.windowManager.createWindow('Gestão de Contratos 6.0', '', { 
+    const winId = window.windowManager.createWindow('Gestão de Contratos 7.0', '', { 
         width: '1400px', 
         height: '900px', 
         appType: 'contract-manager' 
@@ -1019,7 +893,7 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v6.4',
+        appDataType: 'contract-manager_v7.0',
         contracts: [],
         charts: {},
         themeObserver: null,
