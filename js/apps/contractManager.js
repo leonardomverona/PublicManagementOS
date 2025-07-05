@@ -660,11 +660,92 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         },
 
         renderDashboard: function() {
-            // (...) Code remains the same
+            const { dashboard } = this.ui;
+            if (!dashboard || !dashboard.kpiDaysLeft) return; 
+            const { details, physical, invoices } = this.data;
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            if(details.vigenciaAtual){
+                const end=new Date(details.vigenciaAtual + "T23:59:59"), days=Math.ceil((end - today)/864e5);
+                dashboard.kpiDaysLeft.textContent = days;
+                dashboard.kpiDaysLeft.className = 'kpi-value';
+                if(days<0) dashboard.kpiDaysLeft.classList.add('kpi-danger');
+                else if(days<=60) dashboard.kpiDaysLeft.classList.add('kpi-warn');
+                else dashboard.kpiDaysLeft.classList.add('kpi-good');
+            } else {
+                dashboard.kpiDaysLeft.textContent = '-';
+            }
+
+            const pending = (physical || []).filter(p => p.status !== 'concluido').length;
+            dashboard.kpiPendingDeliveries.textContent = pending;
+            dashboard.kpiPendingDeliveries.className = 'kpi-value ' + (pending > 0 ? 'kpi-warn' : 'kpi-good');
+
+            const late = (invoices || []).filter(i => i.status !== 'pago' && i.date_due && (new Date(i.date_due + "T23:59:59") < today)).length;
+            dashboard.kpiOverduePayments.textContent = late;
+            dashboard.kpiOverduePayments.className = 'kpi-value ' + (late > 0 ? 'kpi-danger' : 'kpi-good');
+
+            const fin = this.calculateFinancials();
+            const finData=[{l:'Pago',v:fin.pago,c:'#34c759'}, {l:'A Pagar',v:fin.liquidado-fin.pago,c:'#ff9500'}, {l:'A Liquidar',v:fin.empenhado-fin.liquidado,c:'#007aff'}, {l:'Saldo a Empenhar',v:fin.totalValue-fin.empenhado,c:'#8e8e93'}].filter(d=>d.v>0.005);
+            this._createDoughnutChart(dashboard.financialChart, dashboard.financialChartLegend, finData, formatCurrency(fin.totalValue));
+
+            const physStatus=(physical||[]).reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{});
+            const physData=[{l:'Concluído',v:physStatus.concluido||0,c:'#34c759'},{l:'Andamento',v:physStatus.andamento||0,c:'#007aff'},{l:'Pendente',v:physStatus.pendente||0,c:'#ff9500'},{l:'Atrasado',v:physStatus.atrasado||0,c:'#ff3b30'}].filter(d=>d.v>0);
+            this._createDoughnutChart(dashboard.physicalChart, dashboard.physicalChartLegend, physData, `${(physical||[]).length} Itens`);
         },
 
         _createDoughnutChart: function(svgContainer, legendContainer, data, centerLabel) {
-            // (...) Code remains the same
+            if (!svgContainer || !legendContainer) return;
+            svgContainer.innerHTML=''; legendContainer.innerHTML='';
+            const total = data.reduce((s, item) => s + item.v, 0);
+            if(total === 0){ 
+                svgContainer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color: var(--text-secondary-light);"><p>Sem dados para exibir.</p></div>`; 
+                return; 
+            }
+
+            const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+            svg.setAttribute("viewBox", "0 0 100 100");
+            const r=45, ir=32; let startAngle = -Math.PI/2;
+            const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+            svg.appendChild(defs);
+
+            data.forEach((item, index) => {
+                const gradId = `grad_${uniqueSuffix}_${index}`;
+                const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+                gradient.setAttribute("id", gradId);
+                gradient.setAttribute("gradientTransform", "rotate(45)");
+                gradient.innerHTML = `<stop offset="0%" stop-color="${item.c}" stop-opacity="1" /><stop offset="100%" stop-color="${item.c}" stop-opacity="0.7" />`;
+                defs.appendChild(gradient);
+
+                const angle = (item.v / total) * 2 * Math.PI;
+                const endAngle = startAngle + angle;
+                if(angle < 0.001) return;
+                
+                const [x1,y1] = [50 + r * Math.cos(startAngle), 50 + r * Math.sin(startAngle)];
+                const [x2,y2] = [50 + r * Math.cos(endAngle),   50 + r * Math.sin(endAngle)];
+                const [ix1,iy1] = [50 + ir * Math.cos(startAngle), 50 + ir * Math.sin(startAngle)];
+                const [ix2,iy2] = [50 + ir * Math.cos(endAngle),   50 + ir * Math.sin(endAngle)];
+                const largeArcFlag = angle > Math.PI ? 1 : 0;
+                
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${largeArcFlag} 0 ${ix1} ${iy1} Z`);
+                path.setAttribute("fill", `url(#${gradId})`);
+                path.innerHTML = `<title>${item.l}: ${item.v}</title>`;
+                svg.appendChild(path);
+                
+                const isCurrency = item.l.includes('Pago') || item.l.includes('Pagar') || item.l.includes('Liquidar') || item.l.includes('Saldo');
+                const valueDisplay = isCurrency ? formatCurrency(item.v) : item.v;
+
+                legendContainer.innerHTML += `<li><span class="legend-label"><span class="legend-color" style="background-color:${item.c};"></span>${item.l}</span><span class="legend-value">${valueDisplay}</span></li>`;
+                startAngle = endAngle;
+            });
+            
+            const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+            text.setAttribute("x","50"); text.setAttribute("y","50"); text.setAttribute("text-anchor","middle"); text.setAttribute("dominant-baseline","middle");
+            text.classList.add('doughnut-center-text'); text.textContent = centerLabel;
+            svg.appendChild(text);
+
+            svgContainer.appendChild(svg);
         },
 
         cleanup: function() {
@@ -913,28 +994,110 @@ export function openContractManager() {
         },
         
         setupThemeObserver: function() {
-            // (...) Code remains the same
+            const appContainer = this.ui.container;
+            const applyTheme = () => {
+                const isDark = document.body.classList.contains('dark-mode');
+                appContainer.classList.toggle('dark-mode', isDark);
+                if (typeof Chart !== 'undefined' && this.charts.financial) {
+                    this.renderCharts();
+                }
+            };
+
+            this.themeObserver = new MutationObserver((mutations) => {
+                mutations.forEach(mutation => {
+                    if (mutation.attributeName === 'class') {
+                        applyTheme();
+                    }
+                });
+            });
+
+            this.themeObserver.observe(document.body, { attributes: true });
+            applyTheme();
         },
 
         loadData: function(dataString, fileMeta) {
-            // (...) Code remains the same
+            try {
+                const parsedData = JSON.parse(dataString);
+                if (Array.isArray(parsedData)) {
+                    this.contracts = parsedData;
+                    this.fileId = fileMeta.id;
+                    this.markClean();
+                    window.windowManager.updateWindowTitle(this.winId, fileMeta.name);
+                    this.renderDashboard();
+                    showNotification("Lista de contratos carregada com sucesso.", 3000, "success");
+                } else { throw new Error("O arquivo não contém uma lista de contratos válida."); }
+            } catch (e) { showNotification(`Erro ao carregar arquivo: ${e.message}`, 5000, "error"); }
         },
 
         getData: function() { return JSON.stringify(this.contracts, null, 2); },
 
         exportData: function() {
-            // (...) Code remains the same
+            const dataStr = this.getData();
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contratos-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification("Dados exportados com sucesso!", 3000, "success");
         },
         
         markDirty: function() { this.isDirty = true; },
         markClean: function() { this.isDirty = false; },
 
         loadSampleData: function() {
-            // (...) Code remains the same
+            this.contracts = [
+                {
+                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString().split('T')[0] },
+                    items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
+                },
+                {
+                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
+                    items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }], financial: [], physical: [], amendments: [], invoices: []
+                },
+                 {
+                    id: 'ctr-smp-003', details: { numeroContrato: 'CTR/2024/012', contratada: { nome: 'Inovações Construtivas', cnpj: '88.999.000/0001-12' }, contratante: { nome: 'Departamento de Infraestrutura', cnpj: '00.360.335/0001-00' }, valorGlobal: 580000, situacao: 'ativo', dataAssinatura: '2024-02-20', vigenciaAtual: new Date(new Date().setDate(new Date().getDate() + 120)).toISOString().split('T')[0] },
+                    items: [{ id: generateId('item'), descricao: 'Reforma Estrutural Bloco C', valorFinanceiro: 580000 }], financial: [], physical: [], amendments: [], invoices: []
+                }
+            ];
         },
         
         getFilteredContracts: function() {
-            // (...) Code remains the same
+            const filter = this.ui.timeFilter.value;
+            const statusFilter = this.ui.statusFilter.value;
+            const searchTerm = this.ui.searchInput.value.toLowerCase();
+            const today = new Date();
+            
+            let filtered = this.contracts;
+            
+            if (filter !== 'all') {
+                const days = parseInt(filter, 10);
+                const limitDate = new Date();
+                limitDate.setDate(today.getDate() + days);
+                filtered = filtered.filter(c => {
+                    if (!c.details.vigenciaAtual) return false;
+                    const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
+                    return endDate > today && endDate <= limitDate;
+                });
+            }
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(c => c.details.situacao === statusFilter);
+            }
+            
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    (c.details.numeroContrato?.toLowerCase().includes(searchTerm) ||
+                    (c.details.contratada.nome?.toLowerCase().includes(searchTerm)) ||
+                    (c.details.contratante.nome?.toLowerCase().includes(searchTerm))));
+            }
+            
+            return filtered;
         },
         
         changePage: function(delta) {
@@ -972,15 +1135,112 @@ export function openContractManager() {
         },
         
         renderContractsTable: function() {
-            // (...) Code remains the same
+            const tbody = this.ui.contractsTable;
+            tbody.innerHTML = '';
+            const filteredContracts = this.getFilteredContracts();
+            const totalPages = Math.ceil(filteredContracts.length / this.pageSize);
+            
+            if (this.currentPage >= totalPages && totalPages > 0) {
+                this.currentPage = totalPages - 1;
+            } else if (this.currentPage < 0) {
+                this.currentPage = 0;
+            }
+            
+            const startIdx = this.currentPage * this.pageSize;
+            const pageContracts = filteredContracts.slice(startIdx, startIdx + this.pageSize);
+            
+            this.ui.prevPageBtn.disabled = this.currentPage === 0;
+            this.ui.nextPageBtn.disabled = this.currentPage >= totalPages - 1 || totalPages === 0;
+            this.ui.pageInfo.textContent = totalPages > 0 
+                ? `Página ${this.currentPage + 1} de ${totalPages}` 
+                : 'Nenhum contrato encontrado';
+            
+            pageContracts.forEach(contract => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${contract.details.numeroContrato || '-'}</td>
+                    <td>${contract.details.contratada.nome || '-'}</td>
+                    <td>${formatCurrency(contract.details.valorGlobal)}</td>
+                    <td><span class="status-badge ${contract.details.situacao}">${this.getStatusText(contract.details.situacao)}</span></td>
+                    <td>${contract.details.vigenciaAtual ? new Date(contract.details.vigenciaAtual + 'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+                    <td><button class="app-button small" data-action="edit" data-id="${contract.id}" title="Editar Contrato"><i class="fas fa-edit"></i></button></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            tbody.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+                btn.onclick = () => this.editContract(btn.dataset.id);
+            });
         },
         
         getStatusText: function(status) {
-            // (...) Code remains the same
+            const statusMap = { 'ativo': 'Ativo', 'suspenso': 'Suspenso', 'concluido': 'Concluído', 'encerrado': 'Encerrado', 'cancelado': 'Cancelado' };
+            return statusMap[status] || status;
         },
         
         renderCharts: function() {
-            // (...) Code remains the same
+            if (typeof Chart === 'undefined') return;
+            
+            if (this.charts.financial) this.charts.financial.destroy();
+            if (this.charts.status) this.charts.status.destroy();
+            
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            const textColor = isDarkMode ? '#f5f5f7' : '#1d1d1f';
+            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+            const accentPrimary = isDarkMode ? '#0a84ff' : '#007aff';
+            
+            const ctx = this.ui.financialChart.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, accentPrimary);
+            gradient.addColorStop(1, isDarkMode ? 'rgba(10, 132, 255, 0.2)' : 'rgba(0, 122, 255, 0.2)');
+
+            const contractValues = this.contracts.map(c => c.details.valorGlobal || 0);
+            const contractNames = this.contracts.map(c => c.details.numeroContrato || 'Sem Número');
+            const statusCounts = this.contracts.reduce((acc, c) => {
+                const status = this.getStatusText(c.details.situacao || 'indefinido');
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+            
+            this.charts.financial = new Chart(this.ui.financialChart, {
+                type: 'bar',
+                data: { 
+                    labels: contractNames, 
+                    datasets: [{ 
+                        label: 'Valor do Contrato (R$)', 
+                        data: contractValues, 
+                        backgroundColor: gradient, 
+                        borderColor: accentPrimary, 
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }] 
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } } }, 
+                    scales: { 
+                        y: { beginAtZero: true, ticks: { color: textColor, callback: (v) => `R$ ${v/1000}k` }, grid: { color: gridColor } }, 
+                        x: { ticks: { color: textColor }, grid: { display: false } } 
+                    } 
+                }
+            });
+            
+            this.charts.status = new Chart(this.ui.statusChart, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{ 
+                        data: Object.values(statusCounts), 
+                        backgroundColor: ['#34c759', '#ff9500', '#ff3b30', '#8e8e93', '#007aff', '#5856d6'], 
+                        borderWidth: 0,
+                        hoverOffset: 15
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 12 } } } }
+                }
+            });
         },
 
         handleContractSave: function(savedData) {
