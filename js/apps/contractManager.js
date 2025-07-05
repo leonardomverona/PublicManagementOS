@@ -3,9 +3,9 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * @version 6.3 - "Mendocino Modal" (UI/UX Refresh). Enhanced modal design with improved
- * styling for input fields, buttons, and overall layout. Updated dashboard KPI alert
- * to flag contracts expiring within 90 days.
+ * @version 6.2 - "Sonoma Glass" (Modal Layout Fix). Corrected CSS grid layout issues
+ * in the dynamically generated modals for "Amendments" and "Invoices", ensuring all
+ * form elements align correctly. Added full-width styling for labels.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -66,7 +66,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             /* Light Mode */
             --accent-primary-light: #007aff; --accent-secondary-light: #e9e9eb;
             --text-primary-light: #1d1d1f; --text-secondary-light: #6e6e73;
-            --bg-window-light: #f5f5f7; --input-bg-light: #fff;
+            --bg-window-light: #f5f5f7;
             --glass-bg-light: rgba(240, 240, 245, 0.6); --glass-border-light: rgba(255, 255, 255, 0.4);
             --shadow-color-light: rgba(0, 0, 0, 0.1);
             --kpi-good: #34c759; --kpi-warn: #ff9500; --kpi-danger: #ff3b30;
@@ -75,7 +75,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
              /* Dark Mode */
             --accent-primary-dark: #0a84ff; --accent-secondary-dark: #3a3a3c;
             --text-primary-dark: #f5f5f7; --text-secondary-dark: #8e8e93;
-            --bg-window-dark: #1c1c1e; --input-bg-dark: #2c2c2e;
+            --bg-window-dark: #1c1c1e;
             --glass-bg-dark: rgba(40, 40, 42, 0.7); --glass-border-dark: rgba(60, 60, 60, 0.5);
             --shadow-color-dark: rgba(0, 0, 0, 0.3);
         }
@@ -112,17 +112,20 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         }
         .main-form-column { flex-basis: 480px; flex-grow: 0; flex-shrink: 0; }
         
-        /* Form Sections */
+        /* Form Sections (Collapsible Glass Panels) */
         .form-section { border: none; margin-bottom: 15px; }
         .form-section summary {
-            font-weight: 600; padding: 12px 15px; cursor: pointer; list-style: none;
-            border-radius: var(--radius-medium); position: relative;
+            font-weight: 600; padding: 12px 15px; cursor: pointer;
+            border-radius: var(--radius-medium); position: relative; list-style: none;
             background-color: var(--accent-secondary-light);
+            transition: background-color 0.2s ease;
         }
         .dark-mode .form-section summary { background-color: var(--accent-secondary-dark); }
+        .form-section summary:hover { background-color: rgba(0,0,0,0.05); }
+        .dark-mode .form-section summary:hover { background-color: rgba(255,255,255,0.05); }
         .form-section[open] > summary { border-radius: var(--radius-medium) var(--radius-medium) 0 0; }
         .form-section summary::-webkit-details-marker { display: none; }
-        .form-section summary::after { content: '›'; position: absolute; right: 15px; font-size: 1.5em; transition: transform .2s; transform: rotate(90deg); }
+        .form-section summary::after { content: '›'; position: absolute; right: 15px; font-size: 1.5em; line-height: 1; transition: transform .2s; transform: rotate(90deg); }
         .form-section:not([open]) summary::after { transform: rotate(0deg); }
         .form-section-content {
             padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 15px;
@@ -132,7 +135,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .dark-mode .form-section-content { background-color: rgba(255,255,255,0.03); }
         .form-grid-full { grid-column: 1 / -1; }
 
-        /* Tabs */
+        /* Tabs (Pill Style) */
         .contract-tracking-tabs-v6 { display: flex; flex-shrink: 0; padding: 5px; margin-bottom: 15px; background-color: var(--accent-secondary-light); border-radius: var(--radius-medium); }
         .dark-mode .contract-tracking-tabs-v6 { background-color: var(--accent-secondary-dark); }
         .contract-tab-button {
@@ -154,75 +157,33 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         /* Dashboard & Charts */
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         .kpi-card { padding: 15px; border-radius: var(--radius-medium); text-align: center; }
-        .kpi-title { font-size: 0.9em; font-weight: 500; margin-bottom: 5px; opacity: 0.8; color: var(--text-secondary-light); }
+        .kpi-title { font-size: 0.9em; font-weight: 500; text-transform: uppercase; margin-bottom: 5px; opacity: 0.8; color: var(--text-secondary-light); }
         .dark-mode .kpi-title { color: var(--text-secondary-dark); }
         .kpi-value { font-size: 2em; font-weight: 700; }
+        .kpi-subtext { font-size: 0.8em; opacity: 0.7; }
+        .kpi-value.kpi-good { color: var(--kpi-good); } .kpi-value.kpi-warn { color: var(--kpi-warn); } .kpi-value.kpi-danger { color: var(--kpi-danger); }
+        .chart-container { display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap; margin-top: 20px; }
+        .chart-wrapper { display: flex; flex-direction: column; align-items: center; padding: 20px; border-radius: var(--radius-medium); width: 48%; min-width: 300px; }
+        .chart-title { font-weight: 600; margin-bottom: 15px; }
+        .chart-legend { list-style: none; padding: 0; margin-top: 15px; width: 100%; }
+        .chart-legend li { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: .9em; }
+        .chart-legend .legend-label { display: flex; align-items: center; }
+        .chart-legend .legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
         .doughnut-center-text { fill: var(--text-primary-light); font-size: 1.5em; font-weight: 700; }
         .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
 
-        /* === MODAL REDESIGN V6.3 === */
-        @keyframes modal-pop-in {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; align-items: center; justify-content: center;
-            z-index: 2000;
-            -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
-            background: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            animation: modal-pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            max-width: 750px; width: 95%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .dark-mode .modal-content { box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-
-        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--glass-border-light); display:flex; justify-content:space-between; align-items:center; }
-        .dark-mode .modal-header { border-bottom: 1px solid var(--glass-border-dark); }
-        .modal-title { font-size: 1.2em; margin: 0; }
-        .modal-close { background:none; border:none; font-size:1.5em; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition: background-color .2s; color: var(--text-secondary-light); }
-        .dark-mode .modal-close { color: var(--text-secondary-dark); }
-        .modal-close:hover { background-color: var(--accent-secondary-light); }
-        .dark-mode .modal-close:hover { background-color: var(--accent-secondary-dark); }
-
-        .modal-body { padding: 25px 20px; }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px 20px; }
-        .modal-form-grid label { font-size: 0.9em; font-weight: 500; color: var(--text-secondary-light); margin-bottom: -10px; margin-top:10px; display:block; }
+        /* Modal */
+        .modal-overlay { z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0,0,0,0.3); }
+        .modal-content.glass-effect { border-radius: var(--radius-large); }
+        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .modal-form-grid label { font-size: 0.9em; color: var(--text-secondary-light); margin-bottom: -10px; }
         .dark-mode .modal-form-grid label { color: var(--text-secondary-dark); }
         
-        .modal-body .app-input, .modal-body .app-select, .modal-body .app-textarea {
-            background-color: var(--input-bg-light);
-            border: 1px solid var(--accent-secondary-light);
-            transition: border-color 0.2s, box-shadow 0.2s;
-            padding: 12px;
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content-v6 { flex-direction: column; }
+            .main-form-column { flex-basis: auto; }
         }
-        .dark-mode .modal-body .app-input, .dark-mode .modal-body .app-select, .dark-mode .modal-body .app-textarea {
-            background-color: var(--input-bg-dark);
-            border: 1px solid var(--accent-secondary-dark);
-        }
-        .modal-body .app-input:focus, .modal-body .app-select:focus, .modal-body .app-textarea:focus {
-            border-color: var(--accent-primary-light);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
-        }
-        .dark-mode .modal-body .app-input:focus, .dark-mode .modal-body .app-select:focus, .dark-mode .modal-body .app-textarea:focus {
-            border-color: var(--accent-primary-dark);
-            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
-        }
-
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid var(--glass-border-light);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-        .dark-mode .modal-footer { border-top: 1px solid var(--glass-border-dark); }
-        .modal-footer .app-button { padding: 10px 20px; font-weight: 600; }
-        /* === END MODAL REDESIGN === */
-        
-        @media (max-width: 1200px) { .main-content-v6 { flex-direction: column; } .main-form-column { flex-basis: auto; } }
     </style>
     <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
     <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
@@ -304,7 +265,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     
     const appState = {
         winId,
-        appDataType: 'contract-editor_v6.3',
+        appDataType: 'contract-editor_v6.2',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
@@ -577,9 +538,12 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         closeModal: function() { this.ui.modal.overlay.style.display = 'none'; this.ui.modal.body.innerHTML = ''; },
 
+        // ### BUGFIX v6.2 ###
+        // Corrected the HTML structure for modal forms, ensuring labels span the full width
+        // when they are on their own line, fixing the grid layout.
         _getModalFormHTML: function(type, entry = {}) {
             const today = new Date().toISOString().split('T')[0];
-            const seiFields = `<div class="form-grid-full"><input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"></div><div class="form-grid-full"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}"></div>`;
+            const seiFields = `<input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">`;
             const getItemOptions = (selectedId) => (this.data.items || []).map(i => `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`).join('');
 
             switch(type) {
@@ -905,7 +869,7 @@ export function openContractManager() {
                 <h4>Estatísticas Rápidas</h4>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Valor Total</div><div class="kpi-value" id="totalValue_${uniqueSuffix}">R$ 0,00</div></div>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Contratos Ativos</div><div class="kpi-value" id="activeContracts_${uniqueSuffix}">0</div></div>
-                <div class="kpi-card glass-effect"><div class="kpi-label">Vencendo em 90 dias</div><div class="kpi-value" id="expiringSoon_${uniqueSuffix}">0</div></div>
+                <div class="kpi-card glass-effect"><div class="kpi-label">Vencendo em 30 dias</div><div class="kpi-value" id="expiringSoon_${uniqueSuffix}">0</div></div>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Total de Contratos</div><div class="kpi-value" id="totalContracts_${uniqueSuffix}">0</div></div>
             </div>
              <button id="addContractBtn_${uniqueSuffix}" class="app-button primary" style="margin-top: auto;"><i class="fas fa-plus"></i> Novo Contrato</button>
@@ -950,7 +914,7 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v6.3',
+        appDataType: 'contract-manager_v6.2',
         contracts: [],
         charts: {},
         themeObserver: null,
@@ -1109,15 +1073,13 @@ export function openContractManager() {
             this.markDirty();
             const totalValue = this.contracts.reduce((sum, c) => sum + (c.details.valorGlobal || 0), 0);
             const activeContracts = this.contracts.filter(c => c.details.situacao === 'ativo').length;
-            
-            // ### CHANGE: KPI check changed from 30 to 90 days ###
             const expiringSoon = this.contracts.filter(c => {
                 if (!c.details.vigenciaAtual) return false;
                 const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
                 const today = new Date();
                 const diffTime = endDate - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 90 && diffDays > 0;
+                return diffDays <= 30 && diffDays > 0;
             }).length;
             
             this.ui.totalValue.textContent = formatCurrency(totalValue);
