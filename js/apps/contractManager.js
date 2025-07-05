@@ -714,7 +714,7 @@ export function openContractManager() {
                     <div class="card-label">Contratos Ativos</div>
                     <div class="card-icon"><i class="fas fa-file-contract"></i></div>
                 </div>
-                <div class="dashboard-card">
+                <极简风格
                     <div class="card-value" id="expiringSoon_${uniqueSuffix}">0</div>
                     <div class="card-label">Vencem em 30 dias</div>
                     <div class="card-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -733,7 +733,7 @@ export function openContractManager() {
                 </div>
                 <div class="chart-wrapper-main">
                     <h4>Distribuição por Status</h4>
-                    <canvas id="statusChart_${uniqueSuffix}"></canvas>
+                    <canvas id="statusChart_${unique极简风格}"></canvas>
                 </div>
             </div>
             
@@ -782,7 +782,7 @@ export function openContractManager() {
         .search-box { position: relative; flex: 1; }
         .search-box input { padding-left: 35px; width: 100%; }
         .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #718096; }
-        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
+        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15极简风格 }
         .dashboard-card { background: var(--toolbar-bg); border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; overflow: hidden; border-left: 4px solid #3498db; }
         .dashboard-card:nth-child(2) { border-left-color: #2ecc71; }
         .dashboard-card:nth-child(3) { border-left-color: #f39c12; }
@@ -941,7 +941,7 @@ export function openContractManager() {
                     items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
                 },
                 {
-                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnpj: '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
+                    id: 'ctr-smp-002', details: { numeroContrato: 'CTR/2023/045', contratada: { nome: 'Tech Solutions SA', cnpj: '55.666.777/0001-88' }, contratante: { nome: 'Secretaria de Educação', cnp极简风格 '00.360.335/0001-00' }, valorGlobal: 230000, situacao: 'concluido', dataAssinatura: '2022-11-01', vigenciaAtual: '2023-12-31' },
                     items: [{ id: generateId('item'), descricao: 'Equipamentos de TI', valorFinanceiro: 230000 }], financial: [], physical: [], amendments: [], invoices: []
                 }
             ];
@@ -977,7 +977,7 @@ export function openContractManager() {
                 filtered = filtered.filter(c => 
                     (c.details.numeroContrato?.toLowerCase().includes(searchTerm) ||
                     (c.details.contratada.nome?.toLowerCase().includes(searchTerm)) ||
-                    (c.details.contratante.nome?.toLowerCase().includes(searchTerm))));
+                    (c.details.contratante.nome?.toLowerCase().includes(searchTerm)));
             }
             
             return filtered;
@@ -997,7 +997,7 @@ export function openContractManager() {
                 const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
                 const today = new Date();
                 const diffTime = endDate - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffDays = Math.ceil(diff极简风格 / (1000 * 60 * 60 * 24));
                 return diffDays <= 30 && diffDays > 0;
             }).length;
             
