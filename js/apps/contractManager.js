@@ -3,9 +3,9 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * @version 6.3 - "Mendocino Modal" (UI/UX Refresh). Enhanced modal design with improved
- * styling for input fields, buttons, and overall layout. Updated dashboard KPI alert
- * to flag contracts expiring within 90 days.
+ * @version 6.4 - "Modal Layout Refinement". Fixed an issue where field labels in modals
+ * were being cut off by their input fields. Corrected the HTML structure by wrapping
+ * label/input pairs, ensuring proper layout within the CSS grid.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -170,7 +170,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .doughnut-center-text { fill: var(--text-primary-light); font-size: 1.5em; font-weight: 700; }
         .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
 
-        /* === MODAL REDESIGN V6.3 === */
+        /* === MODAL REDESIGN V6.4 === */
         @keyframes modal-pop-in {
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
@@ -198,8 +198,14 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .dark-mode .modal-close:hover { background-color: var(--accent-secondary-dark); }
 
         .modal-body { padding: 25px 20px; }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px 20px; }
-        .modal-form-grid label { font-size: 0.9em; font-weight: 500; color: var(--text-secondary-light); margin-bottom: -10px; margin-top:10px; display:block; }
+        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .modal-form-grid label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: var(--text-secondary-light);
+            margin-bottom: 6px;
+        }
         .dark-mode .modal-form-grid label { color: var(--text-secondary-dark); }
         
         .modal-body .app-input, .modal-body .app-select, .modal-body .app-textarea {
@@ -207,6 +213,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             border: 1px solid var(--accent-secondary-light);
             transition: border-color 0.2s, box-shadow 0.2s;
             padding: 12px;
+            width: 100%; /* Ensure inputs fill their container */
         }
         .dark-mode .modal-body .app-input, .dark-mode .modal-body .app-select, .dark-mode .modal-body .app-textarea {
             background-color: var(--input-bg-dark);
@@ -262,9 +269,9 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     <button id="addItemBtn_${uniqueSuffix}" class="app-button secondary"><i class="fas fa-plus"></i> Adicionar Item</button>
                 </div></details>
                 <details class="form-section"><summary>Prazos e Vigência</summary><div class="form-section-content">
-                    <label class="form-grid-full">Assinatura</label><input type="date" data-field="dataAssinatura" class="app-input form-grid-full" title="Data Assinatura">
-                    <label class="form-grid-full">Vigência Inicial</label><input type="date" data-field="vigenciaInicial" class="app-input form-grid-full" title="Vigência Inicial">
-                    <label class="form-grid-full">Vigência Atual</label><input type="date" data-field="vigenciaAtual" class="app-input form-grid-full" title="Vigência Atual">
+                    <div class="form-grid-full"><label>Assinatura</label><input type="date" data-field="dataAssinatura" class="app-input" title="Data Assinatura"></div>
+                    <div class="form-grid-full"><label>Vigência Inicial</label><input type="date" data-field="vigenciaInicial" class="app-input" title="Vigência Inicial"></div>
+                    <div class="form-grid-full"><label>Vigência Atual</label><input type="date" data-field="vigenciaAtual" class="app-input" title="Vigência Atual"></div>
                 </div></details>
             </div>
             <div class="tabs-column glass-effect">
@@ -314,7 +321,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     
     const appState = {
         winId,
-        appDataType: 'contract-editor_v6.3',
+        appDataType: 'contract-editor_v6.4',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
@@ -421,7 +428,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
                     if(field.endsWith('.cnpj')) {
                         e.target.value = formatCNPJ(e.target.value);
                     }
-                    this.updateDetailsFromUI();
+                    // No need to call updateDetailsFromUI() on every input, 
+                    // it's now called when saving. This can be a performance improvement.
                 }
             };
             this.ui.form.addEventListener('input', this.eventHandlers.formInput);
@@ -589,15 +597,65 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         _getModalFormHTML: function(type, entry = {}) {
             const today = new Date().toISOString().split('T')[0];
-            const seiFields = `<div class="form-grid-full"><input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"></div><div class="form-grid-full"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}"></div>`;
+            const seiFields = `
+                <div class="form-grid-full">
+                    <label for="f_sei_number">Nº Documento SEI</label>
+                    <input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}">
+                </div>
+                <div class="form-grid-full">
+                    <label for="f_sei_link">Link do Documento SEI</label>
+                    <input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">
+                </div>`;
             const getItemOptions = (selectedId) => (this.data.items || []).map(i => `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`).join('');
 
             switch(type) {
-                case 'items': return `<div class="modal-form-grid"><input id="f_numeroSiad" class="app-input" placeholder="Nº SIAD" value="${entry.numeroSiad || ''}"><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="Valor Financeiro (R$)" value="${entry.valorFinanceiro || ''}"><textarea id="f_descricao" class="app-textarea form-grid-full" placeholder="Descrição">${entry.descricao || ''}</textarea></div>`;
-                case 'financial': return `<div class="modal-form-grid"><div><label>Data</label><input type="date" id="f_date" class="app-input" value="${entry.date || today}"></div><div><label>Tipo</label><select id="f_type" class="app-select"><option value="empenho" ${entry.type === 'empenho'?'selected':''}>Empenho</option><option value="liquidacao" ${entry.type === 'liquidacao'?'selected':''}>Liquidação</option><option value="pagamento" ${entry.type === 'pagamento'?'selected':''}>Pagamento</option><option value="anulacao" ${entry.type === 'anulacao'?'selected':''}>Anulação</option></select></div><div class="form-grid-full"><label>Valor (R$)</label><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value || ''}"></div><div class="form-grid-full"><label>Descrição</label><input id="f_description" class="app-input" placeholder="Descrição Opcional" value="${entry.description || ''}"></div>${seiFields}</div>`;
-                case 'physical': return `<div class="modal-form-grid"><div class="form-grid-full"><label>Item do Contrato</label><select id="f_itemId" class="app-select">${getItemOptions(entry.itemId)}</select></div><label>Data Prevista</label><input type="date" id="f_date_planned" class="app-input" title="Data Prevista" value="${entry.date_planned || ''}"><label>Data Realizada</label><input type="date" id="f_date_done" class="app-input" title="Data Realizada" value="${entry.date_done || ''}"><div class="form-grid-full"><label>Status</label><select id="f_status" class="app-select"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="andamento" ${entry.status==='andamento'?'selected':''}>Andamento</option><option value="concluido" ${entry.status==='concluido'?'selected':''}>Concluído</option><option value="atrasado" ${entry.status==='atrasado'?'selected':''}>Atrasado</option></select></div>${seiFields}</div>`;
-                case 'amendments': return `<div class="modal-form-grid"><input id="f_number" class="app-input" placeholder="Nº Aditivo" value="${entry.number || ''}"><select id="f_type" class="app-select"><option value="valor">Valor</option><option value="prazo">Prazo</option><option value="misto">Misto</option></select><input type="date" id="f_date" value="${entry.date||today}"><input type="number" step="0.01" id="f_value_change" placeholder="Variação de Valor (+/-)" value="${entry.value_change||''}"><label class="form-grid-full">Nova Vigência</label><input type="date" id="f_new_end_date" class="app-input form-grid-full" placeholder="Nova Vigência" value="${entry.new_end_date||''}"><textarea id="f_object" class="app-textarea form-grid-full" placeholder="Objeto">${entry.object||''}</textarea>${seiFields}</div>`;
-                case 'invoices': return `<div class="modal-form-grid"><input id="f_number" class="app-input" placeholder="Nº NF" value="${entry.number||''}"><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value||''}"><label class="form-grid-full">Data de Emissão</label><input type="date" id="f_date_issue" class="app-input form-grid-full" title="Data de Emissão" value="${entry.date_issue||today}"><label class="form-grid-full">Data de Atesto</label><input type="date" id="f_date_attested" class="app-input form-grid-full" title="Data de Atesto" value="${entry.date_attested||''}"><label class="form-grid-full">Data de Vencimento</label><input type="date" id="f_date_due" class="app-input form-grid-full" title="Data de Vencimento" value="${entry.date_due||''}"><label class="form-grid-full">Data de Pagamento</label><input type="date" id="f_date_payment" class="app-input form-grid-full" title="Data de Pagamento" value="${entry.date_payment||''}"><select id="f_status" class="app-select form-grid-full"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="atestado" ${entry.status==='atestado'?'selected':''}>Atestado</option><option value="pago" ${entry.status==='pago'?'selected':''}>Pago</option><option value="cancelado" ${entry.status==='cancelado'?'selected':''}>Cancelado</option></select>${seiFields}</div>`;
+                case 'items': 
+                    return `<div class="modal-form-grid">
+                                <div><label for="f_numeroSiad">Nº SIAD</label><input id="f_numeroSiad" class="app-input" placeholder="Nº SIAD" value="${entry.numeroSiad || ''}"></div>
+                                <div><label for="f_valorFinanceiro">Valor Financeiro (R$)</label><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="R$ 0,00" value="${entry.valorFinanceiro || ''}"></div>
+                                <div class="form-grid-full"><label for="f_descricao">Descrição</label><textarea id="f_descricao" class="app-textarea" placeholder="Descrição do item">${entry.descricao || ''}</textarea></div>
+                            </div>`;
+
+                case 'financial': 
+                    return `<div class="modal-form-grid">
+                                <div><label for="f_date">Data</label><input type="date" id="f_date" class="app-input" value="${entry.date || today}"></div>
+                                <div><label for="f_type">Tipo</label><select id="f_type" class="app-select"><option value="empenho" ${entry.type === 'empenho'?'selected':''}>Empenho</option><option value="liquidacao" ${entry.type === 'liquidacao'?'selected':''}>Liquidação</option><option value="pagamento" ${entry.type === 'pagamento'?'selected':''}>Pagamento</option><option value="anulacao" ${entry.type === 'anulacao'?'selected':''}>Anulação</option></select></div>
+                                <div class="form-grid-full"><label for="f_value">Valor (R$)</label><input type="number" step="0.01" id="f_value" class="app-input" placeholder="R$ 0,00" value="${entry.value || ''}"></div>
+                                <div class="form-grid-full"><label for="f_description">Descrição</label><input id="f_description" class="app-input" placeholder="Descrição Opcional" value="${entry.description || ''}"></div>
+                                ${seiFields}
+                            </div>`;
+                            
+                case 'physical': 
+                    return `<div class="modal-form-grid">
+                                <div class="form-grid-full"><label for="f_itemId">Item do Contrato</label><select id="f_itemId" class="app-select">${getItemOptions(entry.itemId)}</select></div>
+                                <div><label for="f_date_planned">Data Prevista</label><input type="date" id="f_date_planned" class="app-input" title="Data Prevista" value="${entry.date_planned || ''}"></div>
+                                <div><label for="f_date_done">Data Realizada</label><input type="date" id="f_date_done" class="app-input" title="Data Realizada" value="${entry.date_done || ''}"></div>
+                                <div class="form-grid-full"><label for="f_status">Status</label><select id="f_status" class="app-select"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="andamento" ${entry.status==='andamento'?'selected':''}>Andamento</option><option value="concluido" ${entry.status==='concluido'?'selected':''}>Concluído</option><option value="atrasado" ${entry.status==='atrasado'?'selected':''}>Atrasado</option></select></div>
+                                ${seiFields}
+                            </div>`;
+
+                case 'amendments': 
+                    return `<div class="modal-form-grid">
+                                <div><label for="f_number">Nº Aditivo</label><input id="f_number" class="app-input" placeholder="Nº Aditivo" value="${entry.number || ''}"></div>
+                                <div><label for="f_type">Tipo</label><select id="f_type" class="app-select"><option value="valor">Valor</option><option value="prazo">Prazo</option><option value="misto">Misto</option></select></div>
+                                <div><label for="f_date">Data</label><input type="date" id="f_date" class="app-input" value="${entry.date||today}"></div>
+                                <div><label for="f_value_change">Variação de Valor (+/-)</label><input type="number" step="0.01" id="f_value_change" class="app-input" placeholder="R$ 0,00" value="${entry.value_change||''}"></div>
+                                <div class="form-grid-full"><label for="f_new_end_date">Nova Vigência</label><input type="date" id="f_new_end_date" class="app-input" value="${entry.new_end_date||''}"></div>
+                                <div class="form-grid-full"><label for="f_object">Objeto</label><textarea id="f_object" class="app-textarea" placeholder="Objeto do aditivo">${entry.object||''}</textarea></div>
+                                ${seiFields}
+                            </div>`;
+                            
+                case 'invoices': 
+                    return `<div class="modal-form-grid">
+                                <div><label for="f_number">Nº NF</label><input id="f_number" class="app-input" placeholder="Nº NF" value="${entry.number||''}"></div>
+                                <div><label for="f_value">Valor (R$)</label><input type="number" step="0.01" id="f_value" class="app-input" placeholder="R$ 0,00" value="${entry.value||''}"></div>
+                                <div><label for="f_date_issue">Data de Emissão</label><input type="date" id="f_date_issue" class="app-input" title="Data de Emissão" value="${entry.date_issue||today}"></div>
+                                <div><label for="f_date_attested">Data de Atesto</label><input type="date" id="f_date_attested" class="app-input" title="Data de Atesto" value="${entry.date_attested||''}"></div>
+                                <div><label for="f_date_due">Data de Vencimento</label><input type="date" id="f_date_due" class="app-input" title="Data de Vencimento" value="${entry.date_due||''}"></div>
+                                <div><label for="f_date_payment">Data de Pagamento</label><input type="date" id="f_date_payment" class="app-input" title="Data de Pagamento" value="${entry.date_payment||''}"></div>
+                                <div class="form-grid-full"><label for="f_status">Status</label><select id="f_status" class="app-select"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="atestado" ${entry.status==='atestado'?'selected':''}>Atestado</option><option value="pago" ${entry.status==='pago'?'selected':''}>Pago</option><option value="cancelado" ${entry.status==='cancelado'?'selected':''}>Cancelado</option></select></div>
+                                ${seiFields}
+                            </div>`;
                 default: return `Formulário não encontrado para o tipo: ${type}.`;
             }
         },
@@ -625,6 +683,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
             if (mode === 'add') this.data[dataArrayName].push(entry);
             
+            this.updateDetailsFromUI(); // Ensure main form data is synced before re-rendering everything
             this.renderAll();
             this.closeModal();
         },
@@ -960,7 +1019,7 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v6.3',
+        appDataType: 'contract-manager_v6.4',
         contracts: [],
         charts: {},
         themeObserver: null,
