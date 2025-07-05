@@ -3,10 +3,8 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * @version 6.0 - "Sonoma Glass" Redesign. Major UI/UX overhaul featuring a translucent,
- * glassmorphic design inspired by macOS Sonoma and modern mobile OS aesthetics.
- * Introduces a new sidebar layout, enhanced charts with gradients, fluid animations,
- * and a complete visual refresh for all components.
+ * @version 6.1 - "Sonoma Glass" (Bugfix). Corrected a race condition in the Contract Detail Editor
+ * where rendering functions were called before data was loaded, causing a TypeError on open.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -264,7 +262,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     
     const appState = {
         winId,
-        appDataType: 'contract-editor_v6.0',
+        appDataType: 'contract-editor_v6.1',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
@@ -322,9 +320,14 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const saveBtn = toolbar.querySelector('.save-file-btn');
             if(saveBtn) saveBtn.onclick = () => this.saveChanges();
             
-            this.setupThemeObserver();
+            // ### BUGFIX v6.1 ###
+            // The order of operations is changed here to prevent the race condition.
+            // 1. Register event handlers.
+            // 2. Load the data, which populates `this.data`.
+            // 3. Set up the theme observer, which can now safely call render functions.
             this._registerEventListeners();
             this.loadData(initialData);
+            this.setupThemeObserver(); 
         },
 
         saveChanges: function() {
@@ -347,6 +350,8 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const applyTheme = () => {
                 const isDark = document.body.classList.contains('dark-mode');
                 appContainer.classList.toggle('dark-mode', isDark);
+                // Re-render charts on theme change to update colors.
+                // This is now safe because data is already loaded.
                 if (this.ui.tabButtons[0].classList.contains('active')) {
                     this.renderDashboard();
                 }
@@ -361,7 +366,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             });
 
             this.themeObserver.observe(document.body, { attributes: true });
-            applyTheme();
+            applyTheme(); // Call once on init to set the initial theme
         },
         
         _registerEventListeners: function() {
@@ -910,7 +915,7 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v6.0',
+        appDataType: 'contract-manager_v6.1',
         contracts: [],
         charts: {},
         themeObserver: null,
