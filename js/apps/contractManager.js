@@ -172,10 +172,33 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .doughnut-center-text { fill: var(--text-primary-light); font-size: 1.5em; font-weight: 700; }
         .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
 
-        /* Modal */
-        .modal-overlay { z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0,0,0,0.3); }
-        .modal-content.glass-effect { border-radius: var(--radius-large); }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        /* Modal CORRECTION */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Initially hidden */
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            max-width: 600px;
+            width: 90%;
+        }
+        .modal-content.glass-effect {
+            border-radius: var(--radius-large);
+        }
+        .modal-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
         .modal-form-grid label { font-size: 0.9em; color: var(--text-secondary-light); margin-bottom: -10px; }
         .dark-mode .modal-form-grid label { color: var(--text-secondary-dark); }
         
