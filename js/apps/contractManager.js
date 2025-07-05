@@ -3,9 +3,9 @@
  * @description A comprehensive contract management application for a virtual OS.
  * This module merges a dashboard-centric list view with a detailed, tabbed contract editor view.
  *
- * @version 6.2 - "Sonoma Glass" (Modal Layout Fix). Corrected CSS grid layout issues
- * in the dynamically generated modals for "Amendments" and "Invoices", ensuring all
- * form elements align correctly. Added full-width styling for labels.
+ * @version 6.3 - "Mendocino Modal" (UI/UX Refresh). Enhanced modal design with improved
+ * styling for input fields, buttons, and overall layout. Updated dashboard KPI alert
+ * to flag contracts expiring within 90 days.
  */
 
 import { generateId, showNotification } from '../main.js';
@@ -66,7 +66,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             /* Light Mode */
             --accent-primary-light: #007aff; --accent-secondary-light: #e9e9eb;
             --text-primary-light: #1d1d1f; --text-secondary-light: #6e6e73;
-            --bg-window-light: #f5f5f7;
+            --bg-window-light: #f5f5f7; --input-bg-light: #fff;
             --glass-bg-light: rgba(240, 240, 245, 0.6); --glass-border-light: rgba(255, 255, 255, 0.4);
             --shadow-color-light: rgba(0, 0, 0, 0.1);
             --kpi-good: #34c759; --kpi-warn: #ff9500; --kpi-danger: #ff3b30;
@@ -75,7 +75,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
              /* Dark Mode */
             --accent-primary-dark: #0a84ff; --accent-secondary-dark: #3a3a3c;
             --text-primary-dark: #f5f5f7; --text-secondary-dark: #8e8e93;
-            --bg-window-dark: #1c1c1e;
+            --bg-window-dark: #1c1c1e; --input-bg-dark: #2c2c2e;
             --glass-bg-dark: rgba(40, 40, 42, 0.7); --glass-border-dark: rgba(60, 60, 60, 0.5);
             --shadow-color-dark: rgba(0, 0, 0, 0.3);
         }
@@ -85,6 +85,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             display: flex; flex-direction: column; height: 100%; overflow: hidden;
             background-color: var(--bg-window-light); font-family: var(--font-main);
             color: var(--text-primary-light);
+            position: relative; /* Needed for modal positioning */
         }
         .dark-mode .contract-editor-container { background-color: var(--bg-window-dark); color: var(--text-primary-dark); }
         
@@ -112,17 +113,14 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         }
         .main-form-column { flex-basis: 480px; flex-grow: 0; flex-shrink: 0; }
         
-        /* Form Sections (Collapsible Glass Panels) */
+        /* Form Sections */
         .form-section { border: none; margin-bottom: 15px; }
         .form-section summary {
-            font-weight: 600; padding: 12px 15px; cursor: pointer;
-            border-radius: var(--radius-medium); position: relative; list-style: none;
+            font-weight: 600; padding: 12px 15px; cursor: pointer; list-style: none;
+            border-radius: var(--radius-medium); position: relative;
             background-color: var(--accent-secondary-light);
-            transition: background-color 0.2s ease;
         }
         .dark-mode .form-section summary { background-color: var(--accent-secondary-dark); }
-        .form-section summary:hover { background-color: rgba(0,0,0,0.05); }
-        .dark-mode .form-section summary:hover { background-color: rgba(255,255,255,0.05); }
         .form-section[open] > summary { border-radius: var(--radius-medium) var(--radius-medium) 0 0; }
         .form-section summary::-webkit-details-marker { display: none; }
         .form-section summary::after { content: '›'; position: absolute; right: 15px; font-size: 1.5em; line-height: 1; transition: transform .2s; transform: rotate(90deg); }
@@ -135,7 +133,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .dark-mode .form-section-content { background-color: rgba(255,255,255,0.03); }
         .form-grid-full { grid-column: 1 / -1; }
 
-        /* Tabs (Pill Style) */
+        /* Tabs */
         .contract-tracking-tabs-v6 { display: flex; flex-shrink: 0; padding: 5px; margin-bottom: 15px; background-color: var(--accent-secondary-light); border-radius: var(--radius-medium); }
         .dark-mode .contract-tracking-tabs-v6 { background-color: var(--accent-secondary-dark); }
         .contract-tab-button {
@@ -172,18 +170,69 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .doughnut-center-text { fill: var(--text-primary-light); font-size: 1.5em; font-weight: 700; }
         .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
 
-        /* Modal */
-        .modal-overlay { z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0,0,0,0.3); }
-        .modal-content.glass-effect { border-radius: var(--radius-large); }
-        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .modal-form-grid label { font-size: 0.9em; color: var(--text-secondary-light); margin-bottom: -10px; }
+        /* === MODAL REDESIGN V6.3 === */
+        @keyframes modal-pop-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center;
+            z-index: 2000;
+            -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            animation: modal-pop-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            max-width: 750px; width: 95%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .dark-mode .modal-content { box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--glass-border-light); display:flex; justify-content:space-between; align-items:center; }
+        .dark-mode .modal-header { border-bottom: 1px solid var(--glass-border-dark); }
+        .modal-title { font-size: 1.2em; margin: 0; }
+        .modal-close { background:none; border:none; font-size:1.5em; cursor:pointer; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition: background-color .2s; color: var(--text-secondary-light); }
+        .dark-mode .modal-close { color: var(--text-secondary-dark); }
+        .modal-close:hover { background-color: var(--accent-secondary-light); }
+        .dark-mode .modal-close:hover { background-color: var(--accent-secondary-dark); }
+
+        .modal-body { padding: 25px 20px; }
+        .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px 20px; }
+        .modal-form-grid label { font-size: 0.9em; font-weight: 500; color: var(--text-secondary-light); margin-bottom: -10px; margin-top:10px; display:block; }
         .dark-mode .modal-form-grid label { color: var(--text-secondary-dark); }
         
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .main-content-v6 { flex-direction: column; }
-            .main-form-column { flex-basis: auto; }
+        .modal-body .app-input, .modal-body .app-select, .modal-body .app-textarea {
+            background-color: var(--input-bg-light);
+            border: 1px solid var(--accent-secondary-light);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            padding: 12px;
         }
+        .dark-mode .modal-body .app-input, .dark-mode .modal-body .app-select, .dark-mode .modal-body .app-textarea {
+            background-color: var(--input-bg-dark);
+            border: 1px solid var(--accent-secondary-dark);
+        }
+        .modal-body .app-input:focus, .modal-body .app-select:focus, .modal-body .app-textarea:focus {
+            border-color: var(--accent-primary-light);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        .dark-mode .modal-body .app-input:focus, .dark-mode .modal-body .app-select:focus, .dark-mode .modal-body .app-textarea:focus {
+            border-color: var(--accent-primary-dark);
+            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.3);
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--glass-border-light);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .dark-mode .modal-footer { border-top: 1px solid var(--glass-border-dark); }
+        .modal-footer .app-button { padding: 10px 20px; font-weight: 600; }
+        /* === END MODAL REDESIGN === */
+        
+        @media (max-width: 1200px) { .main-content-v6 { flex-direction: column; } .main-form-column { flex-basis: auto; } }
     </style>
     <div class="app-toolbar">${getStandardAppToolbarHTML({ save: true, open: false, new: false })}</div>
     <div class="contract-editor-container" id="editorContainer_${uniqueSuffix}">
@@ -265,7 +314,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
     
     const appState = {
         winId,
-        appDataType: 'contract-editor_v6.2',
+        appDataType: 'contract-editor_v6.3',
         data: {},
         onSaveCallback: onSaveCallback,
         themeObserver: null,
@@ -538,18 +587,15 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         closeModal: function() { this.ui.modal.overlay.style.display = 'none'; this.ui.modal.body.innerHTML = ''; },
 
-        // ### BUGFIX v6.2 ###
-        // Corrected the HTML structure for modal forms, ensuring labels span the full width
-        // when they are on their own line, fixing the grid layout.
         _getModalFormHTML: function(type, entry = {}) {
             const today = new Date().toISOString().split('T')[0];
-            const seiFields = `<input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}">`;
+            const seiFields = `<div class="form-grid-full"><input id="f_sei_number" class="app-input" placeholder="Nº Documento SEI" value="${entry.sei_number || ''}"></div><div class="form-grid-full"><input id="f_sei_link" class="app-input" placeholder="Link do Documento SEI" value="${entry.sei_link || ''}"></div>`;
             const getItemOptions = (selectedId) => (this.data.items || []).map(i => `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${i.descricao || '(Item sem descrição)'}</option>`).join('');
 
             switch(type) {
                 case 'items': return `<div class="modal-form-grid"><input id="f_numeroSiad" class="app-input" placeholder="Nº SIAD" value="${entry.numeroSiad || ''}"><input type="number" step="0.01" id="f_valorFinanceiro" class="app-input" placeholder="Valor Financeiro (R$)" value="${entry.valorFinanceiro || ''}"><textarea id="f_descricao" class="app-textarea form-grid-full" placeholder="Descrição">${entry.descricao || ''}</textarea></div>`;
-                case 'financial': return `<div class="modal-form-grid"><input type="date" id="f_date" class="app-input" value="${entry.date || today}"><select id="f_type" class="app-select"><option value="empenho" ${entry.type === 'empenho'?'selected':''}>Empenho</option><option value="liquidacao" ${entry.type === 'liquidacao'?'selected':''}>Liquidação</option><option value="pagamento" ${entry.type === 'pagamento'?'selected':''}>Pagamento</option><option value="anulacao" ${entry.type === 'anulacao'?'selected':''}>Anulação</option></select><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value || ''}"><input id="f_description" class="app-input form-grid-full" placeholder="Descrição" value="${entry.description || ''}">${seiFields}</div>`;
-                case 'physical': return `<div class="modal-form-grid"><select id="f_itemId" class="app-select form-grid-full">${getItemOptions(entry.itemId)}</select><label class="form-grid-full">Data Prevista</label><input type="date" id="f_date_planned" class="app-input form-grid-full" title="Data Prevista" value="${entry.date_planned || ''}"><label class="form-grid-full">Data Realizada</label><input type="date" id="f_date_done" class="app-input form-grid-full" title="Data Realizada" value="${entry.date_done || ''}"><select id="f_status" class="app-select form-grid-full"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="andamento" ${entry.status==='andamento'?'selected':''}>Andamento</option><option value="concluido" ${entry.status==='concluido'?'selected':''}>Concluído</option><option value="atrasado" ${entry.status==='atrasado'?'selected':''}>Atrasado</option></select>${seiFields}</div>`;
+                case 'financial': return `<div class="modal-form-grid"><div><label>Data</label><input type="date" id="f_date" class="app-input" value="${entry.date || today}"></div><div><label>Tipo</label><select id="f_type" class="app-select"><option value="empenho" ${entry.type === 'empenho'?'selected':''}>Empenho</option><option value="liquidacao" ${entry.type === 'liquidacao'?'selected':''}>Liquidação</option><option value="pagamento" ${entry.type === 'pagamento'?'selected':''}>Pagamento</option><option value="anulacao" ${entry.type === 'anulacao'?'selected':''}>Anulação</option></select></div><div class="form-grid-full"><label>Valor (R$)</label><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value || ''}"></div><div class="form-grid-full"><label>Descrição</label><input id="f_description" class="app-input" placeholder="Descrição Opcional" value="${entry.description || ''}"></div>${seiFields}</div>`;
+                case 'physical': return `<div class="modal-form-grid"><div class="form-grid-full"><label>Item do Contrato</label><select id="f_itemId" class="app-select">${getItemOptions(entry.itemId)}</select></div><label>Data Prevista</label><input type="date" id="f_date_planned" class="app-input" title="Data Prevista" value="${entry.date_planned || ''}"><label>Data Realizada</label><input type="date" id="f_date_done" class="app-input" title="Data Realizada" value="${entry.date_done || ''}"><div class="form-grid-full"><label>Status</label><select id="f_status" class="app-select"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="andamento" ${entry.status==='andamento'?'selected':''}>Andamento</option><option value="concluido" ${entry.status==='concluido'?'selected':''}>Concluído</option><option value="atrasado" ${entry.status==='atrasado'?'selected':''}>Atrasado</option></select></div>${seiFields}</div>`;
                 case 'amendments': return `<div class="modal-form-grid"><input id="f_number" class="app-input" placeholder="Nº Aditivo" value="${entry.number || ''}"><select id="f_type" class="app-select"><option value="valor">Valor</option><option value="prazo">Prazo</option><option value="misto">Misto</option></select><input type="date" id="f_date" value="${entry.date||today}"><input type="number" step="0.01" id="f_value_change" placeholder="Variação de Valor (+/-)" value="${entry.value_change||''}"><label class="form-grid-full">Nova Vigência</label><input type="date" id="f_new_end_date" class="app-input form-grid-full" placeholder="Nova Vigência" value="${entry.new_end_date||''}"><textarea id="f_object" class="app-textarea form-grid-full" placeholder="Objeto">${entry.object||''}</textarea>${seiFields}</div>`;
                 case 'invoices': return `<div class="modal-form-grid"><input id="f_number" class="app-input" placeholder="Nº NF" value="${entry.number||''}"><input type="number" step="0.01" id="f_value" class="app-input" placeholder="Valor (R$)" value="${entry.value||''}"><label class="form-grid-full">Data de Emissão</label><input type="date" id="f_date_issue" class="app-input form-grid-full" title="Data de Emissão" value="${entry.date_issue||today}"><label class="form-grid-full">Data de Atesto</label><input type="date" id="f_date_attested" class="app-input form-grid-full" title="Data de Atesto" value="${entry.date_attested||''}"><label class="form-grid-full">Data de Vencimento</label><input type="date" id="f_date_due" class="app-input form-grid-full" title="Data de Vencimento" value="${entry.date_due||''}"><label class="form-grid-full">Data de Pagamento</label><input type="date" id="f_date_payment" class="app-input form-grid-full" title="Data de Pagamento" value="${entry.date_payment||''}"><select id="f_status" class="app-select form-grid-full"><option value="pendente" ${entry.status==='pendente'?'selected':''}>Pendente</option><option value="atestado" ${entry.status==='atestado'?'selected':''}>Atestado</option><option value="pago" ${entry.status==='pago'?'selected':''}>Pago</option><option value="cancelado" ${entry.status==='cancelado'?'selected':''}>Cancelado</option></select>${seiFields}</div>`;
                 default: return `Formulário não encontrado para o tipo: ${type}.`;
@@ -869,7 +915,7 @@ export function openContractManager() {
                 <h4>Estatísticas Rápidas</h4>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Valor Total</div><div class="kpi-value" id="totalValue_${uniqueSuffix}">R$ 0,00</div></div>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Contratos Ativos</div><div class="kpi-value" id="activeContracts_${uniqueSuffix}">0</div></div>
-                <div class="kpi-card glass-effect"><div class="kpi-label">Vencendo em 30 dias</div><div class="kpi-value" id="expiringSoon_${uniqueSuffix}">0</div></div>
+                <div class="kpi-card glass-effect"><div class="kpi-label">Vencendo em 90 dias</div><div class="kpi-value" id="expiringSoon_${uniqueSuffix}">0</div></div>
                 <div class="kpi-card glass-effect"><div class="kpi-label">Total de Contratos</div><div class="kpi-value" id="totalContracts_${uniqueSuffix}">0</div></div>
             </div>
              <button id="addContractBtn_${uniqueSuffix}" class="app-button primary" style="margin-top: auto;"><i class="fas fa-plus"></i> Novo Contrato</button>
@@ -914,7 +960,7 @@ export function openContractManager() {
     
     const appState = {
         winId,
-        appDataType: 'contract-manager_v6.2',
+        appDataType: 'contract-manager_v6.3',
         contracts: [],
         charts: {},
         themeObserver: null,
@@ -1017,7 +1063,7 @@ export function openContractManager() {
         loadSampleData: function() {
             this.contracts = [
                 {
-                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: new Date(new Date().setDate(new Date().getDate() + 25)).toISOString().split('T')[0] },
+                    id: 'ctr-smp-001', details: { numeroContrato: 'CTR/2023/001', contratada: { nome: 'Empresa Fornecedora Ltda', cnpj: '11.222.333/0001-44' }, contratante: { nome: 'Ministério da Tecnologia', cnpj: '00.394.460/0001-41' }, valorGlobal: 150000, situacao: 'ativo', dataAssinatura: '2023-01-15', vigenciaAtual: new Date(new Date().setDate(new Date().getDate() + 85)).toISOString().split('T')[0] },
                     items: [{ id: generateId('item'), descricao: 'Serviços de Consultoria', valorFinanceiro: 150000 }], financial: [], physical: [], amendments: [], invoices: []
                 },
                 {
@@ -1073,13 +1119,14 @@ export function openContractManager() {
             this.markDirty();
             const totalValue = this.contracts.reduce((sum, c) => sum + (c.details.valorGlobal || 0), 0);
             const activeContracts = this.contracts.filter(c => c.details.situacao === 'ativo').length;
+            
             const expiringSoon = this.contracts.filter(c => {
                 if (!c.details.vigenciaAtual) return false;
                 const endDate = new Date(c.details.vigenciaAtual + 'T23:59:59');
                 const today = new Date();
                 const diffTime = endDate - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 30 && diffDays > 0;
+                return diffDays <= 90 && diffDays > 0;
             }).length;
             
             this.ui.totalValue.textContent = formatCurrency(totalValue);
