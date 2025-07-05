@@ -173,7 +173,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
         .dark-mode .doughnut-center-text { fill: var(--text-primary-dark); }
 
         /* Modal */
-        .modal-overlay { z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); }
+        .modal-overlay { z-index: 2000; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); background: rgba(0,0,0,0.3); }
         .modal-content.glass-effect { border-radius: var(--radius-large); }
         .modal-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
         
@@ -347,7 +347,6 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             const applyTheme = () => {
                 const isDark = document.body.classList.contains('dark-mode');
                 appContainer.classList.toggle('dark-mode', isDark);
-                // Re-render charts on theme change to update colors
                 if (this.ui.tabButtons[0].classList.contains('active')) {
                     this.renderDashboard();
                 }
@@ -622,7 +621,7 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
 
         renderDashboard: function() {
             const { dashboard } = this.ui;
-            if (!dashboard || !dashboard.kpiDaysLeft) return; // Guard clause
+            if (!dashboard || !dashboard.kpiDaysLeft) return; 
             const { details, physical, invoices } = this.data;
             const today = new Date();
             today.setHours(0,0,0,0);
@@ -647,11 +646,11 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             dashboard.kpiOverduePayments.className = 'kpi-value ' + (late > 0 ? 'kpi-danger' : 'kpi-good');
 
             const fin = this.calculateFinancials();
-            const finData=[{l:'Pago',v:fin.pago,c:'#28a745'}, {l:'A Pagar',v:fin.liquidado-fin.pago,c:'#ffc107'}, {l:'A Liquidar',v:fin.empenhado-fin.liquidado,c:'#17a2b8'}, {l:'Saldo a Empenhar',v:fin.totalValue-fin.empenhado,c:'#6c757d'}].filter(d=>d.v>0.005);
+            const finData=[{l:'Pago',v:fin.pago,c:'#34c759'}, {l:'A Pagar',v:fin.liquidado-fin.pago,c:'#ff9500'}, {l:'A Liquidar',v:fin.empenhado-fin.liquidado,c:'#007aff'}, {l:'Saldo a Empenhar',v:fin.totalValue-fin.empenhado,c:'#8e8e93'}].filter(d=>d.v>0.005);
             this._createDoughnutChart(dashboard.financialChart, dashboard.financialChartLegend, finData, formatCurrency(fin.totalValue));
 
             const physStatus=(physical||[]).reduce((acc,p)=>{acc[p.status]=(acc[p.status]||0)+1;return acc;},{});
-            const physData=[{l:'Concluído',v:physStatus.concluido||0,c:'#28a745'},{l:'Andamento',v:physStatus.andamento||0,c:'#17a2b8'},{l:'Pendente',v:physStatus.pendente||0,c:'#ffc107'},{l:'Atrasado',v:physStatus.atrasado||0,c:'#dc3545'}].filter(d=>d.v>0);
+            const physData=[{l:'Concluído',v:physStatus.concluido||0,c:'#34c759'},{l:'Andamento',v:physStatus.andamento||0,c:'#007aff'},{l:'Pendente',v:physStatus.pendente||0,c:'#ff9500'},{l:'Atrasado',v:physStatus.atrasado||0,c:'#ff3b30'}].filter(d=>d.v>0);
             this._createDoughnutChart(dashboard.physicalChart, dashboard.physicalChartLegend, physData, `${(physical||[]).length} Itens`);
         },
 
@@ -659,7 +658,10 @@ export function openContractDetailEditor(initialData, fileId, onSaveCallback) {
             if (!svgContainer || !legendContainer) return;
             svgContainer.innerHTML=''; legendContainer.innerHTML='';
             const total = data.reduce((s, item) => s + item.v, 0);
-            if(total === 0){ svgContainer.innerHTML = `<p style="text-align:center; margin-top:50px; color: var(--text-secondary-light);">Sem dados para exibir.</p>`; return; }
+            if(total === 0){ 
+                svgContainer.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color: var(--text-secondary-light);"><p>Sem dados para exibir.</p></div>`; 
+                return; 
+            }
 
             const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
             svg.setAttribute("viewBox", "0 0 100 100");
@@ -988,7 +990,7 @@ export function openContractManager() {
         getData: function() { return JSON.stringify(this.contracts, null, 2); },
 
         exportData: function() {
-            const dataStr = JSON.stringify(this.contracts, null, 2);
+            const dataStr = this.getData();
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
@@ -1171,7 +1173,7 @@ export function openContractManager() {
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } }, 
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatCurrency(c.raw) } } }, 
                     scales: { 
                         y: { beginAtZero: true, ticks: { color: textColor, callback: (v) => `R$ ${v/1000}k` }, grid: { color: gridColor } }, 
                         x: { ticks: { color: textColor }, grid: { display: false } } 
@@ -1234,6 +1236,7 @@ export function openContractManager() {
         editContract: function(contractId) {
             const contractData = this.contracts.find(c => c.id === contractId);
             if (contractData) {
+                // Pass a deep copy to the editor to prevent live updates before saving
                 openContractDetailEditor(JSON.parse(JSON.stringify(contractData)), null, (data) => this.handleContractSave(data));
             } else {
                 showNotification(`Erro: Contrato com ID ${contractId} não encontrado.`, 4000, 'error');
